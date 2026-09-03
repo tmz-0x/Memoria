@@ -1,0 +1,1530 @@
+MEMORIA'26 — CINEMATIC INTERACTIVE TICKETING WEBSITE
+MASTER IMPLEMENTATION PROMPT FOR GOOGLE ANTIGRAVITY
+
+Build a complete, production-quality, immersive event ticketing website for Memoria'26 — The Eclipse of Memories.
+
+This is NOT a normal landing page with decorative animations.
+
+The website must feel like an interactive theatrical experience.
+
+The visitor should feel as though they are entering an empty concert stage, watching the stage come alive, discovering the eclipse, and then entering the Memoria'26 event.
+
+Do NOT simplify the concept into basic fade-ins, slide-ins, floating cards, or generic parallax.
+
+The opening experience is the most important part of the website.
+
+1. CORE CREATIVE DIRECTION
+
+The visual concept is:
+
+AN EMPTY STAGE → LIGHT → MEMORY → ECLIPSE → MEMORIA'26 → EVENT
+
+The website should visually communicate:
+
+mystery
+anticipation
+theatrical atmosphere
+elegance
+nostalgia
+music
+moonlight
+memories
+an eclipse
+premium concert/event production
+
+The visitor should feel:
+
+"Something is about to begin."
+
+Then, through scrolling:
+
+"The stage is coming alive."
+
+Then:
+
+"This is Memoria'26."
+
+The animation must be driven by the user's scroll position wherever appropriate.
+
+Do NOT make the entire experience autoplay and finish before the visitor interacts with it.
+
+Scrolling must be part of the storytelling.
+
+2. TECHNOLOGY — DO NOT CHANGE
+
+Use:
+
+React
+Vite
+TypeScript
+Tailwind CSS
+Framer Motion
+React Router v6
+Zustand
+html5-qrcode
+
+Do NOT introduce another animation library.
+
+Use Framer Motion for animation and scroll-linked motion.
+
+The project must be fully runnable.
+
+Do not provide pseudocode.
+
+Generate actual working component code.
+
+3. EXISTING PROJECT SPECIFICATION
+
+Preserve the existing ticket-management functionality and architecture.
+
+The application contains four surfaces:
+
+PUBLIC WEBSITE
+ADMIN DASHBOARD
+APPROVER DASHBOARD
+STAFF CHECK-IN APP
+
+Only the public website should have the immersive Memoria branding and cinematic animations.
+
+Admin and Approver surfaces must remain professional administrative interfaces.
+
+Check-in must remain mobile-first and functional.
+
+4. DESIGN LANGUAGE
+Main colors
+
+Use these exact visual directions:
+
+Background primary:
+
+#1A0D2E
+
+Background secondary:
+
+#0D0518
+
+Magenta glow:
+
+#C04ECF → #E066FF
+
+Gold:
+
+#C9A227 → #D4AF37
+
+Blossom pink:
+
+#FF8FC7 → #FFB3D9
+
+Body text:
+
+#F0E6FA
+
+5. TYPOGRAPHY
+
+Use:
+
+Memoria wordmark:
+
+Great Vibes
+
+IMPORTANT:
+
+Great Vibes is ONLY for the Memoria wordmark.
+
+Never use Great Vibes for body text.
+
+Headings:
+
+Montserrat
+
+Weight:
+
+700–800
+
+Uppercase.
+
+Wide letter spacing.
+
+Body:
+
+Inter or Poppins.
+
+6. ASSETS
+
+Use the existing assets with these exact filenames.
+
+assetshero-stage-scene.jpg
+
+assetsstar-sparkle-texture.png
+
+assetsspotlight-beam.png
+
+assetsticket-frame.png
+
+assetsgold-blossom-divider.png
+
+assetsmoon-starfield.png
+
+assetscandlelit-venue.jpg
+
+assetsicon-music.png
+
+assetsicon-dance.png
+
+assetsicon-couple.png
+
+assetsicon-camera.png
+
+Do not rename these assets.
+
+Do not replace them with random generated assets.
+
+Before using PNG assets, make sure transparent assets are rendered correctly over the violet background.
+
+Never show a white rectangular background around transparent PNG assets.
+
+7. MOST IMPORTANT PART — CINEMATIC OPENING
+
+DO NOT IMPLEMENT THE HERO AS A NORMAL HERO SECTION.
+
+Create a dedicated full-screen cinematic introduction.
+
+The intro should occupy approximately the first 2–3 viewport heights and be controlled by scrolling.
+
+Use a sticky cinematic container.
+
+Example architecture:
+
+CinematicIntro
+├── StageBackground
+├── DarknessOverlay
+├── LeftSpotlight
+├── RightSpotlight
+├── ParticleLayer
+├── BlossomLayer
+├── MoonLayer
+├── EclipseLayer
+├── StageLayer
+├── EventTitle
+└── ScrollIndicator
+
+The exact implementation can differ, but the visual behavior MUST remain the same.
+
+8. CINEMATIC SCENE 01 — THE EMPTY STAGE
+
+Initial page state:
+
+The screen must be almost completely dark.
+
+Use:
+
+deep violet-indigo-black background.
+
+Do NOT immediately show:
+
+event name
+CTA
+ticket button
+navigation-heavy UI
+large text
+cards
+normal hero content
+
+The first visual should be an EMPTY THEATRICAL STAGE.
+
+The stage should feel distant.
+
+There should be two powerful theatrical spotlights.
+
+LEFT SPOTLIGHT:
+
+Origin:
+
+upper-left corner.
+
+Angle:
+
+diagonal toward the center of the stage.
+
+RIGHT SPOTLIGHT:
+
+Origin:
+
+upper-right corner.
+
+Angle:
+
+diagonal toward the center.
+
+Initially the beams should NOT fully illuminate the center.
+
+The center should remain mysterious and dark.
+
+The spotlight beams should have:
+
+soft edges
+volumetric appearance
+subtle magenta/purple tint
+atmospheric bloom
+realistic theatrical falloff
+
+Use:
+
+assetsspotlight-beam.png
+
+where appropriate.
+
+Do not simply place two flat transparent PNGs and call it finished.
+
+Use transforms, opacity, blur/filter and layering to create depth.
+
+9. SCENE 02 — THE VISITOR STARTS SCROLLING
+
+The animation must react to scroll progress.
+
+When the visitor begins scrolling:
+
+The camera should slowly move toward the stage.
+
+At the same time:
+
+LEFT SPOTLIGHT:
+
+rotate slowly toward center.
+
+RIGHT SPOTLIGHT:
+
+rotate slowly toward center.
+
+The two beams gradually converge.
+
+Do not make this fast.
+
+It must feel cinematic.
+
+Use smooth interpolation/spring behavior.
+
+Avoid sudden jumps.
+
+The stage should gradually become visible.
+
+10. SCENE 03 — LIGHT REVEALS THE ATMOSPHERE
+
+As the two spotlights move toward the center:
+
+Introduce very subtle atmospheric particles.
+
+Particles should appear primarily inside illuminated areas.
+
+Use:
+
+assetsstar-sparkle-texture.png
+
+and/or CSS-generated particles.
+
+Particles should:
+
+drift slowly
+move vertically
+have slight horizontal movement
+vary in size
+vary in opacity
+glow softly
+never distract from the stage
+
+Add approximately 40–60 particles.
+
+They should feel like:
+
+dust + stars + magical atmospheric particles.
+
+NOT like a generic website particle background.
+
+11. SCENE 04 — CHERRY BLOSSOM MEMORY
+
+As scrolling continues, introduce cherry blossom petals.
+
+Petals should slowly travel through the scene.
+
+Use subtle:
+
+rotation
+depth variation
+opacity
+horizontal drift
+vertical movement
+
+Do NOT flood the screen with petals.
+
+The petals should feel elegant and sparse.
+
+Some petals should pass through spotlight beams.
+
+Some should remain almost invisible in darkness.
+
+12. SCENE 05 — THE MOON REVEAL
+
+As the stage becomes illuminated:
+
+Gradually reveal the moon behind the stage.
+
+Use the existing moon/starfield visual:
+
+assetsmoon-starfield.png
+
+The moon should NOT suddenly appear.
+
+It should emerge slowly.
+
+The moon should:
+
+increase in opacity
+increase slightly in scale
+move subtly into position
+develop a soft magenta/gold atmospheric glow
+
+The moon becomes the visual focal point behind the stage.
+
+13. SCENE 06 — THE ECLIPSE
+
+This is the central visual moment.
+
+The moon slowly transitions into an eclipse.
+
+Do NOT simply fade one image into another.
+
+Create the feeling of an eclipse:
+
+Moon becomes brighter.
+Dark circular shadow begins crossing the moon.
+Shadow gradually covers the moon.
+A glowing rim remains visible.
+The surrounding atmosphere develops a subtle purple/magenta bloom.
+The stage remains illuminated underneath.
+The eclipse stabilizes.
+
+The eclipse should feel mysterious and elegant.
+
+Avoid cheesy sci-fi effects.
+
+This is a musical/theatrical event, not a space game.
+
+14. SCENE 07 — MEMORIA'26 REVEAL
+
+Only AFTER the eclipse has visually formed should the event identity appear.
+
+Do not display the entire title at once.
+
+Reveal it in layers.
+
+First:
+
+THE ECLIPSE
+
+Then:
+
+OF MEMORIES
+
+Then:
+
+MEMORIA'26
+
+The Memoria'26 wordmark must use:
+
+Great Vibes.
+
+It should appear with:
+
+opacity fade
+slight upward movement
+subtle scale
+gold/magenta glow bloom
+soft cinematic blur-to-sharp transition
+
+The title should feel like it is being revealed by the stage lighting.
+
+NOT like a standard website animation.
+
+15. SCENE 08 — THE STAGE BECOMES THE HERO
+
+After the title reveal, the cinematic scene settles into the actual Hero.
+
+Display:
+
+MEMORIA'26
+
+THE ECLIPSE OF MEMORIES
+
+event date
+
+venue
+
+short emotional tagline
+
+CTA:
+
+GET YOUR TICKET — Rs. 1000
+
+The CTA should only become prominent AFTER the cinematic reveal.
+
+Do not show the CTA during the empty-stage opening.
+
+16. SCROLL TRANSITION FROM INTRO TO WEBSITE
+
+When the cinematic intro reaches its final scroll progress:
+
+The scene should transition naturally into the main website.
+
+Do not create a hard cut.
+
+The stage can slowly move downward/outward while the next section emerges.
+
+The visitor should feel that they have entered the event world.
+
+The transition should look like:
+
+STAGE
+
+↓
+
+MEMORY
+
+↓
+
+STORY
+
+17. ABOUT SECTION — CONTINUE THE STORY
+
+Do NOT simply create:
+
+"About Memoria'26"
+
+with a normal card.
+
+Make this section feel like the next scene.
+
+Opening statement:
+
+"Every memory begins with a moment."
+
+Then explain the Eclipse of Memories concept.
+
+Use:
+
+assetsmoon-starfield.png
+
+and:
+
+assetscandlelit-venue.jpg
+
+Use atmospheric layering.
+
+The supporting image should feel like part of the stage/story rather than a generic website image.
+
+18. SECTION TRANSITIONS
+
+Every major section must feel connected.
+
+Use:
+
+assetsgold-blossom-divider.png
+
+between major sections.
+
+The divider should animate when entering the viewport.
+
+Animation:
+
+scaleX:
+
+0 → 1
+
+opacity:
+
+0 → 1
+
+Use approximately 500–700ms.
+
+Do not use the divider as a decorative line everywhere.
+
+It should feel like a theatrical scene transition.
+
+19. LINEUP SECTION
+
+The Lineup section should feel like performers are entering the stage.
+
+Use:
+
+assetsticket-frame.png
+
+for performer cards.
+
+Use:
+
+assetsspotlight-beam.png
+
+for the lighting effect.
+
+When the lineup enters:
+
+Section becomes visible.
+Spotlight appears.
+Performer cards appear one by one.
+Spotlight visually moves across the cards.
+Each card brightens as the beam reaches it.
+
+Card animation:
+
+scale:
+
+0.9 → 1
+
+opacity:
+
+0 → 1
+
+brightness:
+
+0.7 → 1
+
+stagger:
+
+150ms
+
+Do NOT invent real performer names.
+
+Keep the lineup visually ready for real content.
+
+20. TICKET INFORMATION
+
+Make ticket information visually premium but extremely clear.
+
+Price:
+
+Rs. 1000
+
+General Admission.
+
+Clearly explain:
+
+Online sales are for external attendees.
+
+JPURA members purchase tickets in person.
+
+Show the manually configured remaining allocation.
+
+Clearly display the purchase cutoff date.
+
+Do NOT hide important ticket information behind animation.
+
+21. HOW TO BUY
+
+Create a visually connected step-by-step journey.
+
+Steps:
+
+01 — Fill the form.
+
+02 — Transfer Rs. 1000 × quantity.
+
+03 — Upload the payment slip in the same form.
+
+04 — Wait for manual review.
+
+05 — Confirmation within 24–48 hours.
+
+06 — Ticket sent to email after approval.
+
+Use elegant sequential reveals.
+
+Do not over-animate.
+
+22. TICKET FORM
+
+IMPORTANT:
+
+The Ticket Form must NOT have an entrance animation.
+
+It must render immediately.
+
+No motion.div wrapper around the complete form.
+
+This is intentional.
+
+The form must feel stable and trustworthy.
+
+Fields:
+
+Name
+
+Email
+
+Phone
+
+Quantity
+
+Payment slip upload
+
+File types:
+
+Image/PDF
+
+Maximum:
+
+5MB client-side validation.
+
+On submit:
+
+Call mock:
+
+POST /api/submissions
+
+Use simulated 500–800ms delay.
+
+After successful submission:
+
+Only the success message fades in.
+
+23. PAYMENT DETAILS
+
+Create a premium payment information block.
+
+Include:
+
+Bank account name
+
+Account number
+
+Branch
+
+Copy-to-clipboard interaction.
+
+After copying:
+
+Show:
+
+Copied ✓
+
+for approximately 1.5 seconds.
+
+Important warning:
+
+Use your full name as the payment reference so we can match your transfer to your form.
+
+24. FAQ
+
+Use an accordion.
+
+Questions:
+
+Refund policy
+
+Approval turnaround
+
+Missing ticket email
+
+Ticket format
+
+Rejection process
+
+Use Framer Motion AnimatePresence.
+
+Accordion:
+
+height auto
+
+opacity transition
+
+Chevron rotates 180 degrees.
+
+Approximately 250ms.
+
+25. CHARITY SECTION
+
+Create an emotional section explaining where proceeds go.
+
+This should feel more human and less transactional.
+
+Use subtle:
+
+gold
+
+pink
+
+moonlight
+
+particle
+
+effects.
+
+Avoid excessive animation.
+
+26. CONTACT
+
+Provide:
+
+WhatsApp support
+
+Email support
+
+Make them clearly usable.
+
+27. FOOTER
+
+Final visual should return to the night-stage atmosphere.
+
+Include:
+
+JPURA Voiceclub credit
+
+social links
+
+venue address
+
+event date
+
+Use a subtle starfield / moonlit background.
+
+The page should feel like the story has come full circle.
+
+28. MICRO-INTERACTIONS
+
+CTA hover:
+
+scale 1.02
+
+stronger gold glow
+
+200ms
+
+Performer card hover:
+
+image scale 1.05
+
+spotlight opacity increases to approximately 0.9
+
+250ms
+
+FAQ:
+
+AnimatePresence
+
+250ms
+
+Payment copy:
+
+Copied + checkmark
+
+1.5 seconds
+
+29. PARTICLE SYSTEM
+
+ParticleField is mounted once at the public page root.
+
+40–60 particles.
+
+Each particle:
+
+random X position
+
+random delay
+
+random duration
+
+6–12 seconds
+
+infinite movement
+
+top-to-bottom movement
+
+horizontal sine-like drift:
+
+approximately ±15–20px
+
+opacity:
+
+0.4 → 0.9 → 0.4
+
+Particles must remain:
+
+above background
+
+below UI/text
+
+Do not allow particles to interfere with buttons/forms.
+
+30. IMPORTANT SCROLL PHILOSOPHY
+
+DO NOT make every section fly into the screen.
+
+That creates a generic AI-generated website.
+
+Use three animation categories:
+
+CATEGORY A — CINEMATIC
+
+Scroll-controlled.
+
+Used ONLY for the opening experience.
+
+CATEGORY B — STORY REVEAL
+
+whileInView.
+
+Used for:
+
+About
+
+Lineup
+
+Ticket Info
+
+How To Buy
+
+Charity
+
+Contact
+
+CATEGORY C — INTERACTION
+
+Used for:
+
+buttons
+
+cards
+
+FAQ
+
+copy actions
+
+This creates hierarchy.
+
+31. RESPONSIVE BEHAVIOR
+
+Desktop:
+
+Use the full cinematic experience.
+
+Mobile:
+
+Do NOT simply shrink the desktop scene.
+
+Adapt:
+
+spotlight angles
+
+moon position
+
+text size
+
+stage scale
+
+particle density
+
+scroll distances
+
+CTA positioning
+
+The cinematic experience must remain understandable on mobile.
+
+Maintain performance.
+
+Use reduced particle count on low-power/mobile devices if necessary.
+
+32. ACCESSIBILITY
+
+Respect:
+
+prefers-reduced-motion.
+
+If reduced motion is enabled:
+
+disable intense camera movement
+disable continuous particle animation
+simplify spotlight movement
+keep all content visible
+preserve functionality
+
+Animations must never prevent interaction.
+
+33. ADMIN DASHBOARD
+
+Route:
+
+/admin
+
+Neutral professional admin theme.
+
+DO NOT use:
+
+Memoria branding
+
+purple theatrical styling
+
+cinematic animations
+
+particles
+
+spotlights
+
+Use conventional:
+
+slate / white / blue / neutral dashboard styling.
+
+Pages:
+
+Login
+
+Overview
+
+Event Settings
+
+User Management
+
+All Submissions
+
+Use mock data.
+
+15–20 submissions.
+
+4–5 users.
+
+34. APPROVER DASHBOARD
+
+Route:
+
+/approve
+
+Same neutral administrative theme.
+
+Pending queue.
+
+Click submission:
+
+open slide-over detail panel.
+
+Show:
+
+name
+
+email
+
+phone
+
+quantity
+
+payment slip preview
+
+Approve
+
+Reject
+
+Optimistically remove item from pending queue.
+
+History table:
+
+timestamp
+
+approver identity
+
+35. STAFF CHECK-IN
+
+Route:
+
+/checkin
+
+Mobile-first.
+
+Default screen:
+
+QR scanner.
+
+Use html5-qrcode.
+
+Mock verification.
+
+Valid result:
+
+GREEN
+
+ADMIT
+
+attendee name
+
+quantity
+
+Confirm Check-in
+
+Invalid result:
+
+RED
+
+DO NOT ADMIT
+
+reason
+
+Manual search fallback:
+
+name
+
+ticket ID
+
+Persistent:
+
+X / Y checked in
+
+36. AUTHENTICATION
+
+Use Zustand + localStorage mock authentication.
+
+Protected routes:
+
+/admin
+
+/approve
+
+/checkin
+
+Use shared login.
+
+Hardcode three demo credential sets.
+
+Do not implement a real backend.
+
+37. MOCK API
+
+All APIs are frontend mock functions.
+
+Simulate:
+
+500–800ms delay.
+
+Use:
+
+VITE_API_BASE_URL
+
+Keep API functions separated in:
+
+src/api
+
+API contract:
+
+POST /api/submissions
+
+POST /api/auth/login
+
+GET /api/admin/stats
+
+GET/PUT /api/admin/event-settings
+
+GET /api/admin/users
+
+POST /api/admin/users
+
+DELETE /api/admin/users/
+
+GET /api/admin/submissions
+
+GET /api/approve/pending
+
+POST /api/approve/
+
+POST /api/reject/
+
+GET /api/approve/history
+
+GET /api/verify-ticket/
+
+GET /api/checkin/stats
+
+POST /api/checkin/qr-code
+
+38. REQUIRED FOLDER STRUCTURE
+
+Use exactly this structure:
+
+src/
+
+components/
+
+public/
+
+Hero.tsx
+
+About.tsx
+
+Lineup.tsx
+
+TicketInfo.tsx
+
+HowToBuy.tsx
+
+TicketForm.tsx
+
+PaymentDetails.tsx
+
+FAQ.tsx
+
+Charity.tsx
+
+Contact.tsx
+
+Footer.tsx
+
+ParticleField.tsx
+
+SpotlightCard.tsx
+
+CinematicIntro.tsx
+
+admin/
+
+StatCard.tsx
+
+UserTable.tsx
+
+SubmissionsTable.tsx
+
+EventSettingsForm.tsx
+
+approve/
+
+PendingQueueItem.tsx
+
+DetailPanel.tsx
+
+HistoryTable.tsx
+
+checkin/
+
+QRScanner.tsx
+
+StatusScreen.tsx
+
+RunningCounter.tsx
+
+shared/
+
+LoginForm.tsx
+
+ProtectedRoute.tsx
+
+pages/
+
+store/
+
+api/
+
+assets/
+
+styles/
+
+Do not create a completely different architecture.
+
+39. CODE QUALITY
+
+Write real production-quality React code.
+
+Use:
+
+TypeScript interfaces/types.
+
+Reusable components.
+
+Reusable animation variants.
+
+Clean state management.
+
+No giant monolithic component.
+
+No duplicated animation logic where avoidable.
+
+No placeholder pseudocode.
+
+No TODO comments for required functionality.
+
+40. ANIMATION IMPLEMENTATION REQUIREMENT
+
+For normal component animations, use actual Framer Motion variants.
+
+Example concept:
+
+initial:
+
+opacity: 0
+
+y: 24
+
+animate:
+
+opacity: 1
+
+y: 0
+
+transition:
+
+duration: 0.5
+
+ease:
+
+easeOut
+
+For the cinematic opening, use scroll progress.
+
+Use:
+
+useScroll()
+
+useTransform()
+
+useSpring()
+
+where appropriate.
+
+The spotlight rotation, camera movement, moon movement, eclipse progress and title reveal should be tied to scroll progress.
+
+Do NOT fake scroll-driven animation using random whileInView triggers.
+
+41. PERFORMANCE
+
+Do not render thousands of particles.
+
+Do not run unnecessary React state updates on every animation frame.
+
+Prefer Framer Motion transforms.
+
+Avoid expensive DOM operations.
+
+Use CSS where appropriate.
+
+Use GPU-friendly transforms:
+
+transform
+
+opacity
+
+filter where necessary.
+
+42. CRITICAL DESIGN RULES
+
+NEVER turn the website into:
+
+generic SaaS UI
+generic event template
+basic purple landing page
+simple fade-in website
+collection of cards
+excessive glassmorphism
+excessive neon
+random gradients
+cartoon animation
+gaming UI
+
+The aesthetic must remain:
+
+cinematic + theatrical + mystical + elegant + premium
+
+43. MOST IMPORTANT CREATIVE RULE
+
+The visitor must experience the website in this emotional sequence:
+
+DARKNESS
+
+↓
+
+CURIOSITY
+
+↓
+
+LIGHT
+
+↓
+
+DISCOVERY
+
+↓
+
+THE STAGE
+
+↓
+
+THE MOON
+
+↓
+
+THE ECLIPSE
+
+↓
+
+MEMORIES
+
+↓
+
+MEMORIA'26
+
+↓
+
+THE EVENT
+
+↓
+
+THE TICKET
+
+The website is telling a story.
+
+The animation is not decoration.
+
+The animation IS the introduction.
+
+44. FINAL ACCEPTANCE TEST
+
+Before considering the implementation complete, manually test the public website.
+
+On first load:
+
+[ ] Screen begins dark.
+
+[ ] Empty stage is visible.
+
+[ ] Two spotlights originate from opposite upper corners.
+
+[ ] Event title is NOT immediately visible.
+
+[ ] Scrolling moves the cinematic sequence.
+
+[ ] Spotlights converge toward the stage.
+
+[ ] Atmospheric particles appear.
+
+[ ] Cherry blossom petals appear subtly.
+
+[ ] Moon gradually reveals itself.
+
+[ ] Eclipse develops progressively.
+
+[ ] Memoria'26 appears only after the eclipse sequence.
+
+[ ] Wordmark uses Great Vibes.
+
+[ ] CTA appears after the cinematic reveal.
+
+[ ] Transition into About feels continuous.
+
+[ ] Section dividers animate.
+
+[ ] Lineup spotlight sweep works.
+
+[ ] Ticket form remains stable with NO entrance animation.
+
+[ ] Payment copy interaction works.
+
+[ ] FAQ animation works.
+
+[ ] Admin is neutral and NOT branded.
+
+[ ] Approver is neutral and NOT branded.
+
+[ ] Check-in works on mobile layout.
+
+[ ] Protected routes work.
+
+[ ] Mock APIs work.
+
+[ ] No console errors.
+
+[ ] No broken asset paths.
+
+[ ] No missing images.
+
+[ ] No horizontal overflow.
+
+[ ] Mobile layout works.
+
+[ ] prefers-reduced-motion is respected.
+
+45. DEVELOPMENT PRIORITY
+
+Do NOT build all pages first and then add the cinematic animation.
+
+Build in this order:
+
+PHASE 1
+
+Build the cinematic intro.
+
+Make it visually correct.
+
+PHASE 2
+
+Connect the cinematic intro into the Hero.
+
+PHASE 3
+
+Build About + section transitions.
+
+PHASE 4
+
+Build Lineup + spotlight behavior.
+
+PHASE 5
+
+Build Ticket Information + How To Buy.
+
+PHASE 6
+
+Build Ticket Form + Payment Details.
+
+PHASE 7
+
+Build FAQ + Charity + Contact + Footer.
+
+PHASE 8
+
+Build Admin.
+
+PHASE 9
+
+Build Approver.
+
+PHASE 10
+
+Build Check-in.
+
+PHASE 11
+
+Test responsive behavior and performance.
+
+Do not sacrifice the cinematic opening to finish the administrative screens faster.
+
+FINAL INSTRUCTION
+
+DO NOT interpret "cinematic" as simply adding fade animations.
+
+The first interaction must feel like entering a dark theatre.
+
+The visitor scrolls.
+
+The spotlights move.
+
+The stage appears.
+
+The atmosphere wakes up.
+
+The moon appears.
+
+The eclipse happens.
+
+The Memoria'26 identity is revealed.
+
+Then the actual website begins.
+
+Build that experience first.
+
+Do not simplify it.
+Do not replace it with a standard hero.
+Do not autoplay the entire story before scrolling.
+Do not immediately show the event title.
+
+The website should feel like a concert stage awakening through the visitor's scroll.
+
+That is the defining creative feature of this project.
