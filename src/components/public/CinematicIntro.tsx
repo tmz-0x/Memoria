@@ -10,19 +10,19 @@ export const CinematicIntro: React.FC = () => {
     offset: ['start start', 'end end'],
   });
 
-  // Smooth spring physics for cinematic motion
+  // Smooth spring physics for cinematic realism
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 65,
+    stiffness: 70,
     damping: 24,
     restDelta: 0.001,
   });
 
-  // 1. Camera zoom & depth on the concert stage
-  const stageScale = useTransform(smoothProgress, [0, 0.45, 0.85, 1], [1, 1.06, 1.14, 1.18]);
+  // 1. Stage camera zoom & depth
+  const stageScale = useTransform(smoothProgress, [0, 0.45, 0.85, 1], [1, 1.05, 1.12, 1.15]);
   const stageY = useTransform(smoothProgress, [0, 0.5, 1], ['0%', '-2%', '-4%']);
 
-  // 2. Darkness overlay (starts nearly pitch black, gradually unveils the stage)
-  const darknessOpacity = useTransform(smoothProgress, [0, 0.15, 0.45, 0.85], [0.92, 0.8, 0.35, 0.15]);
+  // 2. Darkness overlay (starts nearly black, lifts as lights focus)
+  const darknessOpacity = useTransform(smoothProgress, [0, 0.15, 0.45, 0.85], [0.94, 0.82, 0.35, 0.15]);
 
   // 3. Volumetric Theatrical Left Spotlight
   const leftSpotlightRotate = useTransform(smoothProgress, [0, 0.12, 0.45], [-32, -24, -6]);
@@ -38,19 +38,19 @@ export const CinematicIntro: React.FC = () => {
   const centerPoolOpacity = useTransform(smoothProgress, [0.15, 0.4, 0.75], [0, 0.8, 1]);
   const centerPoolScale = useTransform(smoothProgress, [0.15, 0.45], [0.5, 1.15]);
 
-  // 6. Stardust sparkle texture emergence (from screen1.png)
+  // 6. Stardust sparkle texture emergence
   const stardustOpacity = useTransform(smoothProgress, [0.2, 0.45, 0.8], [0, 0.45, 0.25]);
 
   // 7. Cherry blossom petals floating across stage
   const blossomOpacity = useTransform(smoothProgress, [0.25, 0.45, 0.85], [0, 0.9, 0.4]);
   const blossomY = useTransform(smoothProgress, [0.25, 0.85], ['-20px', '100px']);
 
-  // 8. Moon reveal behind the stage (using real moon from screen7.png)
-  const moonOpacity = useTransform(smoothProgress, [0.38, 0.58], [0, 1]);
-  const moonScale = useTransform(smoothProgress, [0.38, 0.65, 0.85], [0.75, 1, 1.08]);
+  // 8. Moon reveal behind the stage
+  const moonOpacity = useTransform(smoothProgress, [0.35, 0.55], [0, 1]);
+  const moonScale = useTransform(smoothProgress, [0.35, 0.6, 0.85], [0.75, 1, 1.06]);
   const moonGlow = useTransform(
     smoothProgress,
-    [0.45, 0.65, 0.8],
+    [0.4, 0.6, 0.8],
     [
       '0 0 25px rgba(224, 102, 255, 0.3)',
       '0 0 60px rgba(245, 158, 11, 0.5)',
@@ -59,34 +59,31 @@ export const CinematicIntro: React.FC = () => {
   );
 
   // 9. Eclipse Sequence: dark celestial shadow disc crosses the glowing crescent
-  const eclipseShadowX = useTransform(smoothProgress, [0.55, 0.72, 0.82], ['-115%', '-25%', '0%']);
-  const eclipseCoronaOpacity = useTransform(smoothProgress, [0.65, 0.76, 0.86], [0, 0.85, 1]);
+  const eclipseShadowX = useTransform(smoothProgress, [0.52, 0.68, 0.78], ['-115%', '-25%', '0%']);
+  const eclipseCoronaOpacity = useTransform(smoothProgress, [0.62, 0.72, 0.82], [0, 0.85, 1]);
 
   // 10. Memoria'26 Title reveal in exact layers (Section 14)
-  // Layer 1: "THE ECLIPSE"
-  const title1Opacity = useTransform(smoothProgress, [0.72, 0.78, 0.88], [0, 1, 1]);
-  const title1Y = useTransform(smoothProgress, [0.72, 0.78], [15, 0]);
+  const title1Opacity = useTransform(smoothProgress, [0.68, 0.75, 0.88], [0, 1, 1]);
+  const title1Y = useTransform(smoothProgress, [0.68, 0.75], [15, 0]);
 
-  // Layer 2: "OF MEMORIES"
-  const title2Opacity = useTransform(smoothProgress, [0.77, 0.83, 0.88], [0, 1, 1]);
-  const title2Y = useTransform(smoothProgress, [0.77, 0.83], [15, 0]);
+  const title2Opacity = useTransform(smoothProgress, [0.74, 0.80, 0.88], [0, 1, 1]);
+  const title2Y = useTransform(smoothProgress, [0.74, 0.80], [15, 0]);
 
-  // Layer 3: "Memoria'26" in Great Vibes (blur-to-sharp)
-  const wordmarkOpacity = useTransform(smoothProgress, [0.82, 0.89], [0, 1]);
-  const wordmarkScale = useTransform(smoothProgress, [0.82, 0.89], [0.92, 1]);
-  const wordmarkFilter = useTransform(smoothProgress, [0.82, 0.89], ['blur(8px)', 'blur(0px)']);
-  const wordmarkY = useTransform(smoothProgress, [0.82, 0.89], [25, 0]);
+  const wordmarkOpacity = useTransform(smoothProgress, [0.78, 0.86], [0, 1]);
+  const wordmarkScale = useTransform(smoothProgress, [0.78, 0.86], [0.92, 1]);
+  const wordmarkFilter = useTransform(smoothProgress, [0.78, 0.86], ['blur(8px)', 'blur(0px)']);
+  const wordmarkY = useTransform(smoothProgress, [0.78, 0.86], [25, 0]);
 
   // 11. Hero Date, Venue & CTA
-  const heroInfoOpacity = useTransform(smoothProgress, [0.88, 0.95], [0, 1]);
-  const heroInfoY = useTransform(smoothProgress, [0.88, 0.95], [20, 0]);
+  const heroInfoOpacity = useTransform(smoothProgress, [0.85, 0.94], [0, 1]);
+  const heroInfoY = useTransform(smoothProgress, [0.85, 0.94], [20, 0]);
 
-  // 12. Initial Scroll Prompt
+  // 12. Initial Scroll Prompt (Fades out when scrolling begins)
   const promptOpacity = useTransform(smoothProgress, [0, 0.08], [1, 0]);
   const promptY = useTransform(smoothProgress, [0, 0.08], [0, 20]);
 
-  const scrollToTicketForm = () => {
-    const el = document.getElementById('ticket-form');
+  const scrollToTicketSection = () => {
+    const el = document.getElementById('ticket-section');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -96,7 +93,8 @@ export const CinematicIntro: React.FC = () => {
   };
 
   return (
-    <div ref={containerRef} className="relative h-[320vh] w-full bg-[#0D0518]">
+    // Reduced height from 320vh to 230vh to eliminate dead scroll space
+    <div ref={containerRef} className="relative h-[230vh] w-full bg-[#0D0518]">
       {/* Sticky Fullscreen Theatrical Stage Canvas */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center select-none">
         {/* Layer 1: Stage Background Scene (from screen.png) */}
@@ -221,7 +219,7 @@ export const CinematicIntro: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* Layer 9: Atmospheric Stage Vignette */}
+        {/* Layer 9: Atmospheric Stage Vignette & Floor Rim */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/75 pointer-events-none z-25" />
 
         {/* Layer 10: Theatrical Event Title & Reveal Content */}
@@ -268,10 +266,10 @@ export const CinematicIntro: React.FC = () => {
               &ldquo;Where echoes of the past meet the light of tonight.&rdquo;
             </p>
 
-            {/* CTAs */}
+            {/* CTAs (Scrolls smoothly to in-page section, not separate page) */}
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
               <button
-                onClick={scrollToTicketForm}
+                onClick={scrollToTicketSection}
                 className="group relative px-8 py-3.5 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_40px_rgba(224,102,255,0.9)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <span className="relative z-10 flex items-center gap-2">
@@ -290,7 +288,7 @@ export const CinematicIntro: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Initial Scroll Prompt */}
+        {/* Initial Scroll Prompt (Fades out when user starts scrolling) */}
         <motion.div
           style={{ opacity: promptOpacity, y: promptY }}
           className="absolute bottom-10 z-40 flex flex-col items-center pointer-events-none"

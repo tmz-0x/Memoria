@@ -1,0 +1,1510 @@
+MEMORIA'26 — EXISTING WEBSITE FIX & REFINEMENT PROMPT
+Google Antigravity — Implementation Fix Pass
+
+You are modifying an already implemented React/Vite/TypeScript Memoria'26 website.
+
+This is a FIX / REFINEMENT task.
+
+DO NOT rebuild the website from scratch.
+
+DO NOT replace the existing architecture.
+
+DO NOT remove existing functionality that already works.
+
+DO NOT redesign the concept into a generic event website.
+
+Your job is to inspect the current implementation, identify the existing components responsible for the cinematic intro, navigation, hero, story/about section, lineup, ticket flow, particles, and routing, and then modify them according to the requirements below.
+
+The existing website was built from the Memoria'26 master specification:
+
+DARKNESS → LIGHT → STAGE → MOON → ECLIPSE → MEMORIES → MEMORIA'26 → EVENT → TICKET
+
+The cinematic experience is the core identity of the project.
+
+1. FIRST: INSPECT THE EXISTING IMPLEMENTATION
+
+Before modifying anything:
+
+Inspect the existing project structure.
+Identify:
+CinematicIntro
+Hero
+navigation/header
+About/Story section
+Lineup
+Ticket section/page
+Ticket form
+ParticleField
+spotlight components
+routing
+scroll animation logic
+Reuse existing components wherever possible.
+Do not duplicate components unnecessarily.
+Do not create a second competing animation system.
+Do not replace Framer Motion with another animation library.
+Preserve the current React + TypeScript + Vite architecture.
+Preserve existing admin, approver, and check-in functionality.
+Preserve existing mock API functionality.
+Only change the areas required by this fix specification.
+
+After inspecting the code, implement the fixes directly.
+
+2. CRITICAL OPENING / NAVIGATION FIX
+Current problem
+
+The navigation bar is visible too early.
+
+The website must NOT look like a conventional website immediately after loading.
+
+Required behavior
+Initial state
+
+When the visitor first loads the public website:
+
+Navigation must be completely hidden.
+Do not show the navigation bar.
+Do not reserve a large visible navigation area.
+Do not show navigation links over the dark opening scene.
+Do not show the ticket CTA in the navigation.
+The opening must feel like entering a dark theatre.
+
+The first viewport should primarily contain:
+
+darkness
+empty stage
+two theatrical spotlights
+subtle atmospheric environment
+
+The visitor should initially have no conventional website UI distracting them.
+
+3. NAVIGATION REVEAL MUST BE SCROLL-LINKED
+
+The navigation should appear only after the cinematic opening has developed sufficiently.
+
+The sequence should be:
+
+INITIAL LOAD
+
+↓
+
+Dark theatre
+
+↓
+
+Empty stage
+
+↓
+
+Visitor begins scrolling
+
+↓
+
+Spotlights slowly move
+
+↓
+
+Stage becomes visible
+
+↓
+
+Moon/crescent becomes visible
+
+↓
+
+Cinematic hero/stage scene becomes established
+
+↓
+
+NAVIGATION REVEALS
+
+The navigation should become visible around the point where the complete hero/stage scene has been revealed, not immediately when scrolling starts.
+
+Use the existing cinematic scroll progress.
+
+Do NOT use an arbitrary timeout.
+
+Do NOT use:
+
+setTimeout()
+
+to decide when the navbar appears.
+
+Use scroll progress / cinematic state.
+
+For example:
+
+progress 0.00–0.55 → navigation hidden
+progress 0.55–0.75 → navigation gradually appears
+progress 0.75–1.00 → navigation fully visible
+
+These values are examples. Adjust them based on the actual cinematic sequence so that the visual result feels natural.
+
+The navbar should transition using:
+
+opacity
+slight vertical movement
+subtle blur reduction if appropriate
+
+Example behavior:
+
+hidden:
+
+opacity: 0
+y: -20
+
+visible:
+
+opacity: 1
+y: 0
+
+The transition should be elegant and cinematic.
+
+4. PORTAL PATH MUST NEVER BE PUBLIC
+
+There is an internal/admin/portal path in the application.
+
+The portal/admin route must remain functional internally.
+
+However:
+
+IMPORTANT
+
+The public website must NOT expose or advertise the portal.
+
+Do not show:
+
+Portal
+Admin
+Staff
+Approver
+Dashboard
+Management links
+
+inside the public navigation.
+
+Do not show a portal button.
+
+Do not show a portal link in the footer.
+
+Do not show it as part of the public visitor journey.
+
+The portal route may still exist for authorized users.
+
+This means:
+
+ROUTE EXISTS ≠ ROUTE IS PUBLICLY ADVERTISED
+
+Keep the route functionality intact but remove all public-facing references to it.
+
+5. FIX THE CINEMATIC ANIMATION — MAKE IT SEAMLESS
+
+The current animation feels disconnected / non-seamless.
+
+This is a major issue.
+
+The entire public experience must behave as one continuous cinematic sequence, rather than a collection of independent animations.
+
+The visual flow must be:
+
+DARKNESS
+
+↓
+
+SPOTLIGHTS
+
+↓
+
+STAGE
+
+↓
+
+ATMOSPHERE
+
+↓
+
+MOON / CRESCENT
+
+↓
+
+ECLIPSE
+
+↓
+
+MEMORIA'26
+
+↓
+
+HERO
+
+↓
+
+STORY / ABOUT
+
+↓
+
+LINEUP
+
+↓
+
+TICKET
+
+There must not be obvious visual gaps between these states.
+
+6. REMOVE THE BLANK SPACE BETWEEN HERO AND STORY
+
+Current problem:
+
+After the hero/cinematic section, there is too much empty/blank space before the Story/About section.
+
+This must be fixed.
+
+The transition should feel like the camera is continuing into the next scene.
+
+DO NOT:
+
+leave a large empty violet area
+create an unexplained blank viewport
+abruptly finish the hero
+jump directly to a separate white/card-like section
+
+Instead:
+
+As the cinematic intro reaches its final state:
+
+The stage remains visually present.
+The moon/eclipsed atmosphere remains visible.
+The hero content settles.
+The stage gradually moves/expands/fades into the next visual layer.
+The Story/About section begins immediately as a continuation of the same world.
+
+The transition should visually communicate:
+
+THE STAGE → THE MEMORY
+
+not:
+
+HERO ENDS → EMPTY SPACE → NEW SECTION
+
+Reduce unnecessary vertical padding/margins/min-heights that create dead space.
+
+Inspect:
+
+min-height
+padding-top
+padding-bottom
+section margins
+sticky container height
+spacer elements
+absolute positioning
+scroll-height calculations
+
+Do not simply reduce spacing blindly.
+
+Preserve enough scroll distance for the cinematic animation to remain smooth.
+
+7. SPOTLIGHTS MUST BECOME A CONNECTING VISUAL LANGUAGE
+
+The spotlights should not exist only inside the opening.
+
+They should become a recurring visual language throughout the website where appropriate.
+
+Use the existing spotlight assets/effects.
+
+The spotlight should visually connect different sections.
+
+Possible usage:
+
+Hero
+
+Two large theatrical spotlights introduce the stage.
+
+Story/About
+
+Use extremely subtle spotlight illumination or atmospheric light.
+
+Lineup
+
+Use the spotlight as an active theatrical beam.
+
+Ticket section
+
+Use a more restrained spotlight glow to guide attention toward the ticket frame/form.
+
+Footer
+
+Return to subtle theatrical lighting.
+
+Do NOT put huge spotlights everywhere.
+
+The effect must remain:
+
+elegant
+atmospheric
+cinematic
+subtle
+
+The spotlight is a storytelling device, not a decorative background.
+
+8. SPOTLIGHT SCROLL DIRECTION MUST BE CORRECT
+
+The spotlight behavior in the Lineup section is currently incorrect.
+
+Current problem:
+
+The spotlight movement does not properly correspond to scroll direction.
+
+REQUIRED BEHAVIOR
+
+When scrolling DOWN:
+
+The spotlight must move:
+
+LEFT → RIGHT
+
+across the lineup.
+
+When scrolling UP:
+
+The spotlight must reverse:
+
+RIGHT → LEFT
+
+The movement must be directly tied to scroll progress.
+
+Do NOT make the spotlight continuously autoplay.
+
+Do NOT use an infinite animation.
+
+Do NOT make it randomly move.
+
+The position must be deterministic based on scroll progress.
+
+Conceptually:
+
+scroll progress 0%
+
+→ spotlight at LEFT
+
+scroll progress 25%
+
+→ spotlight moves toward CENTER-LEFT
+
+scroll progress 50%
+
+→ spotlight at CENTER
+
+scroll progress 75%
+
+→ spotlight moves toward CENTER-RIGHT
+
+scroll progress 100%
+
+→ spotlight at RIGHT
+
+When the visitor reverses scrolling, the animation automatically reverses.
+
+This should be implemented using Framer Motion scroll-linked transforms such as:
+
+useScroll()
+
+useTransform()
+
+useSpring()
+
+where appropriate.
+
+The exact implementation can differ, but the behavior must be equivalent.
+
+9. LINEUP SECTION — ARTIST IMAGES
+
+The lineup section must be prepared for real artist images.
+
+DO NOT invent artist names.
+
+DO NOT generate fake artists.
+
+DO NOT permanently hardcode random performer identities.
+
+Until real artist images are provided:
+
+retain the current example/placeholder artist imagery
+preserve the card layout
+preserve the visual hierarchy
+ensure cards are easy to replace with actual uploaded artist images later
+
+Create the lineup in a way that allows assets to be replaced without restructuring the entire component.
+
+For example, artist data should be separated from presentation.
+
+Conceptually:
+
+Artist:
+
+name
+image
+role/category
+optional description
+
+The image should be replaceable from the asset/data layer.
+
+When real artist images are uploaded later, they should simply replace the placeholder image references.
+
+10. LINEUP SPOTLIGHT INTERACTION
+
+The lineup should feel like performers are standing on a real stage.
+
+When the section enters:
+
+cards gradually become visible
+the spotlight sweeps across them
+the currently illuminated card receives slightly stronger visual emphasis
+
+Possible effect:
+
+normal card:
+
+slightly dim
+
+spotlight reaches card:
+
+brightness increases
+
+spotlight leaves:
+
+brightness returns
+
+Do not make the brightness effect extreme.
+
+Do not make cards jump around.
+
+Do not overuse scaling.
+
+The spotlight movement itself should provide most of the drama.
+
+11. TICKET BUY MUST NOT BE A SEPARATE PUBLIC PAGE
+
+This is a major structural change.
+
+The ticket-buy experience should NOT exist as a separate standalone page.
+
+The public website should remain one continuous cinematic website.
+
+The navigation / hero CTA:
+
+GET YOUR TICKET
+
+or:
+
+BOOK TICKET
+
+must scroll the visitor to the ticket section.
+
+It should NOT navigate to a completely separate ticket page.
+
+Do not use React Router navigation for the public ticket CTA if the destination is the ticket section of the same page.
+
+Use a smooth anchor/scroll behavior.
+
+Example conceptual behavior:
+
+Book Ticket
+
+↓
+
+smooth scroll
+
+↓
+
+Ticket Purchase Section
+
+The visitor should feel that they are moving deeper into the same event experience.
+
+12. TICKET SECTION DESIGN
+
+The ticket section must feel like a physical event ticket / invitation.
+
+Use the existing:
+
+assetsticket-frame.png
+
+as the visual foundation where appropriate.
+
+The section should not look like a generic checkout page.
+
+The visual hierarchy should be:
+
+THE EVENT
+
+↓
+
+TICKET INFORMATION
+
+↓
+
+HOW TO BUY
+
+↓
+
+PURCHASE
+
+The ticket frame should clearly display essential event information.
+
+13. TICKET FRAME INFORMATION
+
+When the visitor reaches the ticket section, display the necessary event information on the ticket frame.
+
+Include the configured event information such as:
+
+Event name: MEMORIA'26
+Theme: THE ECLIPSE OF MEMORIES
+Date
+Venue
+Ticket price
+Ticket type
+General Admission
+Any important attendee information
+
+Price:
+
+Rs. 1000
+
+Do not hide the price.
+
+Do not make the user open another page to discover the price.
+
+The information should be readable on desktop and mobile.
+
+Do not overcrowd the ticket.
+
+14. HOW TO BUY BUTTON
+
+Inside the ticket section, include:
+
+HOW TO BUY
+
+When clicked:
+
+Open a small elegant modal/pop-up.
+
+The modal should explain:
+
+How to purchase
+Fill in your personal details.
+Select ticket quantity.
+Transfer the required amount.
+Upload the payment slip.
+Submit the request.
+Wait for manual approval.
+After approval, the ticket/QR code will be sent by email.
+
+Also include:
+
+Rules & Regulations
+
+Use concise but clear rules.
+
+Examples of relevant information:
+
+Ticket requests are subject to manual verification.
+Payment must match the submitted quantity.
+Uploaded payment evidence must be genuine and readable.
+Tickets are issued only after payment verification.
+The QR ticket is required for event entry.
+One approved ticket/QR should not be duplicated or shared.
+Refund/exchange conditions should be clearly stated according to the configured event policy.
+
+Do not invent unreasonable rules.
+
+Use the existing event configuration wherever available.
+
+The modal should be:
+
+small/medium
+centered
+readable
+mobile-friendly
+dismissible
+visually consistent with Memoria'26
+
+Do not turn it into a full page.
+
+15. BUY BUTTON FLOW
+
+When the visitor clicks:
+
+BUY TICKET
+
+the ticket purchase form should appear in the ticket section.
+
+Do NOT navigate away.
+
+The form should feel like the next step of the ticket.
+
+Flow:
+
+TICKET INFORMATION
+
+↓
+
+BUY TICKET
+
+↓
+
+PURCHASE FORM
+
+↓
+
+PAYMENT DETAILS
+
+↓
+
+PAYMENT SLIP
+
+↓
+
+SUBMIT
+
+↓
+
+PENDING
+
+↓
+
+MANUAL APPROVAL
+
+↓
+
+EMAIL + QR
+
+16. TICKET PURCHASE FORM
+
+The form must contain the required attendee information.
+
+At minimum:
+
+Full Name
+Email
+Phone Number
+Ticket Quantity
+Payment information / bank transfer confirmation
+Payment slip upload
+
+Payment slip:
+
+Supported:
+
+JPG/JPEG
+PNG
+PDF
+
+Maximum client-side size:
+
+5 MB
+
+Validate the file before submission.
+
+Show useful validation messages.
+
+Do not make the form visually complicated.
+
+17. BANK PAYMENT DETAILS
+
+Show the required bank information clearly beside/before the payment slip upload.
+
+Include the configured:
+
+Bank name
+Account name
+Account number
+Branch
+
+Do not invent real banking information.
+
+If the project currently has configurable/mock payment details, use those values.
+
+Include a copy button for important fields.
+
+After copying:
+
+Copied ✓
+
+Display for approximately:
+
+1.5 seconds
+
+18. PAYMENT REFERENCE WARNING
+
+Clearly display:
+
+Use your full name as the payment reference so the payment can be matched with your ticket request.
+
+Make this visually noticeable but not aggressive.
+
+The visitor should understand that the payment reference is important for manual verification.
+
+19. SUBMISSION STATE SYSTEM
+
+The ticket purchase flow must clearly represent the lifecycle of a ticket request.
+
+States:
+
+STATE 1 — FORM
+
+Visitor fills the form.
+
+STATE 2 — SUBMITTED
+
+Visitor submits successfully.
+
+STATE 3 — PENDING
+
+Display:
+
+Payment verification pending
+
+or similar wording.
+
+Explain:
+
+Your ticket request has been received and is waiting for manual verification.
+
+STATE 4 — APPROVED
+
+After approval:
+
+Display a confirmation state.
+
+Explain that the ticket/QR will be sent to the submitted email.
+
+STATE 5 — EMAIL SENT
+
+The intended production behavior is:
+
+Approval → ticket generated → QR generated → email sent
+
+Because this project currently uses mock APIs, simulate this behavior through the existing mock architecture.
+
+Do NOT claim that a real email has been sent if the current application has no real email service.
+
+Instead, make the UI architecture ready for the real backend/email service.
+
+20. IMPORTANT — DO NOT PRETEND MOCK SYSTEMS ARE REAL
+
+The current project uses frontend/mock APIs.
+
+Keep this architecture.
+
+For example:
+
+POST /api/submissions
+
+should simulate the submission.
+
+Approval should change the submission state.
+
+The public ticket UI should respond to that state.
+
+Do not implement fake "real email sending" using a misleading frontend success message.
+
+Structure it so a real backend/email provider can later replace the mock implementation.
+
+21. TICKET FORM ANIMATION
+
+The form must be trustworthy and stable.
+
+Do NOT give the entire form a dramatic entrance animation.
+
+When the form becomes visible:
+
+render it immediately
+keep the layout stable
+avoid large sliding animations
+avoid floating card effects
+avoid bouncing
+
+Only the state change after submission may use a subtle fade.
+
+This preserves the original requirement that the ticket form itself should not have an entrance animation.
+
+22. MORE STAR / SPARKLE ATMOSPHERE
+
+The current star/sparkle effect is too concentrated in the opening.
+
+Extend the atmospheric sparkle system into the lower parts of the public website.
+
+Use the existing:
+
+assetsstar-sparkle-texture.png
+
+and/or the existing ParticleField system.
+
+The following sections can have subtle sparkle atmosphere:
+
+Hero
+Story/About
+Lineup
+Ticket
+Charity
+Contact
+Footer
+
+However:
+
+DO NOT use the same density everywhere.
+
+The opening should have the strongest atmospheric effect.
+
+Lower sections should use fewer particles.
+
+The goal is continuity.
+
+The website should feel like it exists inside the same night/memory environment.
+
+23. SPARKLES MUST RESPOND TO THE MOUSE
+
+Add a subtle mouse interaction to the sparkle/particle atmosphere.
+
+When the mouse moves:
+
+Nearby sparkles should slowly respond toward the mouse pointer.
+
+IMPORTANT:
+
+The movement must be:
+
+subtle
+slow
+delayed
+atmospheric
+
+Do NOT make the particles chase the cursor aggressively.
+
+Do NOT make the entire particle system move as one object.
+
+Do NOT create a flashy cursor-following effect.
+
+The desired feeling is:
+
+The stars/sparkles gently drift toward the visitor's presence.
+
+Use a lightweight implementation.
+
+Avoid expensive per-particle React state updates.
+
+Prefer:
+
+Framer Motion values
+CSS transforms
+requestAnimationFrame where necessary
+GPU-friendly transforms
+
+Do not cause performance problems.
+
+24. MOUSE INTERACTION SHOULD HAVE INERTIA
+
+The sparkles should not instantly snap toward the pointer.
+
+Use a small smoothing/delay.
+
+Conceptually:
+
+mouse moves
+
+↓
+
+sparkles detect nearby influence
+
+↓
+
+sparkles slowly drift
+
+↓
+
+pointer stops
+
+↓
+
+sparkles gently settle
+
+The interaction should feel organic.
+
+Keep the influence radius limited.
+
+Only nearby particles should noticeably react.
+
+25. MOBILE BEHAVIOR
+
+The mouse interaction does not apply on touch devices.
+
+On mobile:
+
+disable cursor-following particle behavior
+reduce particle density
+preserve the atmospheric effect
+preserve cinematic scrolling
+preserve spotlight behavior
+preserve ticket functionality
+
+Do not attempt to simulate a mouse pointer on mobile.
+
+26. SEAMLESS SECTION TRANSITIONS
+
+Review every transition between:
+
+Hero → About
+
+About → Lineup
+
+Lineup → Ticket
+
+Ticket → How To Buy
+
+Ticket → Charity
+
+Charity → Contact
+
+Contact → Footer
+
+There should not be abrupt visual changes.
+
+Maintain:
+
+deep violet background
+moonlight
+gold accents
+magenta atmosphere
+subtle sparkles
+theatrical lighting
+
+Use the existing:
+
+assetsgold-blossom-divider.png
+
+where appropriate.
+
+The divider should feel like a transition between scenes, not a random decoration.
+
+27. DO NOT OVER-ANIMATE
+
+Do not solve the current problems by adding more animations everywhere.
+
+Maintain the existing animation philosophy:
+
+CATEGORY A — CINEMATIC
+
+Scroll-controlled.
+
+Opening only.
+
+CATEGORY B — STORY REVEAL
+
+whileInView.
+
+Used for normal sections.
+
+CATEGORY C — INTERACTION
+
+Hover/click interactions.
+
+Used for buttons, cards, FAQ, ticket actions and copy buttons.
+
+Do not convert every section into a scroll animation.
+
+28. PRESERVE THE VISUAL IDENTITY
+
+Do not change the established design language.
+
+Maintain:
+
+Background:
+
+#1A0D2E
+
+Secondary:
+
+#0D0518
+
+Magenta:
+
+#C04ECF → #E066FF
+
+Gold:
+
+#C9A227 → #D4AF37
+
+Blossom pink:
+
+#FF8FC7 → #FFB3D9
+
+Body text:
+
+#F0E6FA
+
+Typography:
+
+Memoria wordmark:
+
+Great Vibes
+
+Headings:
+
+Montserrat
+
+Body:
+
+Inter or Poppins
+
+Do not replace the design with:
+
+generic SaaS styling
+generic event templates
+excessive glassmorphism
+excessive neon
+gaming UI
+random gradients
+excessive cards
+generic AI landing page animations
+29. PUBLIC NAVIGATION
+
+Once revealed, navigation should contain only useful public destinations.
+
+Example:
+
+HOME
+
+STORY
+
+LINEUP
+
+TICKETS
+
+CONTACT
+
+Do not include:
+
+ADMIN
+
+PORTAL
+
+APPROVER
+
+STAFF
+
+CHECK-IN
+
+DASHBOARD
+
+The public visitor should never be encouraged to access internal systems.
+
+The navigation should remain visually integrated into the cinematic environment.
+
+30. SCROLL BEHAVIOR
+
+Scrolling must work in both directions.
+
+The visitor may:
+
+scroll down
+scroll up
+return to the hero
+revisit the lineup
+revisit tickets
+
+All scroll-linked animations must reverse naturally where appropriate.
+
+Do not create animations that only work once.
+
+Do not permanently lock a cinematic state.
+
+Do not require page reload to replay/reverse the cinematic experience.
+
+31. PERFORMANCE REQUIREMENTS
+
+The new sparkle/mouse interaction must not destroy performance.
+
+Do NOT:
+
+create hundreds/thousands of DOM elements
+update React state for every particle on every mouse event
+create unnecessary component rerenders
+attach multiple global mouse listeners
+create multiple animation loops for different sections
+
+Prefer one shared particle system.
+
+Use GPU-friendly:
+
+transform
+opacity
+
+Use filters only where necessary.
+
+32. ACCESSIBILITY
+
+Respect:
+
+prefers-reduced-motion
+
+When reduced motion is enabled:
+
+disable aggressive spotlight movement
+disable mouse-reactive sparkle movement
+simplify cinematic transitions
+keep all content visible
+keep navigation usable
+keep ticket purchase fully functional
+
+The site must remain functional without animation.
+
+33. ROUTING REQUIREMENT
+
+Do NOT remove:
+
+/admin
+
+/approve
+
+/checkin
+
+and any existing protected routes.
+
+They must continue working.
+
+The public ticket experience, however, must NOT require a dedicated public ticket route.
+
+The public ticket CTA should scroll to the ticket section.
+
+34. DO NOT BREAK ADMIN / APPROVER / CHECK-IN
+
+The following must remain functional:
+
+ADMIN
+
+login
+dashboard
+submissions
+users
+event settings
+
+APPROVER
+
+pending queue
+submission details
+payment slip
+approve
+reject
+history
+
+CHECK-IN
+
+QR scanner
+verification
+manual search
+check-in status
+
+These surfaces must remain professional and separate from the cinematic public branding.
+
+Do not add the public cinematic animation to them.
+
+35. IMPLEMENTATION PRIORITY
+
+Implement the fixes in this exact order.
+
+PRIORITY 1 — Opening / Navbar
+
+Fix:
+
+navbar hidden initially
+navbar appears only after cinematic reveal
+portal path hidden from public
+navigation reveal tied to scroll
+PRIORITY 2 — Cinematic continuity
+
+Fix:
+
+seamless animation
+spotlight continuity
+hero → story transition
+eliminate blank space
+PRIORITY 3 — Lineup
+
+Fix:
+
+spotlight moves LEFT → RIGHT when scrolling down
+RIGHT → LEFT when scrolling up
+prepare artist images for future replacement
+PRIORITY 4 — Ticket experience
+
+Fix:
+
+remove separate public ticket page
+Book Ticket scrolls to ticket section
+ticket frame information
+How To Buy modal
+Buy Ticket form
+bank/payment details
+pending state
+approval state
+QR/email-ready architecture
+PRIORITY 5 — Atmosphere
+
+Fix:
+
+more sparkles throughout lower sections
+mouse-reactive subtle sparkle movement
+mobile performance behavior
+PRIORITY 6 — Final polish
+
+Fix:
+
+spacing
+transitions
+responsiveness
+accessibility
+performance
+console errors
+36. REQUIRED ACCEPTANCE TEST
+
+After implementation, test the actual website.
+
+INITIAL LOAD
+
+[ ] Navbar is completely hidden.
+
+[ ] No public portal/admin link is visible.
+
+[ ] Opening starts dark.
+
+[ ] Empty stage is visible.
+
+[ ] Two spotlights originate from upper corners.
+
+[ ] Event title does not appear immediately.
+
+CINEMATIC SCROLL
+
+[ ] Scrolling gradually reveals the stage.
+
+[ ] Spotlights move smoothly.
+
+[ ] Atmosphere appears progressively.
+
+[ ] Moon/crescent appears progressively.
+
+[ ] Eclipse develops progressively.
+
+[ ] Memoria'26 appears only after the cinematic reveal.
+
+[ ] Navigation appears only after the hero/stage scene has sufficiently developed.
+
+[ ] Navigation does not appear immediately on page load.
+
+[ ] Hero → Story transition feels continuous.
+
+[ ] No large blank space exists between Hero and Story.
+
+LINEUP
+
+[ ] Lineup cards remain ready for real artist images.
+
+[ ] No fake artist names are introduced.
+
+[ ] Placeholder images can easily be replaced.
+
+[ ] Spotlight begins on the left.
+
+[ ] Scrolling down moves spotlight LEFT → RIGHT.
+
+[ ] Scrolling up moves spotlight RIGHT → LEFT.
+
+[ ] Spotlight does not autoplay.
+
+TICKETS
+
+[ ] Book Ticket does not navigate to a separate public ticket page.
+
+[ ] Book Ticket smoothly scrolls to ticket section.
+
+[ ] Ticket frame is visible.
+
+[ ] Date is displayed.
+
+[ ] Venue is displayed.
+
+[ ] Price is displayed.
+
+[ ] Ticket type is displayed.
+
+[ ] How To Buy opens a modal.
+
+[ ] Rules are visible.
+
+[ ] Buy Ticket opens the purchase form.
+
+[ ] Form is stable and does not dramatically animate.
+
+[ ] Bank information is visible.
+
+[ ] Copy interaction works.
+
+[ ] Payment slip upload works.
+
+[ ] JPG/PNG/PDF validation works.
+
+[ ] 5MB validation works.
+
+[ ] Submission creates a pending state.
+
+[ ] Pending state clearly communicates manual verification.
+
+[ ] Approval architecture is compatible with the existing approver dashboard.
+
+[ ] Approved state communicates QR/email delivery.
+
+ATMOSPHERE
+
+[ ] Sparkles exist beyond the hero.
+
+[ ] About has subtle atmosphere.
+
+[ ] Lineup has subtle atmosphere.
+
+[ ] Ticket section has subtle atmosphere.
+
+[ ] Charity has subtle atmosphere.
+
+[ ] Contact/footer have subtle atmosphere.
+
+[ ] Sparkles subtly respond to mouse movement.
+
+[ ] Sparkles do not aggressively chase the cursor.
+
+[ ] Mobile does not attempt cursor interaction.
+
+[ ] Particle density is reduced where appropriate.
+
+TECHNICAL
+
+[ ] No console errors.
+
+[ ] No broken imports.
+
+[ ] No broken asset paths.
+
+[ ] No horizontal overflow.
+
+[ ] No unnecessary duplicate animation systems.
+
+[ ] No unnecessary React state updates on every animation frame.
+
+[ ] Existing admin route works.
+
+[ ] Existing approver route works.
+
+[ ] Existing check-in route works.
+
+[ ] Protected routes remain protected.
+
+[ ] Mock APIs continue working.
+
+[ ] prefers-reduced-motion works.
+
+[ ] Desktop works.
+
+[ ] Mobile works.
+
+37. FINAL IMPLEMENTATION RULE
+
+The most important requirement is this:
+
+DO NOT SIMPLY PATCH VISUAL SYMPTOMS.
+
+Understand the existing scroll architecture and fix the underlying animation relationships.
+
+The website must feel like one continuous theatrical environment.
+
+The visitor should experience:
+
+DARKNESS
+
+↓
+
+CURIOSITY
+
+↓
+
+LIGHT
+
+↓
+
+THE STAGE
+
+↓
+
+THE MOON
+
+↓
+
+THE ECLIPSE
+
+↓
+
+MEMORIA'26
+
+↓
+
+THE STORY
+
+↓
+
+THE PERFORMERS
+
+↓
+
+THE TICKET
+
+The spotlight should become a recurring visual thread.
+
+The stars should create atmospheric continuity.
+
+The ticket should feel like entering the event rather than opening a separate webpage.
+
+The navigation should appear only after the visitor has entered the event world.
+
+The public website should never expose internal portal functionality.
+
+The final result must feel like a premium interactive concert experience, not an AI-generated collection of animated sections.
+
+IMPORTANT: IMPLEMENTATION INSTRUCTION FOR ANTIGRAVITY
+
+Before making changes, inspect the existing implementation and determine:
+
+Which component controls cinematic scroll progress?
+Which component controls the navbar?
+Which component controls the lineup spotlight?
+Which component controls the ticket route?
+Which component controls the particle system?
+Which component controls section spacing/transition heights?
+
+Then modify the existing architecture rather than duplicating it.
+
+After implementing the changes:
+
+run the project
+inspect the public page
+test scrolling down
+test scrolling up
+test navbar reveal
+test lineup spotlight direction
+test ticket navigation
+test ticket submission state
+test mouse sparkle interaction
+test mobile layout
+check console errors
+fix any regressions
+
+Do not stop after writing code.
+
+Verify the actual behavior.
+
+The task is complete only when the acceptance tests above pass.

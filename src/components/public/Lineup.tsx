@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef, useState } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { SectionDivider } from './SectionDivider';
 import { Sparkles, Clock, Star } from 'lucide-react';
 
-interface Act {
+export interface ActData {
   id: string;
   name: string;
   genre: string;
@@ -13,7 +13,8 @@ interface Act {
   image: string;
 }
 
-const ACTS: Act[] = [
+// Separated Artist Data Model for straightforward replacement
+export const LINEUP_ACTS: ActData[] = [
   {
     id: 'act-1',
     name: 'The Acoustic Ensemble',
@@ -53,22 +54,44 @@ const ACTS: Act[] = [
 ];
 
 export const Lineup: React.FC = () => {
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [activeHoverId, setActiveHoverId] = useState<string | null>(null);
 
+  // Deterministic scroll progress tied to section entry & exit (Section 8)
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'end start'],
+  });
+
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 85,
+    damping: 26,
+    restDelta: 0.001,
+  });
+
+  // Section 8: Scroll DOWN -> LEFT to RIGHT. Scroll UP -> RIGHT to LEFT.
+  // 0% -> Left (-20%), 50% -> Center (40%), 100% -> Right (100%)
+  const spotlightX = useTransform(smoothProgress, [0, 1], ['-20%', '100%']);
+  const spotlightOpacity = useTransform(smoothProgress, [0, 0.15, 0.85, 1], [0, 0.65, 0.65, 0]);
+
   return (
-    <section id="lineup" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#0D0518] overflow-hidden">
-      {/* Dynamic Theatrical Spotlight Sweep across Lineup (from screen3.png) */}
+    <section
+      ref={sectionRef}
+      id="lineup"
+      className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#0D0518] overflow-hidden"
+    >
+      {/* Deterministic Scroll-Linked Theatrical Spotlight Sweep (NO AUTOPLAY) */}
       <motion.div
-        initial={{ x: '-40%', opacity: 0.15 }}
-        whileInView={{ x: '120%', opacity: 0.55 }}
-        viewport={{ once: false }}
-        transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut', repeatType: 'reverse' }}
-        className="pointer-events-none absolute -top-40 w-[650px] h-[900px] mix-blend-screen z-0 opacity-40 will-change-transform"
+        style={{
+          x: spotlightX,
+          opacity: spotlightOpacity,
+        }}
+        className="pointer-events-none absolute -top-40 w-[600px] sm:w-[700px] h-[950px] mix-blend-screen z-0 will-change-transform"
       >
         <img
           src="/assets/spotlight-beam.png"
           alt="Theatrical Spotlight Sweep"
-          className="w-full h-full object-fill filter drop-shadow-[0_0_50px_#E066FF]"
+          className="w-full h-full object-fill filter drop-shadow-[0_0_60px_#E066FF]"
         />
       </motion.div>
 
@@ -104,7 +127,7 @@ export const Lineup: React.FC = () => {
 
         {/* Performer Cards in Theatrical Ticket Frames (from screen4.png) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {ACTS.map((act, index) => {
+          {LINEUP_ACTS.map((act, index) => {
             const isHovered = activeHoverId === act.id;
 
             return (
@@ -114,8 +137,8 @@ export const Lineup: React.FC = () => {
                 whileInView={{ scale: 1, opacity: 1, filter: 'brightness(1)' }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{
-                  duration: 0.6,
-                  delay: index * 0.15,
+                  duration: 0.55,
+                  delay: index * 0.12,
                   ease: 'easeOut',
                 }}
                 onMouseEnter={() => setActiveHoverId(act.id)}
@@ -144,7 +167,11 @@ export const Lineup: React.FC = () => {
 
                     {/* Authentic Gold Glowing Icon Badge (from screen9.png) */}
                     <div className="absolute top-3 left-3 w-12 h-12 rounded-xl bg-[#0D0518]/90 border border-[#D4AF37]/70 p-2 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:shadow-[0_0_15px_#D4AF37] transition-all">
-                      <img src={act.icon} alt="" className="w-full h-full object-contain filter drop-shadow-[0_0_6px_#D4AF37]" />
+                      <img
+                        src={act.icon}
+                        alt=""
+                        className="w-full h-full object-contain filter drop-shadow-[0_0_6px_#D4AF37]"
+                      />
                     </div>
 
                     {/* Time Slot Pill */}
