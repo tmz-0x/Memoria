@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SectionDivider } from './SectionDivider';
-import { Sparkles, Music, Star, Clock } from 'lucide-react';
+import { Sparkles, Clock, Star } from 'lucide-react';
 
 interface Act {
   id: string;
@@ -19,23 +19,23 @@ const ACTS: Act[] = [
     name: 'The Acoustic Ensemble',
     genre: 'Chamber Folk & Acoustic Symphony',
     timeSlot: '6:30 PM — 7:15 PM',
-    description: 'Delicate acoustic guitars, cello harmonies, and ethereal vocals opening the theatre into twilight.',
+    description: 'Delicate acoustic strings, cello harmonies, and ethereal vocals opening the theatre into twilight.',
     icon: '/assets/icon-music.png',
-    image: '/assets/candlelit-venue.jpg',
+    image: '/assets/hero-stage-scene.jpg',
   },
   {
     id: 'act-2',
     name: 'Symphony Strings',
-    genre: 'Neo-Classical Cinematic String Quartet',
+    genre: 'Neo-Classical Cinematic Quartet',
     timeSlot: '7:25 PM — 8:10 PM',
     description: 'Dramatic violin crescendos and sweeping string textures evoking the onset of the celestial eclipse.',
     icon: '/assets/icon-dance.png',
-    image: '/assets/hero-stage-scene.jpg',
+    image: '/assets/candlelit-venue.jpg',
   },
   {
     id: 'act-3',
     name: 'The Eclipse Choir',
-    genre: 'Choral Harmony & Harmonic Resonance',
+    genre: 'Choral Harmony & Polyphony',
     timeSlot: '8:20 PM — 9:15 PM',
     description: 'A 30-voice choir filling the grand auditorium with timeless choral arrangements and resonant polyphony.',
     icon: '/assets/icon-couple.png',
@@ -48,7 +48,7 @@ const ACTS: Act[] = [
     timeSlot: '9:25 PM — 10:30 PM',
     description: 'The award-winning premier collegiate vocalists culminating the night in unforgettable theatrical duets.',
     icon: '/assets/icon-camera.png',
-    image: '/assets/candlelit-venue.jpg',
+    image: '/assets/hero-stage-scene.jpg',
   },
 ];
 
@@ -57,13 +57,13 @@ export const Lineup: React.FC = () => {
 
   return (
     <section id="lineup" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#0D0518] overflow-hidden">
-      {/* Dynamic Theatrical Spotlight Sweep across Lineup */}
+      {/* Dynamic Theatrical Spotlight Sweep across Lineup (from screen3.png) */}
       <motion.div
-        initial={{ x: '-40%', opacity: 0.2 }}
-        whileInView={{ x: '120%', opacity: 0.6 }}
+        initial={{ x: '-40%', opacity: 0.15 }}
+        whileInView={{ x: '120%', opacity: 0.55 }}
         viewport={{ once: false }}
-        transition={{ repeat: Infinity, duration: 9, ease: 'easeInOut', repeatType: 'reverse' }}
-        className="pointer-events-none absolute -top-40 w-[600px] h-[900px] mix-blend-screen z-0 opacity-40 will-change-transform"
+        transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut', repeatType: 'reverse' }}
+        className="pointer-events-none absolute -top-40 w-[650px] h-[900px] mix-blend-screen z-0 opacity-40 will-change-transform"
       >
         <img
           src="/assets/spotlight-beam.png"
@@ -102,7 +102,7 @@ export const Lineup: React.FC = () => {
           </p>
         </div>
 
-        {/* Performer Cards in Theatrical Ticket Frames */}
+        {/* Performer Cards in Theatrical Ticket Frames (from screen4.png) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {ACTS.map((act, index) => {
             const isHovered = activeHoverId === act.id;
@@ -122,12 +122,12 @@ export const Lineup: React.FC = () => {
                 onMouseLeave={() => setActiveHoverId(null)}
                 className="relative group cursor-pointer"
               >
-                {/* Spotlight Card Backing with Ticket Frame */}
-                <div className="relative rounded-2xl overflow-hidden bg-[#1A0D2E] border border-[#D4AF37]/30 shadow-xl transition-all duration-300 group-hover:border-[#D4AF37] group-hover:shadow-[0_0_30px_rgba(224,102,255,0.4)]">
+                {/* Backing Card with Filigree Ticket Frame */}
+                <div className="relative rounded-2xl overflow-hidden bg-[#1A0D2E] border border-[#D4AF37]/40 shadow-xl transition-all duration-300 group-hover:border-[#D4AF37] group-hover:shadow-[0_0_35px_rgba(224,102,255,0.45)]">
                   {/* Subtle Top Spotlight Beam Glow on Hover */}
                   <div
-                    className={`absolute -top-12 inset-x-0 h-40 bg-gradient-to-b from-[#E066FF]/30 to-transparent transition-opacity duration-300 pointer-events-none ${
-                      isHovered ? 'opacity-90' : 'opacity-20'
+                    className={`absolute -top-10 inset-x-0 h-44 bg-gradient-to-b from-[#E066FF]/35 to-transparent transition-opacity duration-300 pointer-events-none ${
+                      isHovered ? 'opacity-95' : 'opacity-20'
                     }`}
                   />
 
@@ -142,9 +142,9 @@ export const Lineup: React.FC = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1A0D2E] via-[#1A0D2E]/40 to-transparent" />
 
-                    {/* Act Badge Icon */}
-                    <div className="absolute top-3 left-3 w-10 h-10 rounded-full bg-[#0D0518]/80 border border-[#D4AF37]/60 p-2 flex items-center justify-center shadow-lg">
-                      <img src={act.icon} alt="" className="w-full h-full object-contain" />
+                    {/* Authentic Gold Glowing Icon Badge (from screen9.png) */}
+                    <div className="absolute top-3 left-3 w-12 h-12 rounded-xl bg-[#0D0518]/90 border border-[#D4AF37]/70 p-2 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:shadow-[0_0_15px_#D4AF37] transition-all">
+                      <img src={act.icon} alt="" className="w-full h-full object-contain filter drop-shadow-[0_0_6px_#D4AF37]" />
                     </div>
 
                     {/* Time Slot Pill */}
@@ -154,11 +154,11 @@ export const Lineup: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Ornate Ticket Frame Border Overlay */}
+                  {/* Ornate Ticket Frame Border (from screen4.png) */}
                   <img
                     src="/assets/ticket-frame.png"
                     alt=""
-                    className="absolute inset-0 w-full h-full pointer-events-none object-fill opacity-80 group-hover:opacity-100 transition-opacity"
+                    className="absolute inset-0 w-full h-full pointer-events-none object-cover opacity-60 mix-blend-screen group-hover:opacity-90 transition-opacity"
                   />
 
                   {/* Performer Card Body Content */}

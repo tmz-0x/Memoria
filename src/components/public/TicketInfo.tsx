@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SectionDivider } from './SectionDivider';
 import { useEventStore } from '../../store/eventStore';
-import { Sparkles, Calendar, MapPin, Users, AlertCircle, CheckCircle2, Ticket } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, AlertCircle, CheckCircle2, Ticket } from 'lucide-react';
 
 export const TicketInfo: React.FC = () => {
   const { settings, fetchSettings } = useEventStore();
@@ -41,14 +41,21 @@ export const TicketInfo: React.FC = () => {
           </p>
         </div>
 
-        {/* Master Ticket Details Display */}
+        {/* Master Ticket Details Display with Authentic Ticket Frame */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Main Admission Card */}
-          <div className="lg:col-span-7 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/40 p-6 sm:p-8 relative overflow-hidden shadow-2xl flex flex-col justify-between">
+          {/* Main Admission Pass Card */}
+          <div className="lg:col-span-7 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/50 p-6 sm:p-8 relative overflow-hidden shadow-2xl flex flex-col justify-between">
+            {/* Theatrical Ticket Frame Backdrop Overlay (from screen4.png) */}
+            <img
+              src="/assets/ticket-frame.png"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none mix-blend-screen"
+            />
+
             {/* Background Glow Accents */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#E066FF]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-            <div>
+            <div className="relative z-10">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-[#D4AF37]/20">
                 <div>
                   <span className="text-[11px] font-heading font-bold uppercase tracking-[0.25em] text-[#FF8FC7]">
@@ -68,7 +75,7 @@ export const TicketInfo: React.FC = () => {
 
               {/* Key Details List */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0D0518]/60 border border-[#D4AF37]/15">
+                <div className="flex items-center gap-3 p-3.5 rounded-lg bg-[#0D0518]/70 border border-[#D4AF37]/20">
                   <Calendar className="w-5 h-5 text-[#D4AF37] shrink-0" />
                   <div>
                     <span className="block text-[10px] uppercase tracking-wider text-[#F0E6FA]/50">Date</span>
@@ -76,7 +83,7 @@ export const TicketInfo: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0D0518]/60 border border-[#D4AF37]/15">
+                <div className="flex items-center gap-3 p-3.5 rounded-lg bg-[#0D0518]/70 border border-[#D4AF37]/20">
                   <MapPin className="w-5 h-5 text-[#FF8FC7] shrink-0" />
                   <div>
                     <span className="block text-[10px] uppercase tracking-wider text-[#F0E6FA]/50">Venue</span>
@@ -103,7 +110,7 @@ export const TicketInfo: React.FC = () => {
             </div>
 
             {/* Allocation Meter and CTA */}
-            <div className="pt-4 border-t border-[#D4AF37]/20">
+            <div className="pt-4 border-t border-[#D4AF37]/20 relative z-10">
               <div className="flex items-center justify-between text-xs font-heading mb-2">
                 <span className="text-[#F0E6FA]/80 uppercase tracking-wider">Remaining Online Allocation</span>
                 <span className="text-[#D4AF37] font-bold">
@@ -120,7 +127,6 @@ export const TicketInfo: React.FC = () => {
 
               <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
                 <span className="text-xs text-[#FF8FC7] font-body flex items-center gap-1.5">
-                  <ClockIcon className="w-3.5 h-3.5" />
                   Cutoff Date: {cutoffDate}
                 </span>
 
@@ -135,13 +141,17 @@ export const TicketInfo: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Perks & Ticket Inclusions */}
+          {/* Right Column: Perks & Authentic Camera / Memories Icon */}
           <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
             <div className="p-6 rounded-2xl bg-[#1A0D2E]/70 border border-[#D4AF37]/25 shadow-lg">
-              <h4 className="font-heading text-sm font-bold uppercase tracking-wider text-[#D4AF37] mb-4 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#FF8FC7]" />
-                What Your Pass Includes
-              </h4>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#0D0518] border border-[#D4AF37]/40 p-2 flex items-center justify-center">
+                  <img src="/assets/icon-camera.png" alt="" className="w-full h-full object-contain" />
+                </div>
+                <h4 className="font-heading text-sm font-bold uppercase tracking-wider text-[#D4AF37]">
+                  What Your Pass Includes
+                </h4>
+              </div>
               <ul className="space-y-3 font-body text-xs sm:text-sm text-[#F0E6FA]/80">
                 <li className="flex items-start gap-2">
                   <span className="text-[#D4AF37] font-bold">&bull;</span>
@@ -180,9 +190,3 @@ export const TicketInfo: React.FC = () => {
     </section>
   );
 };
-
-const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);

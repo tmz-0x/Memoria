@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { SectionDivider } from './SectionDivider';
-import { Sparkles, Moon, Compass, Music2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 export const About: React.FC = () => {
   return (
@@ -58,20 +58,20 @@ export const About: React.FC = () => {
             {/* Ambient Glow Aura */}
             <div className="absolute -inset-4 bg-gradient-to-r from-[#C04ECF]/30 via-[#D4AF37]/20 to-[#E066FF]/30 rounded-3xl blur-2xl group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-            {/* Base Image: Candlelit Auditorium */}
+            {/* Base Image: Authentic Candlelit Auditorium from screen8.png */}
             <div className="relative rounded-2xl overflow-hidden border border-[#D4AF37]/30 shadow-2xl bg-[#1A0D2E]">
               <img
                 src="/assets/candlelit-venue.jpg"
                 alt="Intimate Candlelit Theatrical Venue"
-                className="w-full h-[360px] sm:h-[420px] object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-[380px] sm:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
               />
 
-              {/* Floating Moon Atmosphere Overlay */}
-              <div className="absolute top-4 right-4 w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border border-[#D4AF37]/40 shadow-[0_0_25px_rgba(212,175,55,0.4)] pointer-events-none">
+              {/* Floating Moon Atmosphere Overlay from screen7.png */}
+              <div className="absolute top-4 right-4 w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border border-[#D4AF37]/50 shadow-[0_0_30px_rgba(212,175,55,0.5)] pointer-events-none bg-[#0D0518]/60 backdrop-blur-xs">
                 <img
                   src="/assets/moon-starfield.png"
                   alt="Luminous Starfield"
-                  className="w-full h-full object-cover animate-spin-slow"
+                  className="w-full h-full object-cover"
                 />
               </div>
 
@@ -90,26 +90,23 @@ export const About: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Right Column: Three Theatrical Pillars */}
+          {/* Right Column: Three Theatrical Pillars with authentic gold icons */}
           <div className="lg:col-span-5 space-y-6">
             {[
               {
-                icon: Moon,
-                title: 'The Lunar Concept',
-                desc: 'A story of two celestial bodies in transient harmony. As the eclipse reaches totality, forgotten melodies resurface with orchestral power.',
-                color: 'from-[#FF8FC7] to-[#E066FF]',
-              },
-              {
-                icon: Music2,
+                iconSrc: '/assets/icon-music.png',
                 title: 'Live Orchestration',
                 desc: 'Over 40 elite vocalists and classical instrumentalists performing live arrangements written exclusively for Memoria’26.',
-                color: 'from-[#D4AF37] to-[#FF8FC7]',
               },
               {
-                icon: Compass,
-                title: 'A Night Of Purpose',
+                iconSrc: '/assets/icon-dance.png',
+                title: 'Theatrical Narrative',
+                desc: 'A story of two celestial bodies in transient harmony. As the eclipse reaches totality, forgotten melodies resurface with orchestral power.',
+              },
+              {
+                iconSrc: '/assets/icon-couple.png',
+                title: 'A Night Of Memories',
                 desc: 'Every note resonates beyond the theatre walls. All net proceeds directly empower rural youth music and cultural scholarships across Sri Lanka.',
-                color: 'from-[#E066FF] to-[#D4AF37]',
               },
             ].map((item, idx) => (
               <motion.div
@@ -118,11 +115,15 @@ export const About: React.FC = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.15 * idx }}
-                className="p-6 rounded-xl bg-[#1A0D2E]/50 border border-[#D4AF37]/20 hover:border-[#D4AF37]/60 hover:bg-[#1A0D2E]/80 transition-all duration-300 group"
+                className="p-5 rounded-xl bg-[#1A0D2E]/60 border border-[#D4AF37]/25 hover:border-[#D4AF37]/70 hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-md"
               >
                 <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-lg bg-gradient-to-br ${item.color} text-[#0D0518] shadow-md shrink-0 group-hover:scale-110 transition-transform`}>
-                    <item.icon className="w-5 h-5" />
+                  <div className="w-12 h-12 rounded-xl bg-[#0D0518] border border-[#D4AF37]/50 p-2 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:shadow-[0_0_15px_#D4AF37] transition-all">
+                    <img
+                      src={item.iconSrc}
+                      alt=""
+                      className="w-full h-full object-contain filter drop-shadow-[0_0_6px_#D4AF37]"
+                    />
                   </div>
                   <div>
                     <h4 className="font-heading text-base font-bold text-[#F0E6FA] tracking-wide group-hover:text-[#D4AF37] transition-colors">

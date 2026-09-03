@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, MapPin, Calendar, Heart, ArrowUp } from 'lucide-react';
+import { MapPin, Calendar, ArrowUp } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const scrollToTop = () => {
@@ -8,12 +8,21 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="relative bg-[#07020C] text-[#F0E6FA] border-t border-[#D4AF37]/30 pt-16 pb-12 overflow-hidden">
-      {/* Background Starfield and Subtle Eclipse Glow */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
+      {/* Background Starfield and Crescent Moon from screen7.png */}
+      <div className="absolute inset-0 pointer-events-none opacity-25">
         <img
           src="/assets/moon-starfield.png"
           alt=""
           className="w-full h-full object-cover mix-blend-screen"
+        />
+      </div>
+
+      {/* Floating Crescent Moon in the footer corner */}
+      <div className="absolute -top-10 -right-10 w-64 h-64 pointer-events-none opacity-20">
+        <img
+          src="/assets/moon-crescent.png"
+          alt=""
+          className="w-full h-full object-contain"
         />
       </div>
 
