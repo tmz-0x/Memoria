@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-interface DustMote {
+interface TheatricalDustMote {
   x: number;
   y: number;
   vx: number;
@@ -14,6 +14,7 @@ interface DustMote {
   alphaSpeed: number;
   seed: number;
   speedMultiplier: number;
+  hasGlow: boolean;
 }
 
 interface ParticleFieldProps {
@@ -34,7 +35,6 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let animationFrameId: number;
@@ -42,15 +42,17 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
     let height = (canvas.height = window.innerHeight);
 
     const isTouch = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768;
-    // Fix Pass 4: Density 60-90 on desktop, 25-45 on mobile
-    const particleCount = isTouch ? 35 : 82;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+
+    // Fix Pass 5: Major density increase (Desktop: 100-160, Tablet: 70-110, Mobile: 45-80)
+    const particleCount = isTouch ? 58 : isTablet ? 90 : 138;
 
     const mouse = {
       x: -3000,
       y: -3000,
       targetX: -3000,
       targetY: -3000,
-      radius: 220, // Fix 4: Influence radius 150-250px
+      radius: 230, // Influence radius 150-250px
     };
 
     const handleResize = () => {
@@ -74,17 +76,31 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
 
-    // Initialize atmospheric dust motes with varied directions (Fix 4: Sections 9, 10, 13)
-    const particles: DustMote[] = [];
-    const colors = ['#D4AF37', '#FF8FC7', '#E066FF', '#F0E6FA', '#FFF5F8'];
+    // Theatrical illuminated dust colors (Section 11 & 12)
+    const colors = [
+      '#D4AF37', // Warm theatrical gold
+      '#FDF6D8', // Bright gold stardust
+      '#FF8FC7', // Luminous rose blossom
+      '#FFB3D9', // Soft blossom halo
+      '#F0E6FA', // Moonlit silver
+      '#FFFFFF', // Crisp theatrical highlight
+      '#E066FF', // Celestial magenta
+    ];
+
+    const particles: TheatricalDustMote[] = [];
 
     for (let i = 0; i < particleCount; i++) {
-      // Directions varied: some float upward, some downward, some diagonally (Section 13)
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 0.45 + 0.15;
-      const baseVx = Math.cos(angle) * speed * 0.7;
-      const baseVy = (Math.sin(angle) * 0.35) - 0.25; // Gentle upward/ambient drift
-      const baseAlpha = Math.random() * 0.5 + 0.25; // Fix 4: More visible contrast (0.25 to 0.75)
+      const speed = Math.random() * 0.55 + 0.2; // Noticeably moving speeds
+      const baseVx = Math.cos(angle) * speed * 0.8;
+      const baseVy = Math.sin(angle) * speed * 0.6 - 0.2; // Ambient upward-biased drift
+
+      // Varied dust sizes: fine (1.2px) to luminous larger motes (3.8px)
+      const sizeTier = Math.random();
+      const size = sizeTier > 0.88 ? Math.random() * 1.5 + 2.6 : sizeTier > 0.5 ? Math.random() * 1.0 + 1.8 : Math.random() * 0.8 + 1.2;
+
+      // Higher contrast opacity: 0.35 to 0.90
+      const baseAlpha = Math.random() * 0.45 + 0.35;
 
       particles.push({
         x: Math.random() * width,
@@ -93,13 +109,14 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
         vy: baseVy,
         baseVx,
         baseVy,
-        size: Math.random() * 2.2 + 1.2, // Visible dust sizes: 1.2px to 3.4px
+        size,
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: baseAlpha,
         baseAlpha,
-        alphaSpeed: (Math.random() * 0.009 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
-        seed: Math.random() * 200,
-        speedMultiplier: Math.random() * 0.6 + 0.7,
+        alphaSpeed: (Math.random() * 0.01 + 0.004) * (Math.random() > 0.5 ? 1 : -1),
+        seed: Math.random() * 300,
+        speedMultiplier: Math.random() * 0.7 + 0.8,
+        hasGlow: size > 2.0,
       });
     }
 
@@ -107,72 +124,73 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
-      time += 0.015;
+      time += 0.018;
 
-      // Smooth mouse spring interpolation (no React state updates)
+      // Smooth mouse spring interpolation
       if (!isTouch) {
-        mouse.x += (mouse.targetX - mouse.x) * 0.07;
-        mouse.y += (mouse.targetY - mouse.y) * 0.07;
+        mouse.x += (mouse.targetX - mouse.x) * 0.075;
+        mouse.y += (mouse.targetY - mouse.y) * 0.075;
       }
 
-      // Check if dust is active on current public view (Section 7: Separate from initial intro)
       const isFieldActive = enabledRef.current;
 
       if (isFieldActive && !prefersReducedMotion) {
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
 
-          // 1. Organic opacity shimmer / breathing
+          // 1. Visible organic twinkle
           p.alpha += p.alphaSpeed;
-          if (p.alpha > p.baseAlpha + 0.3 || p.alpha < 0.15) {
+          if (p.alpha > p.baseAlpha + 0.28 || p.alpha < 0.20) {
             p.alphaSpeed = -p.alphaSpeed;
           }
 
-          // 2. Visible continuous slow movement with sine wave turbulence (Section 10)
-          p.x += p.vx + Math.sin(time + p.seed) * 0.3 * p.speedMultiplier;
-          p.y += p.vy + Math.cos(time * 0.8 + p.seed) * 0.25 * p.speedMultiplier;
+          // 2. Clearly noticeable continuous slow movement across different directions
+          p.x += p.vx + Math.sin(time + p.seed) * 0.45 * p.speedMultiplier;
+          p.y += p.vy + Math.cos(time * 0.85 + p.seed) * 0.35 * p.speedMultiplier;
 
-          // 3. Fix 4: Enhanced yet soft mouse gathering attraction with inertia
+          // 3. Mouse gathering attraction with soft inertia (Section 15)
           if (!isTouch && mouse.x > -1000) {
             const dx = mouse.x - p.x;
             const dy = mouse.y - p.y;
             const distance = Math.hypot(dx, dy);
 
             if (distance < mouse.radius && distance > 4) {
-              // Smooth falloff attraction
               const normalizedDist = distance / mouse.radius;
-              const gatherStrength = (1 - normalizedDist) * 0.65;
+              const gatherStrength = (1 - normalizedDist) * 0.75;
 
-              p.vx += (dx / distance) * gatherStrength * 0.45;
-              p.vy += (dy / distance) * gatherStrength * 0.45;
+              p.vx += (dx / distance) * gatherStrength * 0.5;
+              p.vy += (dy / distance) * gatherStrength * 0.5;
             }
           }
 
-          // 4. Inertial return: slowly settles back into natural drift when cursor departs
+          // 4. Inertial return: slowly returns to natural drift when mouse departs
           p.vx = p.vx * 0.95 + p.baseVx * 0.05;
           p.vy = p.vy * 0.95 + p.baseVy * 0.05;
 
-          // 5. Wrap screen bounds smoothly
-          if (p.y > height + 20) {
-            p.y = -20;
+          // 5. Wrap bounds seamlessly
+          if (p.y > height + 25) {
+            p.y = -25;
             p.x = Math.random() * width;
-          } else if (p.y < -20) {
-            p.y = height + 20;
+          } else if (p.y < -25) {
+            p.y = height + 25;
             p.x = Math.random() * width;
           }
 
-          if (p.x < -20) {
-            p.x = width + 20;
-          } else if (p.x > width + 20) {
-            p.x = -20;
+          if (p.x < -25) {
+            p.x = width + 25;
+          } else if (p.x > width + 25) {
+            p.x = -25;
           }
 
-          // 6. Draw illuminated dust mote with soft luminous halo
+          // 6. Draw illuminated theatrical dust mote with soft luminous halo
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
           ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = p.size > 2.2 ? 8 : 4;
+
+          if (p.hasGlow) {
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = p.size * 3.5;
+          }
 
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

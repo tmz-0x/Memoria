@@ -16,42 +16,41 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
   const [titleRevealed, setTitleRevealed] = useState(false);
   const [heroSettled, setHeroSettled] = useState(false);
 
-  // Fix Pass 4: Strong, clearly noticeable mouse intensity reaction for fixed spotlights
-  // Left beam responds more when mouse explores the left/center
-  const leftMouseWeight = useMotionValue(0.3);
-  const smoothLeftWeight = useSpring(leftMouseWeight, { stiffness: 65, damping: 20 });
+  // Fix Pass 5: Powerful Mouse Intensity Interaction for Two Side Spotlights
+  const leftIntensityWeight = useMotionValue(0.4);
+  const smoothLeftWeight = useSpring(leftIntensityWeight, { stiffness: 60, damping: 22 });
 
-  // Right beam responds more when mouse explores the right/center
-  const rightMouseWeight = useMotionValue(0.3);
-  const smoothRightWeight = useSpring(rightMouseWeight, { stiffness: 65, damping: 20 });
+  const rightIntensityWeight = useMotionValue(0.4);
+  const smoothRightWeight = useSpring(rightIntensityWeight, { stiffness: 60, damping: 22 });
 
-  // Overhead center downlight responds to overall center presence
-  const centerMouseWeight = useMotionValue(0.3);
-  const smoothCenterWeight = useSpring(centerMouseWeight, { stiffness: 65, damping: 20 });
+  const centerIntensityWeight = useMotionValue(0.4);
+  const smoothCenterWeight = useSpring(centerIntensityWeight, { stiffness: 60, damping: 22 });
 
-  // High-visibility intensity ranges: 0.55 (dim) -> 0.82 (normal) -> 1.20 (intense illumination)
-  const leftBeamOpacity = useTransform(smoothLeftWeight, [0, 1], [0.55, 1.15]);
+  // High-visibility beam ranges: 0.60 (baseline dim) -> 0.90 (normal) -> 1.35 (peak brilliant illumination)
+  const leftBeamOpacity = useTransform(smoothLeftWeight, [0, 1], [0.60, 1.30]);
   const leftBeamGlow = useTransform(
     smoothLeftWeight,
     [0, 1],
     [
-      'drop-shadow(0 0 35px rgba(224,102,255,0.5))',
-      'drop-shadow(0 0 75px rgba(224,102,255,0.95)) drop-shadow(0 0 110px rgba(212,175,55,0.7))',
+      'drop-shadow(0 0 40px rgba(224,102,255,0.6))',
+      'drop-shadow(0 0 85px rgba(224,102,255,1.0)) drop-shadow(0 0 130px rgba(212,175,55,0.8))',
     ]
   );
 
-  const rightBeamOpacity = useTransform(smoothRightWeight, [0, 1], [0.55, 1.15]);
+  const rightBeamOpacity = useTransform(smoothRightWeight, [0, 1], [0.60, 1.30]);
   const rightBeamGlow = useTransform(
     smoothRightWeight,
     [0, 1],
     [
-      'drop-shadow(0 0 35px rgba(212,175,55,0.5))',
-      'drop-shadow(0 0 75px rgba(212,175,55,0.95)) drop-shadow(0 0 110px rgba(224,102,255,0.7))',
+      'drop-shadow(0 0 40px rgba(212,175,55,0.6))',
+      'drop-shadow(0 0 85px rgba(212,175,55,1.0)) drop-shadow(0 0 130px rgba(224,102,255,0.8))',
     ]
   );
 
-  const centerPoolBrightness = useTransform(smoothCenterWeight, [0, 1], [0.45, 0.95]);
-  const centerPoolScale = useTransform(smoothCenterWeight, [0, 1], [0.95, 1.15]);
+  // Secondary center stage pool
+  const centerPoolOpacity = useTransform(smoothCenterWeight, [0, 1], [0.50, 1.05]);
+  const centerPoolScale = useTransform(smoothCenterWeight, [0, 1], [0.95, 1.20]);
+  const supportingLightOpacity = useTransform(smoothCenterWeight, [0, 1], [0.40, 0.85]);
 
   useEffect(() => {
     // Respect reduced motion
@@ -65,7 +64,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
       return;
     }
 
-    // Fix Pass 4: Exactly ~2.0s anticipation
+    // Exactly 2-second theatrical anticipation
     const t1 = setTimeout(() => setStageAwakened(true), 2000);
     const t2 = setTimeout(() => setMoonAppeared(true), 2800);
     const t3 = setTimeout(() => setTitleRevealed(true), 3800);
@@ -82,33 +81,33 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
     };
   }, [onIntroComplete]);
 
-  // Fix Pass 4: Clearly noticeable mouse brightness calculation
+  // Fix 5: Strongly noticeable mouse light-energy reaction across the two side spotlights
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const nx = (e.clientX - rect.left) / rect.width; // 0 (left) to 1 (right)
     const ny = (e.clientY - rect.top) / rect.height; // 0 (top) to 1 (bottom)
 
-    // Left spotlight target is upper-left to center-stage (~x:0.35, y:0.6)
-    const dLeft = Math.hypot(nx - 0.35, ny - 0.6);
-    const leftVal = Math.max(0, Math.min(1, 1 - dLeft / 0.75));
-    leftMouseWeight.set(leftVal);
+    // Left spotlight target is left side / stage-left (nx ~ 0.25, ny ~ 0.6)
+    const distLeft = Math.hypot(nx - 0.25, ny - 0.6);
+    const leftVal = Math.max(0, Math.min(1, 1 - distLeft / 0.72));
+    leftIntensityWeight.set(leftVal);
 
-    // Right spotlight target is upper-right to center-stage (~x:0.65, y:0.6)
-    const dRight = Math.hypot(nx - 0.65, ny - 0.6);
-    const rightVal = Math.max(0, Math.min(1, 1 - dRight / 0.75));
-    rightMouseWeight.set(rightVal);
+    // Right spotlight target is right side / stage-right (nx ~ 0.75, ny ~ 0.6)
+    const distRight = Math.hypot(nx - 0.75, ny - 0.6);
+    const rightVal = Math.max(0, Math.min(1, 1 - distRight / 0.72));
+    rightIntensityWeight.set(rightVal);
 
-    // Center stage pool
-    const dCenter = Math.hypot(nx - 0.5, ny - 0.65);
-    const centerVal = Math.max(0, Math.min(1, 1 - dCenter / 0.65));
-    centerMouseWeight.set(centerVal);
+    // Center stage pool (nx ~ 0.5, ny ~ 0.65)
+    const distCenter = Math.hypot(nx - 0.5, ny - 0.65);
+    const centerVal = Math.max(0, Math.min(1, 1 - distCenter / 0.65));
+    centerIntensityWeight.set(centerVal);
   };
 
   const handleMouseLeave = () => {
-    leftMouseWeight.set(0.35);
-    rightMouseWeight.set(0.35);
-    centerMouseWeight.set(0.35);
+    leftIntensityWeight.set(0.4);
+    rightIntensityWeight.set(0.4);
+    centerIntensityWeight.set(0.4);
   };
 
   const scrollToAbout = () => {
@@ -132,10 +131,10 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         />
       </div>
 
-      {/* Layer 2: Darkness & Anticipation Overlay (Starts pitch-black, lifts after 2s) */}
+      {/* Layer 2: Darkness & Anticipation Overlay (Lifts smoothly after 2 seconds) */}
       <motion.div
         initial={{ opacity: 0.95 }}
-        animate={{ opacity: stageAwakened ? 0.18 : 0.95 }}
+        animate={{ opacity: stageAwakened ? 0.16 : 0.95 }}
         transition={{ duration: 1.8, ease: 'easeInOut' }}
         className="absolute inset-0 bg-[#0D0518] pointer-events-none"
       />
@@ -148,7 +147,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
             opacity: moonAppeared ? 1 : 0,
             scale: moonAppeared ? 1 : 0.8,
             boxShadow: moonAppeared
-              ? '0 0 80px rgba(212, 175, 55, 0.8)'
+              ? '0 0 90px rgba(212, 175, 55, 0.85)'
               : '0 0 0px transparent',
           }}
           transition={{ duration: 1.6, ease: 'easeOut' }}
@@ -179,69 +178,69 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         </motion.div>
       </div>
 
-      {/* Layer 4: FIX PASS 4 — TWO MAIN FIXED SPOTLIGHTS + HIGH-ENERGY MOUSE BRIGHTNESS */}
-      {/* 4a. Left Spotlight: COMPLETELY FIXED IN POSITION, INTENSE THEATRICAL BEAM */}
+      {/* Layer 4: FIX PASS 5 — TWO LARGE MAIN THEATRICAL SPOTLIGHTS ON THE SIDES FRAMING THE STAGE */}
+      {/* 4a. LEFT MAIN SPOTLIGHT: Originates from left side, projected inward toward center stage (FIXED POSITION) */}
       <motion.div
         style={{
           opacity: leftBeamOpacity,
           filter: leftBeamGlow,
-          transform: 'rotate(-9deg)',
+          transform: 'rotate(-24deg)',
           transformOrigin: 'top left',
         }}
-        className="absolute -top-12 -left-8 w-[72vw] sm:w-[50vw] h-[140vh] pointer-events-none z-20 mix-blend-screen will-change-[opacity,filter]"
+        className="absolute -top-10 -left-6 w-[85vw] sm:w-[58vw] h-[145vh] pointer-events-none z-20 mix-blend-screen will-change-[opacity,filter]"
       >
         <img
           src="/assets/spotlight-beam.png"
-          alt="Left Spotlight Beam"
+          alt="Left Main Theatrical Spotlight"
           className="w-full h-full object-fill opacity-95"
         />
       </motion.div>
 
-      {/* 4b. Right Spotlight: COMPLETELY FIXED IN POSITION, INTENSE THEATRICAL BEAM */}
+      {/* 4b. RIGHT MAIN SPOTLIGHT: Originates from right side, projected inward toward center stage (FIXED POSITION) */}
       <motion.div
         style={{
           opacity: rightBeamOpacity,
           filter: rightBeamGlow,
-          transform: 'rotate(9deg) scaleX(-1)',
+          transform: 'rotate(24deg) scaleX(-1)',
           transformOrigin: 'top right',
         }}
-        className="absolute -top-12 -right-8 w-[72vw] sm:w-[50vw] h-[140vh] pointer-events-none z-20 mix-blend-screen will-change-[opacity,filter]"
+        className="absolute -top-10 -right-6 w-[85vw] sm:w-[58vw] h-[145vh] pointer-events-none z-20 mix-blend-screen will-change-[opacity,filter]"
       >
         <img
           src="/assets/spotlight-beam.png"
-          alt="Right Spotlight Beam"
+          alt="Right Main Theatrical Spotlight"
           className="w-full h-full object-fill opacity-95"
         />
       </motion.div>
 
-      {/* 4c. Supporting Fixed Overhead Stage Light (Section 4: Other Fixed Spotlights) */}
+      {/* 4c. Supporting Fixed Overhead Downlight (Secondary Light, Section 5) */}
       <motion.div
         style={{
-          opacity: centerPoolBrightness,
+          opacity: supportingLightOpacity,
           transform: 'translateX(-50%)',
         }}
-        className="absolute -top-10 left-1/2 w-[55vw] sm:w-[38vw] h-[120vh] pointer-events-none z-15 mix-blend-screen"
+        className="absolute -top-12 left-1/2 w-[52vw] sm:w-[35vw] h-[120vh] pointer-events-none z-15 mix-blend-screen"
       >
         <img
           src="/assets/spotlight-beam.png"
-          alt="Center Downlight"
-          className="w-full h-full object-fill opacity-60 filter drop-shadow-[0_0_50px_rgba(255,143,199,0.5)]"
+          alt="Overhead Center Downlight"
+          className="w-full h-full object-fill opacity-65 filter drop-shadow-[0_0_50px_rgba(255,143,199,0.5)]"
         />
       </motion.div>
 
-      {/* Layer 5: Center Stage Converged Pool of Light (Breathes with mouse presence) */}
+      {/* Layer 5: Center Stage Converged Pool of Light */}
       <motion.div
         style={{
-          opacity: centerPoolBrightness,
+          opacity: centerPoolOpacity,
           scale: centerPoolScale,
         }}
-        className="absolute bottom-[6%] w-[80vw] max-w-3xl h-[180px] rounded-[50%] bg-gradient-radial from-[#E066FF]/55 via-[#D4AF37]/35 to-transparent blur-2xl pointer-events-none z-20"
+        className="absolute bottom-[5%] w-[85vw] max-w-3xl h-[190px] rounded-[50%] bg-gradient-radial from-[#E066FF]/60 via-[#D4AF37]/40 to-transparent blur-2xl pointer-events-none z-20"
       />
 
-      {/* Layer 6: Atmospheric Stage Vignette & Bottom Floor Blend */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/65 pointer-events-none z-25" />
+      {/* Layer 6: Atmospheric Stage Vignette */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/60 pointer-events-none z-25" />
 
-      {/* Layer 7: Theatrical Event Title & Hero Content (Automatically revealed after 2s) */}
+      {/* Layer 7: Theatrical Event Title & Hero Content (Reveals after 2s) */}
       <div className="relative z-30 flex flex-col items-center justify-center text-center px-4 max-w-5xl">
         {/* Subtitles: "THE ECLIPSE" + "OF MEMORIES" */}
         <motion.div
@@ -316,7 +315,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         </motion.div>
       </div>
 
-      {/* Downward Scroll Indicator (Appears when hero settles) */}
+      {/* Downward Scroll Indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: heroSettled ? 1 : 0 }}

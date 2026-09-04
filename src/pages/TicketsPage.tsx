@@ -115,12 +115,12 @@ export const TicketsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0518] text-[#F0E6FA] relative overflow-x-hidden pb-20">
-      {/* Background Stardust Particles */}
-      <ParticleField />
+    <div className="min-h-screen bg-[#0D0518] text-[#F0E6FA] relative overflow-x-hidden pb-24">
+      {/* Background Theatrical Stardust Particles (Section 10: Behind UI) */}
+      <ParticleField enabled={true} />
 
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-40 bg-[#0D0518]/90 backdrop-blur-md border-b border-[#D4AF37]/20 py-4 px-4 sm:px-8 shadow-lg">
+      <header className="sticky top-0 z-40 bg-[#0D0518]/92 backdrop-blur-md border-b border-[#D4AF37]/20 py-4 px-4 sm:px-8 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button
             type="button"
@@ -139,8 +139,8 @@ export const TicketsPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Ticketing Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 relative z-10">
+      {/* Main Ticketing Content (z-25: In front of particles, ensuring 100% crisp readability) */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 relative z-25">
         {/* Page Title & Intro */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="font-heading text-xs tracking-[0.35em] text-[#D4AF37] uppercase font-bold inline-flex items-center gap-2">
@@ -247,7 +247,7 @@ export const TicketsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 7-Step How to Buy Guide (Section 20) */}
+        {/* 7-Step How to Buy Guide */}
         <div className="p-6 rounded-2xl bg-[#1A0D2E]/60 border border-[#D4AF37]/30 shadow-lg mb-10">
           <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#D4AF37]/20">
             <HelpCircle className="w-5 h-5 text-[#D4AF37]" />
@@ -299,7 +299,7 @@ export const TicketsPage: React.FC = () => {
           <div className="lg:col-span-7 order-1 lg:order-2">
             <div className="rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/40 p-6 sm:p-8 shadow-2xl relative">
               {submittedResult ? (
-                /* Submission Pending State (Section 20 & 22) */
+                /* Submission Pending State */
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -343,7 +343,7 @@ export const TicketsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Options: Return to Memoria'26 or Submit Another (Section 22) */}
+                  {/* Options: Return to Memoria'26 or Submit Another */}
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
                     <button
                       type="button"
