@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, ArrowUp } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const navigate = useNavigate();
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -13,7 +16,7 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="relative bg-[#07020C] text-[#F0E6FA] border-t border-[#D4AF37]/30 pt-16 pb-12 overflow-hidden">
-      {/* Background Starfield and Crescent Moon from screen7.png */}
+      {/* Background Starfield and Crescent Moon */}
       <div className="absolute inset-0 pointer-events-none opacity-25">
         <img
           src="/assets/moon-starfield.png"
@@ -53,27 +56,27 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2 text-xs font-body text-[#F0E6FA]/70">
               <li>
-                <button onClick={() => scrollToSection('about')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+                <button type="button" onClick={() => scrollToSection('about')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
                   The Genesis & Story
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollToSection('lineup')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+                <button type="button" onClick={() => scrollToSection('lineup')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
                   Theatrical Lineup
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollToSection('ticket-section')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
-                  Ticket Allocations
+                <button type="button" onClick={() => navigate('/tickets')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+                  Ticket Purchase &bull; Rs. 1000
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollToSection('charity')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+                <button type="button" onClick={() => scrollToSection('charity')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
                   Swarodaya Youth Fund
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollToSection('faq')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+                <button type="button" onClick={() => scrollToSection('faq')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
                   Ticketing Policy FAQ
                 </button>
               </li>
@@ -118,10 +121,10 @@ export const Footer: React.FC = () => {
           </p>
 
           <div className="flex items-center space-x-6 text-[11px] font-heading uppercase tracking-wider">
-            <button onClick={() => scrollToSection('ticket-section')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+            <button type="button" onClick={() => navigate('/tickets')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
               Terms of Admission
             </button>
-            <button onClick={() => scrollToSection('contact')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
+            <button type="button" onClick={() => scrollToSection('contact')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
               Concierge Desk
             </button>
           </div>

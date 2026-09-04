@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ParticleField } from '../components/public/ParticleField';
 import { Navbar } from '../components/public/Navbar';
 import { Hero } from '../components/public/Hero';
@@ -11,18 +11,20 @@ import { Contact } from '../components/public/Contact';
 import { Footer } from '../components/public/Footer';
 
 export const PublicHome: React.FC = () => {
+  const [introReady, setIntroReady] = useState(false);
+
   return (
     <div className="relative min-h-screen bg-[#0D0518] text-[#F0E6FA] overflow-x-hidden">
       {/* Universal Stardust Particle Canvas with subtle mouse-reactive inertia */}
       <ParticleField />
 
-      {/* Scroll-Linked Public Navbar (Completely hidden on initial load) */}
-      <Navbar />
+      {/* Theatrical Navbar (Hidden during 3s anticipation, reveals automatically at t=8s) */}
+      <Navbar forceVisible={introReady} />
 
-      {/* Full-Screen Scroll-Controlled Theatrical Intro & Hero */}
-      <Hero />
+      {/* Automatic Theatrical Opening Presentation & Hero (No scroll required) */}
+      <Hero onIntroComplete={() => setIntroReady(true)} />
 
-      {/* Main Theatrical Odyssey */}
+      {/* Main Theatrical Odyssey (User chooses to scroll) */}
       <main className="relative z-20">
         <About />
         <Lineup />

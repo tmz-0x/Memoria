@@ -1,11 +1,15 @@
 import React from 'react';
 import { CinematicIntro } from './CinematicIntro';
 
-export const Hero: React.FC = () => {
+interface HeroProps {
+  onIntroComplete?: () => void;
+}
+
+export const Hero: React.FC<HeroProps> = ({ onIntroComplete }) => {
   return (
     <section id="hero" className="relative w-full">
-      {/* Full-screen Scroll-driven Theatrical Intro Sequence */}
-      <CinematicIntro />
+      {/* Full-screen Automatic Theatrical Opening Presentation */}
+      <CinematicIntro onIntroComplete={onIntroComplete} />
     </section>
   );
 };

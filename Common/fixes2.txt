@@ -1,0 +1,1641 @@
+MEMORIA'26 — FIX PASS 2
+Automatic Cinematic Opening + Separate Ticket Interface + Full-Site Atmosphere
+
+You are modifying the existing Memoria'26 website.
+
+This is a FIX / REFINEMENT task, NOT a rebuild.
+
+Do not recreate the website from scratch.
+
+Do not replace the current architecture unnecessarily.
+
+Do not remove working admin, approver, check-in, authentication, mock API, or existing public functionality unless explicitly required below.
+
+First inspect the existing implementation and then modify it.
+
+The previous implementation attempted to make the cinematic opening scroll-controlled.
+
+That behavior must now be changed.
+
+The new experience must use an automatic cinematic opening.
+
+1. MOST IMPORTANT CHANGE — REMOVE SCROLL CONTROL FROM THE OPENING
+
+The opening cinematic experience must NO LONGER require the visitor to scroll.
+
+The visitor should simply open the website and watch the introduction happen automatically.
+
+The opening should feel like a cinematic stage presentation.
+
+OLD BEHAVIOR
+
+User scrolls
+
+↓
+
+Animation progresses
+
+NEW BEHAVIOR
+
+Website loads
+
+↓
+
+Stage appears
+
+↓
+
+Spotlight focuses on stage
+
+↓
+
+3-second anticipation
+
+↓
+
+Opening scene reveals automatically
+
+↓
+
+Spotlight slowly moves
+
+↓
+
+Hero becomes fully visible
+
+↓
+
+Website remains ready for interaction
+
+The visitor should not need to scroll to discover the opening content.
+
+2. INITIAL WEBSITE STATE
+
+When the website first loads:
+
+The screen should be almost completely dark.
+
+The visual focus should immediately be:
+
+THE STAGE
+
+Use the existing stage background and theatrical lighting.
+
+Do NOT immediately display:
+
+navigation
+large event title
+ticket CTA
+ticket interface
+normal website sections
+large cards
+unnecessary UI
+
+The opening should feel like the visitor has entered a dark theatre just before a performance begins.
+
+3. INITIAL SPOTLIGHT POSITION
+
+Immediately after page load:
+
+A spotlight should be focused primarily on the stage.
+
+The spotlight should NOT immediately sweep across the screen.
+
+It should initially establish the stage.
+
+Visual sequence:
+
+BLACK / DARK THEATRE
+
+↓
+
+STAGE VISIBLE
+
+↓
+
+SPOTLIGHT FOCUSES ON STAGE
+
+↓
+
+WAIT
+
+The spotlight should feel like a theatrical operator has just turned on the stage light.
+
+4. THREE-SECOND INTRODUCTION DELAY
+
+After the website loads:
+
+Allow approximately:
+
+3 seconds
+
+of anticipation.
+
+During these 3 seconds:
+
+keep the stage visible
+keep the atmosphere dark
+maintain the focused spotlight
+allow subtle particles/sparkles
+do not reveal the complete hero immediately
+do not show the navigation
+do not show the ticket interface
+
+The purpose is to create anticipation.
+
+Do NOT make the user wait indefinitely.
+
+Do NOT use a long intro.
+
+Approximately 3 seconds is the target.
+
+5. AUTOMATIC STARTING PAGE REVEAL
+
+After the approximately 3-second anticipation period:
+
+The starting page should reveal itself automatically.
+
+The reveal should be gradual and cinematic.
+
+Reveal:
+
+stage atmosphere
+moon/crescent
+subtle particles
+cherry blossom atmosphere
+event identity
+hero content
+navigation
+
+Do not reveal every element at exactly the same time.
+
+Use a carefully staged sequence.
+
+Suggested sequence:
+
+0–3 seconds
+
+Dark theatre.
+
+Spotlight focused on stage.
+
+3–5 seconds
+
+Stage atmosphere becomes brighter.
+
+4–6 seconds
+
+Moon/crescent gradually appears.
+
+5–7 seconds
+
+Atmospheric particles/sparkles become more visible.
+
+6–8 seconds
+
+Event identity begins appearing.
+
+7–9 seconds
+
+MEMORIA'26 hero identity becomes established.
+
+8–10 seconds
+
+Navigation becomes visible.
+
+8–11 seconds
+
+Hero CTA becomes visible.
+
+These are timing guidelines, not rigid requirements.
+
+Adjust the exact timings to achieve the most cinematic result.
+
+6. SPOTLIGHT AUTOMATIC SIDE-TO-SIDE MOVEMENT
+
+After the starting page has been revealed:
+
+The spotlight should slowly move from side to side automatically.
+
+It must NOT remain stationary.
+
+It must NOT require scrolling.
+
+The movement should be:
+
+LEFT
+
+→
+
+CENTER
+
+→
+
+RIGHT
+
+→
+
+CENTER
+
+→
+
+LEFT
+
+and continue slowly.
+
+The movement should feel like a real theatrical spotlight searching across a stage.
+
+IMPORTANT:
+
+This is NOT a fast animation.
+
+The movement must be:
+
+slow
+smooth
+elegant
+cinematic
+continuous
+
+Avoid:
+
+bouncing
+sudden direction changes
+robotic movement
+rapid oscillation
+
+Use a long animation duration.
+
+For example:
+
+8–15 seconds for one full movement cycle.
+
+Adjust based on visual quality.
+
+7. SPOTLIGHT MOVEMENT MUST FEEL PHYSICAL
+
+Do not simply animate:
+
+x: -100 → 100 → -100
+
+with a basic linear animation.
+
+The spotlight should have theatrical motion.
+
+Use:
+
+smooth easing
+subtle rotation
+slight opacity variation
+soft beam edges
+atmospheric bloom
+
+The beam should remain visually connected to the stage.
+
+The spotlight should never look like a flat rectangle sliding around the screen.
+
+8. OPENING SHOULD LOOP NATURALLY
+
+Once the cinematic introduction has completed:
+
+The spotlight can continue its slow side-to-side movement.
+
+However:
+
+The complete opening story must NOT restart continuously.
+
+Do NOT repeatedly replay:
+
+Moon reveal
+
+↓
+
+Eclipse
+
+↓
+
+Title reveal
+
+↓
+
+Hero reveal
+
+over and over.
+
+The cinematic introduction should play once per page load/session.
+
+After that:
+
+The page remains interactive.
+
+The spotlight and subtle atmospheric effects can continue.
+
+9. USER INTERACTION MUST REMAIN IMMEDIATE AFTER INTRO
+
+Do not lock the website while the animation is running.
+
+The visitor must still be able to interact.
+
+Buttons should become usable as soon as they appear.
+
+Navigation should work.
+
+Ticket button should work.
+
+Links should work.
+
+Do not create an invisible overlay that blocks interaction unnecessarily.
+
+10. NO SCROLL REQUIRED TO SEE THE HERO
+
+The hero must be fully understandable without scrolling.
+
+The visitor should automatically see:
+
+event identity
+theme
+date
+venue
+ticket CTA
+
+after the cinematic opening finishes.
+
+Scrolling can still be used for navigating through the rest of the website.
+
+The important distinction is:
+
+OPENING CINEMATIC
+
+Automatic.
+
+MAIN WEBSITE NAVIGATION
+
+Normal user scrolling.
+
+Do NOT make the user scroll to reveal the first page.
+
+11. NAVIGATION REVEAL
+
+The navigation should remain hidden during the initial theatrical anticipation.
+
+After the automatic opening reaches the hero state:
+
+Reveal the navigation.
+
+Suggested behavior:
+
+opacity:
+
+0 → 1
+
+Y position:
+
+-20px → 0
+
+with a subtle cinematic transition.
+
+The navigation should not suddenly pop onto the screen.
+
+It should feel like part of the website emerging from the darkness.
+
+12. REMOVE PUBLIC PORTAL VISIBILITY
+
+The public website must NOT expose internal portal routes.
+
+Do not display:
+
+Portal
+Admin
+Approver
+Staff
+Check-in
+Dashboard
+
+in the public navigation.
+
+Do not place portal links in:
+
+hero
+footer
+navigation
+ticket page
+public buttons
+
+Internal routes must continue to exist for authorized use.
+
+Do not delete protected routes.
+
+13. LINEUP SPOTLIGHT — KEEP SCROLL-LINKED BEHAVIOR
+
+IMPORTANT:
+
+The Lineup spotlight is different from the opening spotlight.
+
+The opening spotlight is automatic.
+
+The Lineup spotlight must remain connected to the visitor's scroll position.
+
+When the visitor scrolls DOWN through the Lineup:
+
+SPOTLIGHT MUST MOVE LEFT → RIGHT
+
+When the visitor scrolls UP:
+
+SPOTLIGHT MUST MOVE RIGHT → LEFT
+
+This must be deterministic.
+
+Do not use autoplay for the lineup spotlight.
+
+14. LINEUP MUST USE THE FULL WIDTH
+
+The current lineup spotlight movement is too limited.
+
+Fix it so that the spotlight uses the full available width of the lineup section.
+
+Movement should span approximately:
+
+LEFT EDGE
+
+↓
+
+CENTER
+
+↓
+
+RIGHT EDGE
+
+not just:
+
+CENTER-LEFT
+
+↓
+
+CENTER-RIGHT
+
+The entire lineup should feel like a real stage.
+
+Example:
+
+At lineup progress = 0%
+
+Spotlight:
+
+far LEFT
+
+At 25%:
+
+LEFT-CENTER
+
+At 50%:
+
+CENTER
+
+At 75%:
+
+RIGHT-CENTER
+
+At 100%:
+
+far RIGHT
+
+Scrolling back reverses the exact same path.
+
+Use:
+
+useScroll()
+
+useTransform()
+
+and/or
+
+useSpring()
+
+where appropriate.
+
+15. LINEUP SPOTLIGHT MUST REVERSE PERFECTLY
+
+Do not create separate down-scroll and up-scroll animations.
+
+The position should be derived from scroll progress.
+
+That means:
+
+Scroll down:
+
+0 → 1
+
+Spotlight:
+
+left → right
+
+Scroll up:
+
+1 → 0
+
+Spotlight:
+
+right → left
+
+This guarantees natural reversal.
+
+Do not use:
+
+wheel event hacks
+direction detection hacks
+autoplay
+setInterval
+random movement
+
+unless absolutely necessary for a supporting effect.
+
+16. ARTIST IMAGE PREPARATION
+
+Keep the lineup ready for the real artist images.
+
+I will upload the actual artist images later.
+
+Until then:
+
+keep the existing example images
+do not invent artist identities
+do not change the card architecture unnecessarily
+
+Make the artist data easy to replace.
+
+The final implementation should allow:
+
+placeholder image
+
+↓
+
+replace with uploaded artist image
+
+without rewriting the Lineup component.
+
+17. REMOVE TICKET SECTION FROM MAIN WEBSITE
+
+This is another major architecture change.
+
+The ticket purchasing interface must NOT appear as a normal section of the main public website.
+
+The main website should focus on:
+
+cinematic introduction
+event story
+lineup
+event information
+atmosphere
+charity
+contact
+footer
+
+The actual ticket purchasing experience should exist in a separate full-screen ticketing interface.
+
+18. BOOK TICKET BUTTON BEHAVIOR
+
+When the visitor clicks:
+
+BOOK TICKET
+
+or:
+
+GET YOUR TICKET
+
+do NOT scroll to a ticket section.
+
+Do NOT open a small modal.
+
+Do NOT show the complete checkout form inside the main website.
+
+Instead:
+
+Navigate to a dedicated ticketing interface.
+
+For example:
+
+/tickets
+
+Use the existing React Router architecture.
+
+The exact route can be different if the project already has a ticket route, but it must be a dedicated ticketing experience.
+
+19. TICKET INTERFACE MUST FEEL LIKE A SEPARATE EXPERIENCE
+
+The ticket page should not look like the main website with one more section.
+
+It should be a dedicated full-screen ticketing environment.
+
+Conceptually:
+
+MAIN WEBSITE
+
+↓
+
+BOOK TICKET
+
+↓
+
+FULL-SCREEN TICKETING EXPERIENCE
+
+The ticket interface should focus entirely on:
+
+ticket information
+ticket type
+price
+event details
+how to buy
+bank/payment details
+attendee information
+payment slip
+submission
+pending status
+confirmation
+
+Remove unnecessary public website sections from this interface.
+
+Do not show:
+
+lineup
+long story section
+charity section
+large event storytelling
+unrelated website content
+
+Keep the Memoria visual identity, but prioritize clarity and trust.
+
+20. TICKET PAGE STRUCTURE
+
+Recommended structure:
+
+TICKET HEADER
+
+MEMORIA'26
+
+THE ECLIPSE OF MEMORIES
+
+Back to Event
+
+EVENT TICKET
+
+Display:
+
+Date
+Venue
+Ticket type
+Price
+General Admission
+
+Price:
+
+Rs. 1000
+
+HOW TO BUY
+
+Clearly explain:
+
+01 — Fill attendee details
+
+02 — Select quantity
+
+03 — Transfer payment
+
+04 — Upload payment slip
+
+05 — Submit request
+
+06 — Wait for manual verification
+
+07 — Receive ticket/QR after approval
+
+PAYMENT DETAILS
+
+Show configured:
+
+Bank
+Account name
+Account number
+Branch
+
+Include copy-to-clipboard functionality.
+
+After copying:
+
+Copied ✓
+
+PURCHASE FORM
+
+Fields:
+
+Full name
+Email
+Phone
+Quantity
+Payment slip
+
+File types:
+
+JPG / JPEG / PNG / PDF
+
+Maximum:
+
+5 MB
+
+SUBMIT
+
+After submission:
+
+Show:
+
+Payment Verification Pending
+
+Explain that the request is awaiting manual approval.
+
+21. TICKET PAGE BACK BUTTON
+
+The ticket interface must provide a clear:
+
+BACK TO EVENT
+
+button.
+
+When clicked:
+
+Return to the main website.
+
+Do not force the user to use the browser's back button.
+
+The visitor should always have an obvious way to return to the event.
+
+22. AFTER CHECKOUT / SUBMISSION
+
+After the ticket process reaches its final state:
+
+Provide an option:
+
+RETURN TO MEMORIA'26
+
+which navigates back to the main website.
+
+If approval is asynchronous, the user can simply return to the main site after submitting.
+
+The ticket request must remain stored through the existing mock/API architecture.
+
+23. DO NOT BREAK APPROVER WORKFLOW
+
+The separate ticket interface must still connect to the existing submission architecture.
+
+Flow:
+
+USER
+
+↓
+
+TICKET PAGE
+
+↓
+
+SUBMISSION
+
+↓
+
+PENDING
+
+↓
+
+APPROVER DASHBOARD
+
+↓
+
+APPROVE / REJECT
+
+↓
+
+APPROVED
+
+↓
+
+QR / EMAIL DELIVERY STATE
+
+The existing Approver dashboard must continue to work.
+
+Do not create a completely separate ticket database/state that the approver cannot access.
+
+24. MOCK EMAIL / QR BEHAVIOR
+
+The current project uses mock APIs.
+
+Do not pretend a real email has been sent if no email provider exists.
+
+Instead:
+
+After approval, the system should support the state:
+
+APPROVED
+
+and indicate:
+
+Ticket / QR ready for email delivery
+
+If the existing implementation already generates a mock QR, preserve it.
+
+Keep the architecture ready for a real email service later.
+
+25. MAIN WEBSITE MUST NOT SHOW TICKET FORM
+
+Remove/hide from the main public website:
+
+ticket form
+bank details
+payment slip upload
+checkout fields
+pending submission UI
+
+These belong ONLY to the dedicated ticketing interface.
+
+The main website may contain:
+
+BOOK TICKET — Rs. 1000
+
+but it should only act as an entry point to the ticketing interface.
+
+26. MAIN WEBSITE TICKET CTA
+
+The CTA should be visually strong.
+
+Example:
+
+BOOK YOUR TICKET
+
+Secondary information:
+
+GENERAL ADMISSION · RS. 1000
+
+Click:
+
+↓
+
+/tickets
+
+Use a smooth page transition if appropriate.
+
+Do not use a complicated transition that delays access.
+
+27. STAR / SPARKLE SYSTEM — EXPAND THROUGHOUT ENTIRE WEBSITE
+
+The atmospheric star/sparkle effect should not be limited to the opening.
+
+Increase the presence of stars/sparkles throughout the public website.
+
+Use the existing:
+
+assetsstar-sparkle-texture.png
+
+and/or existing ParticleField.
+
+Include subtle atmospheric sparkles in:
+
+Hero
+Story/About
+Lineup
+Event information
+Charity
+Contact
+Footer
+
+The website should feel like it exists inside one continuous:
+
+moonlit memory
+
+environment.
+
+28. SPARKLE DENSITY
+
+Do NOT use identical particle density everywhere.
+
+Use hierarchy.
+
+Hero
+
+High atmospheric density.
+
+Story
+
+Medium density.
+
+Lineup
+
+Medium density.
+
+Event information
+
+Low/medium density.
+
+Charity
+
+Low density.
+
+Contact
+
+Low density.
+
+Footer
+
+Medium density.
+
+The effect should remain elegant.
+
+Do not turn the site into a particle demo.
+
+29. MOUSE-REACTIVE SPARKLES
+
+Add subtle interaction between the mouse pointer and nearby sparkles.
+
+When the mouse moves:
+
+Nearby sparkles should slowly drift toward the mouse pointer.
+
+The effect must be:
+
+subtle
+slow
+smooth
+delayed
+organic
+
+Do NOT make sparkles instantly snap toward the pointer.
+
+Do NOT make all particles move toward the pointer.
+
+Do NOT create an obvious "magnet" effect.
+
+The visitor should barely notice the mechanics.
+
+They should simply feel that the atmosphere responds to their presence.
+
+30. SPARKLE INERTIA
+
+Use smoothing/inertia.
+
+Conceptual behavior:
+
+Mouse moves
+
+↓
+
+Nearby particles detect influence
+
+↓
+
+Particles slowly drift toward pointer
+
+↓
+
+Mouse stops
+
+↓
+
+Particles gradually settle
+
+Use spring-like motion if appropriate.
+
+Avoid React state updates for every particle on every mouse movement.
+
+Use performant motion values / transforms.
+
+31. MOBILE SPARKLE BEHAVIOR
+
+On mobile/touch devices:
+
+Do not attempt mouse-following behavior.
+
+Instead:
+
+maintain normal particle animation
+reduce particle count
+preserve atmospheric depth
+preserve performance
+
+The mobile experience should not feel empty simply because mouse interaction is unavailable.
+
+32. PARTICLE PERFORMANCE
+
+Do not create hundreds or thousands of DOM particles.
+
+Use the existing ParticleField architecture if possible.
+
+Target approximately:
+
+40–60 particles on desktop.
+
+Use fewer on mobile/low-power devices.
+
+Do not create a new particle engine if the existing one already works.
+
+Optimize the existing system.
+
+33. MAIN WEBSITE SCROLLING
+
+IMPORTANT DISTINCTION:
+
+We are removing scroll control from the opening cinematic.
+
+We are NOT removing normal website scrolling.
+
+After the automatic hero introduction finishes:
+
+The visitor can normally scroll through:
+
+Hero
+
+↓
+
+Story
+
+↓
+
+Lineup
+
+↓
+
+Event information
+
+↓
+
+Charity
+
+↓
+
+Contact
+
+↓
+
+Footer
+
+The normal website remains scrollable.
+
+Only the opening cinematic should be automatic.
+
+34. HERO AFTER AUTOMATIC INTRO
+
+Once the opening animation completes:
+
+The Hero should remain stable.
+
+Do not keep changing the hero title continuously.
+
+The spotlight can continue its subtle side-to-side theatrical motion.
+
+The hero content should remain readable.
+
+The visitor should immediately understand:
+
+What the event is
+
+When it is
+
+Where it is
+
+How to get a ticket
+
+35. DO NOT AUTO-SCROLL THE PAGE
+
+Very important:
+
+Automatic animation does NOT mean automatic page scrolling.
+
+Do NOT automatically scroll:
+
+Hero → Story → Lineup → Ticket.
+
+The page must stay at the starting hero.
+
+Only the visual elements animate automatically.
+
+The visitor chooses when to scroll to the next section.
+
+36. DO NOT AUTO-NAVIGATE
+
+Do not automatically send the visitor to:
+
+Story
+Lineup
+Ticket
+another route
+
+The only automatic behavior should be the cinematic visual introduction.
+
+37. ACCESSIBILITY
+
+Respect:
+
+prefers-reduced-motion
+
+If reduced motion is enabled:
+
+minimize the automatic spotlight movement
+remove continuous sparkle movement
+simplify the opening
+reveal important content quickly
+keep navigation accessible
+keep all buttons functional
+
+Do not make accessibility dependent on the animation.
+
+38. PERFORMANCE
+
+The automatic cinematic intro must not cause:
+
+frame drops
+excessive CPU usage
+memory leaks
+repeated animation initialization
+multiple particle systems
+multiple global mouse listeners
+
+Ensure timers/animation loops are cleaned up when components unmount.
+
+Avoid unnecessary React state updates.
+
+Prefer:
+
+Framer Motion
+motion values
+CSS transforms
+opacity
+GPU-friendly transforms
+39. IMPORTANT ARCHITECTURAL DISTINCTION
+
+There are now TWO spotlight systems.
+
+SYSTEM A — HERO SPOTLIGHT
+
+Behavior:
+
+AUTOMATIC
+
+Slow side-to-side movement.
+
+No scrolling required.
+
+Starts focused on stage.
+
+Begins movement after cinematic reveal.
+
+Continues subtly after reveal.
+
+SYSTEM B — LINEUP SPOTLIGHT
+
+Behavior:
+
+SCROLL-LINKED
+
+Scrolling DOWN:
+
+LEFT → RIGHT
+
+Scrolling UP:
+
+RIGHT → LEFT
+
+Full-width movement.
+
+These systems must not interfere with each other.
+
+Do not reuse one animation state if it causes the two spotlights to become coupled incorrectly.
+
+40. TICKET ROUTE ARCHITECTURE
+
+Implement a dedicated public route, preferably:
+
+/tickets
+
+unless an existing ticket route is already present.
+
+Example:
+
+/
+    Main Memoria Website
+
+/tickets
+    Dedicated Ticketing Interface
+
+/admin
+    Admin Dashboard
+
+/approve
+    Approver Dashboard
+
+/checkin
+    Staff Check-in
+
+The /tickets route is public.
+
+The administrative routes remain protected.
+
+41. TICKET PAGE NAVIGATION
+
+The ticket interface should have:
+
+Top-left:
+
+← Back to Event
+
+Top-right if useful:
+
+MEMORIA'26
+
+The page should feel independent but clearly connected to the event.
+
+Do not replicate the entire main website navigation.
+
+42. TICKET PAGE VISUAL STYLE
+
+Keep:
+
+deep violet
+indigo
+magenta
+antique gold
+blossom pink
+moonlight
+stars
+
+But make the interface more practical than the cinematic homepage.
+
+Priority:
+
+CLARITY > DECORATION
+
+The user must easily understand:
+
+How much the ticket costs
+
+How to pay
+
+What information to enter
+
+Where to upload the payment slip
+
+What happens after submission
+
+43. FINAL USER JOURNEY
+
+The final user journey should be:
+
+ENTRY
+
+User opens:
+
+/
+
+↓
+
+Dark theatre
+
+↓
+
+Spotlight focused on stage
+
+↓
+
+Approximately 3 seconds anticipation
+
+↓
+
+Automatic cinematic reveal
+
+↓
+
+Moon / atmosphere
+
+↓
+
+Memoria'26 identity
+
+↓
+
+Hero becomes visible
+
+↓
+
+Navigation appears
+
+MAIN WEBSITE
+
+User explores:
+
+Story
+
+↓
+
+Lineup
+
+↓
+
+Event information
+
+↓
+
+Charity
+
+↓
+
+Contact
+
+TICKET
+
+User clicks:
+
+BOOK TICKET
+
+↓
+
+Navigate to:
+
+/tickets
+
+↓
+
+Dedicated ticketing interface
+
+↓
+
+Ticket information
+
+↓
+
+How to Buy
+
+↓
+
+Payment details
+
+↓
+
+Purchase form
+
+↓
+
+Upload payment slip
+
+↓
+
+Submit
+
+↓
+
+Pending verification
+
+↓
+
+Approver reviews
+
+↓
+
+Approved
+
+↓
+
+QR/email delivery state
+
+↓
+
+Return to main website
+
+44. FINAL ACCEPTANCE TEST
+
+Before declaring the task complete, test the actual application.
+
+OPENING
+
+[ ] Page starts dark.
+
+[ ] Stage is immediately the visual focus.
+
+[ ] Spotlight is focused on the stage.
+
+[ ] Approximately 3 seconds of anticipation occurs.
+
+[ ] No scrolling is required to start the cinematic reveal.
+
+[ ] Starting page reveals automatically.
+
+[ ] Moon/crescent appears automatically.
+
+[ ] Event identity appears automatically.
+
+[ ] Navigation appears automatically after the reveal.
+
+[ ] Hero CTA appears automatically.
+
+[ ] The page itself does NOT automatically scroll to another section.
+
+[ ] The opening story does NOT continuously replay.
+
+[ ] Spotlight moves slowly side-to-side after reveal.
+
+[ ] Spotlight movement is smooth and theatrical.
+
+MAIN WEBSITE
+
+[ ] Normal scrolling works after the hero.
+
+[ ] Story section works.
+
+[ ] Lineup works.
+
+[ ] Lineup spotlight is scroll-linked.
+
+[ ] Lineup spotlight moves LEFT → RIGHT when scrolling down.
+
+[ ] Lineup spotlight moves RIGHT → LEFT when scrolling up.
+
+[ ] Lineup spotlight covers the FULL width.
+
+[ ] Artist images can easily be replaced later.
+
+[ ] Ticket purchase form is NOT visible on the main website.
+
+[ ] No public portal/admin links exist.
+
+TICKET EXPERIENCE
+
+[ ] Book Ticket navigates to dedicated /tickets interface.
+
+[ ] Ticket interface occupies the full page.
+
+[ ] Main website content is not duplicated unnecessarily.
+
+[ ] Ticket price is clearly visible.
+
+[ ] Event date is visible.
+
+[ ] Venue is visible.
+
+[ ] Ticket type is visible.
+
+[ ] How To Buy is available.
+
+[ ] Bank details are visible.
+
+[ ] Copy button works.
+
+[ ] Purchase form works.
+
+[ ] Payment slip upload works.
+
+[ ] JPG/PNG/PDF validation works.
+
+[ ] 5MB limit works.
+
+[ ] Submission creates PENDING state.
+
+[ ] Existing approver workflow can process the submission.
+
+[ ] Approved state works.
+
+[ ] Return to Event button works.
+
+[ ] User can return to the main website.
+
+ATMOSPHERE
+
+[ ] Stars/sparkles appear throughout the website.
+
+[ ] Hero has strong atmosphere.
+
+[ ] Story has subtle atmosphere.
+
+[ ] Lineup has atmosphere.
+
+[ ] Charity has atmosphere.
+
+[ ] Contact has atmosphere.
+
+[ ] Footer has atmosphere.
+
+[ ] Sparkles subtly respond to mouse movement.
+
+[ ] Sparkles move slowly toward the mouse.
+
+[ ] Sparkles do not snap or chase aggressively.
+
+[ ] Mobile disables mouse interaction appropriately.
+
+[ ] Mobile reduces particle density.
+
+TECHNICAL
+
+[ ] No console errors.
+
+[ ] No broken routes.
+
+[ ] No broken assets.
+
+[ ] No horizontal overflow.
+
+[ ] No memory leaks.
+
+[ ] No duplicate particle systems.
+
+[ ] No excessive React re-renders.
+
+[ ] Admin still works.
+
+[ ] Approver still works.
+
+[ ] Check-in still works.
+
+[ ] Protected routes remain protected.
+
+[ ] Mock API remains functional.
+
+[ ] Desktop works.
+
+[ ] Mobile works.
+
+[ ] prefers-reduced-motion works.
+
+45. CRITICAL FINAL INSTRUCTION
+
+Do not interpret this task as:
+
+"Add some automatic animations."
+
+The goal is to change the interaction philosophy of the website.
+
+The visitor should not have to control the opening.
+
+The website should perform the opening for them.
+
+The emotional sequence should be:
+
+OPEN WEBSITE
+
+↓
+
+DARK THEATRE
+
+↓
+
+SPOTLIGHT ON STAGE
+
+↓
+
+3-SECOND ANTICIPATION
+
+↓
+
+THE STAGE AWAKENS
+
+↓
+
+LIGHT MOVES
+
+↓
+
+MOON / ATMOSPHERE
+
+↓
+
+MEMORIA'26 REVEAL
+
+↓
+
+HERO
+
+↓
+
+NORMAL WEBSITE EXPLORATION
+
+↓
+
+USER CHOOSES TO SCROLL
+
+↓
+
+LINEUP SPOTLIGHT FOLLOWS THEIR SCROLL
+
+↓
+
+USER CHOOSES TO BUY
+
+↓
+
+DEDICATED TICKETING EXPERIENCE
+
+The opening should feel like a short theatrical performance, not a website waiting for the user to scroll.
+
+The main website should feel like the visitor has entered the world of Memoria'26.
+
+The ticket interface should feel like entering a separate, focused ticket counter within that world.
+
+Do not simplify the concept.
+
+Do not rebuild unrelated parts.
+
+Do not break existing functionality.
+
+Inspect the current implementation first, modify the underlying animation architecture where necessary, then run and test the application against every acceptance criterion above.
+

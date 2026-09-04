@@ -13,7 +13,7 @@ export interface ActData {
   image: string;
 }
 
-// Separated Artist Data Model for straightforward replacement
+// Separated Artist Data Model for future photo replacement (Section 16)
 export const LINEUP_ACTS: ActData[] = [
   {
     id: 'act-1',
@@ -57,22 +57,22 @@ export const Lineup: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeHoverId, setActiveHoverId] = useState<string | null>(null);
 
-  // Deterministic scroll progress tied to section entry & exit (Section 8)
+  // System B: Strictly Scroll-Linked Lineup Spotlight (Sections 13, 14, 15)
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'end start'],
   });
 
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 85,
+    stiffness: 95,
     damping: 26,
     restDelta: 0.001,
   });
 
-  // Section 8: Scroll DOWN -> LEFT to RIGHT. Scroll UP -> RIGHT to LEFT.
-  // 0% -> Left (-20%), 50% -> Center (40%), 100% -> Right (100%)
-  const spotlightX = useTransform(smoothProgress, [0, 1], ['-20%', '100%']);
-  const spotlightOpacity = useTransform(smoothProgress, [0, 0.15, 0.85, 1], [0, 0.65, 0.65, 0]);
+  // FULL WIDTH MOVEMENT: Far Left (-30%) -> Center (35%) -> Far Right (105%)
+  // Scroll DOWN: Left to Right. Scroll UP: Right to Left. Deterministic and perfectly reversible.
+  const spotlightX = useTransform(smoothProgress, [0, 1], ['-30%', '105%']);
+  const spotlightOpacity = useTransform(smoothProgress, [0, 0.12, 0.88, 1], [0, 0.7, 0.7, 0]);
 
   return (
     <section
@@ -80,18 +80,18 @@ export const Lineup: React.FC = () => {
       id="lineup"
       className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#0D0518] overflow-hidden"
     >
-      {/* Deterministic Scroll-Linked Theatrical Spotlight Sweep (NO AUTOPLAY) */}
+      {/* Full-Width Scroll-Linked Theatrical Spotlight Beam (No Autoplay, No Infinite Loops) */}
       <motion.div
         style={{
           x: spotlightX,
           opacity: spotlightOpacity,
         }}
-        className="pointer-events-none absolute -top-40 w-[600px] sm:w-[700px] h-[950px] mix-blend-screen z-0 will-change-transform"
+        className="pointer-events-none absolute -top-40 w-[650px] sm:w-[800px] h-[1000px] mix-blend-screen z-0 will-change-transform"
       >
         <img
           src="/assets/spotlight-beam.png"
-          alt="Theatrical Spotlight Sweep"
-          className="w-full h-full object-fill filter drop-shadow-[0_0_60px_#E066FF]"
+          alt="Theatrical Spotlight Beam"
+          className="w-full h-full object-fill filter drop-shadow-[0_0_70px_#E066FF]"
         />
       </motion.div>
 
@@ -125,7 +125,7 @@ export const Lineup: React.FC = () => {
           </p>
         </div>
 
-        {/* Performer Cards in Theatrical Ticket Frames (from screen4.png) */}
+        {/* Performer Cards in Theatrical Ticket Frames (screen4.png) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {LINEUP_ACTS.map((act, index) => {
             const isHovered = activeHoverId === act.id;
@@ -137,8 +137,8 @@ export const Lineup: React.FC = () => {
                 whileInView={{ scale: 1, opacity: 1, filter: 'brightness(1)' }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{
-                  duration: 0.55,
-                  delay: index * 0.12,
+                  duration: 0.5,
+                  delay: index * 0.1,
                   ease: 'easeOut',
                 }}
                 onMouseEnter={() => setActiveHoverId(act.id)}

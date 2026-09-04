@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SectionDivider } from './SectionDivider';
 import { useEventStore } from '../../store/eventStore';
 import { HowToBuyModal } from './HowToBuyModal';
-import { TicketForm } from './TicketForm';
 import {
   Sparkles,
   Calendar,
   MapPin,
-  HelpCircle,
   Ticket,
-  ChevronDown,
+  HelpCircle,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const TicketInfo: React.FC = () => {
+  const navigate = useNavigate();
   const { settings, fetchSettings } = useEventStore();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -25,14 +28,9 @@ export const TicketInfo: React.FC = () => {
   const price = settings?.ticketPrice ?? 1000;
   const cutoffDate = settings?.cutoffDate ?? 'November 10, 2026';
 
-  const scrollToForm = () => {
-    const el = document.getElementById('ticket-purchase-form');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <section
-      id="ticket-section"
+      id="ticket-overview"
       className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0D0518] via-[#1A0D2E]/90 to-[#0D0518]"
     >
       <div className="max-w-6xl mx-auto">
@@ -46,38 +44,34 @@ export const TicketInfo: React.FC = () => {
           </span>
 
           <h2 className="font-heading text-3xl sm:text-5xl font-extrabold uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#F0E6FA] via-[#FF8FC7] to-[#D4AF37] mt-3">
-            Official Ticket Pass
+            Pass Allocation
           </h2>
           <p className="font-body text-base text-[#F0E6FA]/70 mt-3 font-light">
-            Secure your presence under the eclipse. All online tickets are strictly validated.
+            Admission passes are strictly limited to theatre capacity. Secure your seat under the eclipse.
           </p>
         </div>
 
-        {/* Master Physical Theatrical Ticket Pass (from screen4.png & screen11.png) */}
-        <div className="relative rounded-3xl overflow-hidden bg-[#1A0D2E] border-2 border-[#D4AF37]/50 p-6 sm:p-10 shadow-[0_0_50px_rgba(212,175,55,0.25)] mb-14">
-          {/* Authentic Ornate Gold Filigree Ticket Frame Overlay (from screen4.png) */}
+        {/* Master Theatrical Ticket Frame (screen4.png & screen11.png) */}
+        <div className="relative rounded-3xl overflow-hidden bg-[#1A0D2E] border-2 border-[#D4AF37]/50 p-6 sm:p-10 shadow-[0_0_50px_rgba(212,175,55,0.25)]">
+          {/* Authentic Ornate Gold Filigree Ticket Frame */}
           <img
             src="/assets/ticket-frame.png"
             alt=""
             className="absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none mix-blend-screen"
           />
 
-          {/* Ambient Lighting Glows */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#E066FF]/20 via-[#D4AF37]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-[#D4AF37]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-          {/* Authentic Brass Memoria Wax Seal Emblem (from screen11.png) */}
-          <div className="absolute -top-6 -right-6 sm:top-6 sm:right-6 w-24 h-24 sm:w-32 sm:h-32 opacity-80 sm:opacity-90 pointer-events-none filter drop-shadow-[0_0_20px_rgba(212,175,55,0.7)] z-20">
+          {/* Authentic Brass Memoria Wax Seal Emblem */}
+          <div className="absolute -top-4 -right-4 sm:top-6 sm:right-6 w-20 h-20 sm:w-28 sm:h-28 opacity-85 pointer-events-none filter drop-shadow-[0_0_20px_rgba(212,175,55,0.7)] z-20">
             <img
               src="/assets/memoria-seal.png"
-              alt="Authentic Memoria Brass Seal"
+              alt="Memoria Seal"
               className="w-full h-full object-contain"
             />
           </div>
 
           <div className="relative z-10">
             {/* Top Pass Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-[#D4AF37]/30 sm:pr-28">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-[#D4AF37]/30 sm:pr-24">
               <div>
                 <span className="text-[11px] font-heading font-bold uppercase tracking-[0.3em] text-[#FF8FC7] block">
                   Official Admission Pass &bull; General Admission
@@ -92,7 +86,7 @@ export const TicketInfo: React.FC = () => {
 
               <div className="sm:text-right bg-[#0D0518]/80 px-6 py-4 rounded-2xl border border-[#D4AF37]/40 shadow-inner">
                 <span className="text-[10px] font-heading uppercase tracking-widest text-[#F0E6FA]/60 block">
-                  Admission Price
+                  Official Price
                 </span>
                 <div className="text-3xl sm:text-4xl font-heading font-black text-[#D4AF37]">
                   Rs. {price.toLocaleString()}
@@ -136,7 +130,7 @@ export const TicketInfo: React.FC = () => {
               <div className="flex items-center justify-between text-xs font-heading mb-2">
                 <span className="text-[#F0E6FA]/80 uppercase tracking-wider">Hall Allocation Capacity</span>
                 <span className="text-[#D4AF37] font-bold">
-                  {capacity - remaining} / {capacity} Allocated
+                  {capacity - remaining} / {capacity} Passes Allocated
                 </span>
               </div>
               <div className="w-full h-3 bg-[#0D0518] rounded-full overflow-hidden border border-[#D4AF37]/30">
@@ -147,7 +141,7 @@ export const TicketInfo: React.FC = () => {
               </div>
             </div>
 
-            {/* Actions: "How to Buy & Rules" modal trigger & "Buy Ticket" */}
+            {/* Primary Action Buttons on Main Site: Navigates to /tickets (Sections 18 & 26) */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-[#D4AF37]/30">
               <button
                 type="button"
@@ -155,16 +149,16 @@ export const TicketInfo: React.FC = () => {
                 className="w-full sm:w-auto px-6 py-3 rounded-full font-heading text-xs tracking-[0.15em] font-semibold uppercase text-[#D4AF37] border border-[#D4AF37]/50 hover:border-[#D4AF37] hover:bg-[#D4AF37]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <HelpCircle className="w-4 h-4 text-[#D4AF37]" />
-                <span>How To Buy & Admission Rules</span>
+                <span>How To Buy & Rules</span>
               </button>
 
               <button
                 type="button"
-                onClick={scrollToForm}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full font-heading text-xs tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_35px_rgba(224,102,255,0.8)] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                onClick={() => navigate('/tickets')}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_35px_rgba(224,102,255,0.8)] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Reserve Pass Now</span>
-                <ChevronDown className="w-4 h-4 text-[#0D0518]" />
+                <span>Book Your Ticket &bull; Rs. 1000</span>
+                <ArrowRight className="w-4 h-4 text-[#0D0518]" />
               </button>
             </div>
           </div>
@@ -172,11 +166,6 @@ export const TicketInfo: React.FC = () => {
 
         {/* How To Buy & Rules Modal */}
         <HowToBuyModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
-
-        {/* In-Section Ticket Purchase Form */}
-        <div id="ticket-purchase-form">
-          <TicketForm />
-        </div>
       </div>
     </section>
   );
