@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
-interface DustParticle {
+interface DustMote {
   x: number;
   y: number;
   vx: number;
   vy: number;
+  baseVx: number;
   baseVy: number;
   size: number;
   color: string;
@@ -12,6 +13,7 @@ interface DustParticle {
   baseAlpha: number;
   alphaSpeed: number;
   seed: number;
+  speedMultiplier: number;
 }
 
 interface ParticleFieldProps {
@@ -34,22 +36,21 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
 
     // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
 
     let animationFrameId: number;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
     const isTouch = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768;
-    // Fix Pass 3: 40-60 particles on desktop, 20-35 on mobile
-    const particleCount = isTouch ? 26 : 52;
+    // Fix Pass 4: Density 60-90 on desktop, 25-45 on mobile
+    const particleCount = isTouch ? 35 : 82;
 
     const mouse = {
-      x: -2000,
-      y: -2000,
-      targetX: -2000,
-      targetY: -2000,
-      radius: 190, // Fix 3: Influence radius ~120-220px
+      x: -3000,
+      y: -3000,
+      targetX: -3000,
+      targetY: -3000,
+      radius: 220, // Fix 4: Influence radius 150-250px
     };
 
     const handleResize = () => {
@@ -66,94 +67,112 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
     };
 
     const handleMouseLeave = () => {
-      mouse.targetX = -2000;
-      mouse.targetY = -2000;
+      mouse.targetX = -3000;
+      mouse.targetY = -3000;
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
 
-    // Initialize fine atmospheric dust particles (Fix Pass 3: Rule 5 - Tiny illuminated dust)
-    const particles: DustParticle[] = [];
-    const colors = ['#D4AF37', '#FF8FC7', '#E066FF', '#F0E6FA'];
+    // Initialize atmospheric dust motes with varied directions (Fix 4: Sections 9, 10, 13)
+    const particles: DustMote[] = [];
+    const colors = ['#D4AF37', '#FF8FC7', '#E066FF', '#F0E6FA', '#FFF5F8'];
 
     for (let i = 0; i < particleCount; i++) {
-      const baseAlpha = Math.random() * 0.45 + 0.2;
+      // Directions varied: some float upward, some downward, some diagonally (Section 13)
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 0.45 + 0.15;
+      const baseVx = Math.cos(angle) * speed * 0.7;
+      const baseVy = (Math.sin(angle) * 0.35) - 0.25; // Gentle upward/ambient drift
+      const baseAlpha = Math.random() * 0.5 + 0.25; // Fix 4: More visible contrast (0.25 to 0.75)
+
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() * 0.35 + 0.2),
-        baseVy: Math.random() * 0.35 + 0.2,
-        size: Math.random() * 1.6 + 1.0, // Very fine dust motes: 1.0px to 2.6px
+        vx: baseVx,
+        vy: baseVy,
+        baseVx,
+        baseVy,
+        size: Math.random() * 2.2 + 1.2, // Visible dust sizes: 1.2px to 3.4px
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: baseAlpha,
         baseAlpha,
-        alphaSpeed: (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
-        seed: Math.random() * 100,
+        alphaSpeed: (Math.random() * 0.009 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
+        seed: Math.random() * 200,
+        speedMultiplier: Math.random() * 0.6 + 0.7,
       });
     }
 
+    let time = 0;
+
     const render = () => {
       ctx.clearRect(0, 0, width, height);
+      time += 0.015;
 
-      // Smooth mouse spring/lerp
+      // Smooth mouse spring interpolation (no React state updates)
       if (!isTouch) {
-        mouse.x += (mouse.targetX - mouse.x) * 0.06;
-        mouse.y += (mouse.targetY - mouse.y) * 0.06;
+        mouse.x += (mouse.targetX - mouse.x) * 0.07;
+        mouse.y += (mouse.targetY - mouse.y) * 0.07;
       }
 
-      // If particles are temporarily disabled during initial intro, skip drawing
+      // Check if dust is active on current public view (Section 7: Separate from initial intro)
       const isFieldActive = enabledRef.current;
 
-      if (isFieldActive) {
+      if (isFieldActive && !prefersReducedMotion) {
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
 
-          // 1. Natural twinkle / opacity fluctuation
+          // 1. Organic opacity shimmer / breathing
           p.alpha += p.alphaSpeed;
-          if (p.alpha > p.baseAlpha + 0.25 || p.alpha < 0.12) {
+          if (p.alpha > p.baseAlpha + 0.3 || p.alpha < 0.15) {
             p.alphaSpeed = -p.alphaSpeed;
           }
 
-          // 2. Base natural atmospheric drift (Section 19: natural drift + subtle mouse attraction)
-          p.y += p.vy;
-          p.x += Math.sin((p.y + p.seed) * 0.015) * 0.35 + p.vx;
+          // 2. Visible continuous slow movement with sine wave turbulence (Section 10)
+          p.x += p.vx + Math.sin(time + p.seed) * 0.3 * p.speedMultiplier;
+          p.y += p.vy + Math.cos(time * 0.8 + p.seed) * 0.25 * p.speedMultiplier;
 
-          // 3. Fix Pass 3: Rule 5 - Soft gathering toward mouse pointer with inertia
-          if (!isTouch && mouse.x > 0) {
+          // 3. Fix 4: Enhanced yet soft mouse gathering attraction with inertia
+          if (!isTouch && mouse.x > -1000) {
             const dx = mouse.x - p.x;
             const dy = mouse.y - p.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            const distance = Math.hypot(dx, dy);
 
-            if (distance < mouse.radius && distance > 2) {
-              // Gentle attraction force: particles slowly gather, forming a soft cluster
+            if (distance < mouse.radius && distance > 4) {
+              // Smooth falloff attraction
               const normalizedDist = distance / mouse.radius;
-              const attractionForce = (1 - normalizedDist) * 0.45;
+              const gatherStrength = (1 - normalizedDist) * 0.65;
 
-              p.vx += (dx / distance) * attractionForce * 0.4;
-              p.vy += (dy / distance) * attractionForce * 0.4;
+              p.vx += (dx / distance) * gatherStrength * 0.45;
+              p.vy += (dy / distance) * gatherStrength * 0.45;
             }
           }
 
-          // 4. Inertial damping: cluster slowly disperses/settles when mouse moves away
-          p.vx *= 0.94;
-          p.vy = p.vy * 0.94 + p.baseVy * 0.06;
+          // 4. Inertial return: slowly settles back into natural drift when cursor departs
+          p.vx = p.vx * 0.95 + p.baseVx * 0.05;
+          p.vy = p.vy * 0.95 + p.baseVy * 0.05;
 
-          // 5. Seamless boundary wrapping
-          if (p.y > height + 15) {
-            p.y = -15;
+          // 5. Wrap screen bounds smoothly
+          if (p.y > height + 20) {
+            p.y = -20;
+            p.x = Math.random() * width;
+          } else if (p.y < -20) {
+            p.y = height + 20;
             p.x = Math.random() * width;
           }
-          if (p.x < -15) p.x = width + 15;
-          if (p.x > width + 15) p.x = -15;
 
-          // 6. Render as fine illuminated dust with soft celestial glow
+          if (p.x < -20) {
+            p.x = width + 20;
+          } else if (p.x > width + 20) {
+            p.x = -20;
+          }
+
+          // 6. Draw illuminated dust mote with soft luminous halo
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
           ctx.fillStyle = p.color;
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 4;
+          ctx.shadowBlur = p.size > 2.2 ? 8 : 4;
 
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

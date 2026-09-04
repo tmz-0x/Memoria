@@ -1,0 +1,618 @@
+MEMORIA'26 — FIX 4
+Stronger Interactive Spotlights + More Visible Atmospheric Dust
+
+IMPORTANT: This is a modification pass on the EXISTING Memoria'26 website.
+
+Do NOT rebuild the project from scratch.
+
+First inspect the existing implementation, especially:
+
+CinematicIntro
+existing spotlight components/effects
+particle/sparkle system
+hero/stage section
+lineup spotlight
+public page sections
+existing animation utilities
+
+Preserve the existing architecture, routing, styling, ticket system, admin system, approval system, check-in system, and all functionality that is already working.
+
+This Fix 4 specifically improves the visual visibility and intensity of the spotlight and dust effects.
+
+1. CINEMATIC INTRO — TWO MAIN FIXED SPOTLIGHTS
+
+The cinematic intro has two main fixed spotlights.
+
+They must remain:
+
+fixed in their physical position
+fixed in their rotation
+fixed in their direction
+NOT move horizontally
+NOT move vertically
+NOT rotate
+NOT follow the mouse as an object
+
+The spotlight beams themselves stay fixed.
+
+BUT:
+
+The LIGHT INTENSITY / BRIGHTNESS / ILLUMINATION of the two main spotlights must respond strongly to mouse movement.
+
+Think of the mouse as controlling the energy/intensity of the lights, not their position.
+
+2. MAIN SPOTLIGHT MOUSE INTERACTION
+
+When the mouse moves across the cinematic intro:
+
+the two fixed spotlights should become noticeably brighter/dimmer
+the light should feel like it is reacting to the viewer
+the illuminated stage area should visibly change in intensity
+the beam glow should become more noticeable
+the central illuminated area should respond smoothly
+use smooth interpolation/easing
+
+Do NOT make the effect instant or flickering.
+
+The response should feel:
+
+cinematic → theatrical → atmospheric → smooth → premium
+
+IMPORTANT:
+
+The spotlight should be MORE VISIBLE than in the previous version.
+
+Increase the visual presence of:
+
+spotlight beam
+beam opacity
+beam glow
+stage illumination
+bloom
+light falloff
+illuminated area
+
+But do NOT make the entire screen white.
+
+The background should remain dark and mystical.
+
+3. TWO MAIN SPOTLIGHTS — VISUAL TARGET
+
+The two main spotlights should clearly look like real theatrical stage lights.
+
+They should have:
+
+clearly visible beams
+soft volumetric glow
+brighter center
+soft feathered edges
+subtle atmospheric haze
+visible light cone
+realistic falloff
+cinematic bloom
+
+The beams should be visible even when the mouse is near the center.
+
+Mouse movement should amplify/reduce their brightness rather than making them disappear completely.
+
+Suggested intensity range
+
+Use a noticeable range such as:
+
+minimum intensity: approximately 0.45–0.60
+normal intensity: approximately 0.70–0.85
+maximum intensity: approximately 1.00–1.20
+
+Adjust these values based on the existing visual implementation.
+
+Do not blindly use these numbers if the current rendering system requires different values.
+
+4. OTHER FIXED SPOTLIGHTS
+
+The cinematic intro also contains other sub/fixed spotlights.
+
+These must remain fixed in:
+
+position
+rotation
+direction
+
+They should NOT physically move.
+
+However, their brightness/intensity should also react considerably to mouse movement.
+
+Make this effect clearly visible.
+
+For example:
+
+When the mouse moves toward one region:
+
+nearby/sub spotlight brightness increases
+other spotlights can become slightly dimmer
+light distribution changes subtly
+the stage atmosphere feels alive
+
+When the mouse moves away:
+
+brightness smoothly transitions back
+
+Do NOT make these lights completely synchronized.
+
+Each sub-spotlight should have slightly different:
+
+intensity
+response strength
+delay
+fade timing
+
+This creates a more realistic theatrical lighting system.
+
+5. IMPORTANT — NO SPOTLIGHT POSITION MOVEMENT
+
+Do NOT accidentally reintroduce the behavior from earlier versions.
+
+The cinematic intro spotlights must NOT:
+
+❌ follow mouse X position
+❌ follow mouse Y position
+❌ translate with mouse
+❌ rotate toward mouse
+❌ orbit
+❌ pan
+❌ tilt
+❌ move across the stage
+
+Only:
+
+BRIGHTNESS + GLOW + LIGHT INTENSITY
+
+may react to the mouse.
+
+The physical spotlight geometry remains fixed.
+
+6. MOUSE RESPONSE SHOULD BE CLEARLY NOTICEABLE
+
+The previous version was too subtle.
+
+Increase the difference between:
+
+mouse away → normal/dim lighting
+
+and
+
+mouse near the light's influence → clearly brighter lighting
+
+The user should immediately notice:
+
+"The lights are reacting to my mouse."
+
+But it should still feel sophisticated rather than like a game UI.
+
+Use smooth interpolation such as:
+
+spring
+lerp
+MotionValue interpolation
+requestAnimationFrame
+
+Avoid React state updates for every frame.
+
+7. CINEMATIC INTRO PARTICLES — KEEP THEM SEPARATE
+
+IMPORTANT:
+
+The cinematic intro should NOT use the new mouse-attracted dust particle system.
+
+Keep the cinematic intro particle behavior separate.
+
+Do not allow the global dust system to accidentally appear or react inside CinematicIntro.
+
+The cinematic intro should remain focused on:
+
+stage + fixed spotlights + atmosphere + cinematic reveal
+
+8. WHOLE PUBLIC WEBSITE — MORE VISIBLE DUST PARTICLES
+
+Outside the cinematic intro, the entire public website should contain atmospheric dust/sparkle particles.
+
+These should be significantly more visible than the previous version.
+
+Apply the dust effect to:
+
+Hero content after the cinematic intro
+Story / About
+Event information
+Lineup
+Charity
+Contact
+Footer
+other public-facing sections
+
+Do NOT add these particles to:
+
+Admin
+Approver
+Staff Check-in
+internal management interfaces
+9. DUST PARTICLES — VISUAL STYLE
+
+The particles must look like floating atmospheric dust illuminated by stage light.
+
+They should NOT look like:
+
+❌ large stars
+❌ Christmas glitter
+❌ confetti
+❌ random circles
+❌ snow
+❌ UI decorations
+❌ large glowing dots
+
+Instead:
+
+tiny floating particles + soft luminous dust + subtle sparkle
+
+Use a mixture of:
+
+very small particles
+slightly larger particles
+tiny blurred particles
+occasional brighter particles
+very soft glow
+
+The effect should feel like dust floating through theatrical light beams.
+
+10. MAKE THE DUST VISIBLY MOVING
+
+This is very important.
+
+The particles should not look like static dots placed on the background.
+
+The user should be able to clearly notice that they are slowly moving.
+
+Use:
+
+very slow drifting
+subtle floating motion
+different movement directions
+different speeds
+small vertical movement
+small horizontal movement
+gentle random paths
+slight opacity variation
+
+The movement should be:
+
+SLOW + ORGANIC + CONTINUOUS
+
+Not:
+
+FAST + RANDOM + DISTRACTING
+
+The user should notice the atmosphere after watching the page for a few seconds.
+
+11. DUST DENSITY
+
+Increase the number of particles compared with the previous implementation.
+
+Desktop:
+
+approximately 60–90 particles per major public section, depending on performance.
+
+Mobile:
+
+approximately 25–45 particles per section.
+
+Do not create excessive DOM elements if the existing architecture can use a single canvas or efficient particle layer.
+
+Prefer a performant implementation.
+
+If a canvas-based particle system already exists, improve it rather than replacing it unnecessarily.
+
+12. DUST VISIBILITY
+
+Increase:
+
+opacity
+glow
+particle size slightly
+contrast against the dark background
+
+However, preserve the dark Memoria'26 aesthetic.
+
+The particles should be:
+
+visible enough to notice
+
+but not:
+
+bright enough to compete with the content.
+
+They should feel like they are being illuminated by the surrounding stage lighting.
+
+13. PARTICLE MOVEMENT EXAMPLE
+
+Conceptually, imagine:
+
+A dark violet room filled with tiny particles.
+
+A particle slowly drifts:
+
+↗
+
+Another:
+
+↓
+
+Another:
+
+←
+
+Another:
+
+↘
+
+They move independently.
+
+Some particles slowly brighten.
+
+Some slowly fade.
+
+Some drift slightly faster.
+
+Some barely move.
+
+This creates a realistic atmospheric dust field.
+
+Do NOT make every particle follow the same animation.
+
+14. MOUSE INTERACTION FOR GLOBAL DUST
+
+Keep the existing mouse-reactive gathering behavior outside the cinematic intro.
+
+When the mouse moves through the page:
+
+nearby dust particles slowly drift toward the mouse
+surrounding particles subtly respond
+particles gather gently
+movement remains slow
+particles should have inertia
+no snapping
+
+The mouse attraction should now be slightly more visible than before.
+
+But it must remain:
+
+soft + atmospheric + slow
+
+NOT:
+
+magnetic + aggressive + chaotic
+
+Use a reasonable influence radius, approximately:
+
+150–250px
+
+with smooth falloff.
+
+15. IMPORTANT SEPARATION OF SYSTEMS
+
+Maintain two completely separate visual systems:
+
+SYSTEM A — CINEMATIC INTRO
+
+Spotlights:
+
+fixed position
+fixed rotation
+fixed direction
+mouse affects brightness/intensity only
+strong visible beams
+strong theatrical illumination
+no global dust attraction
+SYSTEM B — REST OF PUBLIC WEBSITE
+
+Dust:
+
+visible atmospheric particles
+slow continuous movement
+subtle mouse attraction
+more particles
+clearly visible movement
+organic drifting
+applies throughout public sections
+
+Do not merge these systems in a way that causes unintended behavior.
+
+16. PERFORMANCE
+
+The effect must remain smooth.
+
+Use:
+
+requestAnimationFrame
+MotionValues
+refs
+canvas where appropriate
+interpolation
+GPU-friendly transforms
+opacity/transform animation
+
+Avoid:
+
+React state updates for every particle every frame
+unnecessary component re-renders
+expensive blur filters on hundreds of elements
+excessive DOM nodes
+layout-triggering animations
+
+Target:
+
+smooth 60fps experience on desktop
+
+and a simplified version on mobile.
+
+17. MOBILE
+
+On mobile:
+
+keep spotlight brightness interaction disabled if there is no mouse
+keep cinematic spotlight fixed
+preserve strong theatrical lighting
+reduce particle count
+preserve visible slow dust movement
+disable mouse attraction because touch does not provide continuous cursor tracking
+
+The website should still feel atmospheric on mobile.
+
+18. REDUCED MOTION
+
+Respect:
+
+prefers-reduced-motion
+
+When enabled:
+
+reduce continuous particle movement
+disable mouse attraction
+reduce spotlight transitions
+preserve basic lighting and visual atmosphere
+avoid excessive animation
+19. DO NOT CHANGE EXISTING FUNCTIONALITY
+
+Do NOT modify or break:
+
+ticket interface
+/tickets
+ticket submission
+ticket approval
+QR/check-in
+/admin
+/approve
+/checkin
+mock APIs
+routing
+existing forms
+existing authentication/protection
+existing lineup behavior
+
+The existing lineup spotlight behavior must remain:
+
+scroll down → spotlight travels fully left → right
+
+scroll up → spotlight travels fully right → left
+
+Do not replace this with mouse control.
+
+20. VISUAL PRIORITY
+
+The final visual hierarchy should feel like this:
+
+CINEMATIC INTRO
+
+1. Stage
+2. Two powerful fixed spotlights
+3. Mouse-reactive brightness
+4. Supporting theatrical lights
+5. Moon/eclipsed atmosphere
+6. Memoria reveal
+
+REST OF WEBSITE
+
+1. Content
+2. Cinematic backgrounds
+3. Clearly visible floating dust
+4. Mouse-reactive atmospheric particles
+5. Subtle glow and lighting
+
+The dust should support the design, not cover the content.
+
+21. FINAL ACCEPTANCE TEST
+
+After implementation, verify all of these:
+
+Cinematic Intro
+
+[ ] Two main spotlights remain completely fixed.
+
+[ ] Their position never follows the mouse.
+
+[ ] Their rotation never follows the mouse.
+
+[ ] Their brightness clearly reacts to mouse movement.
+
+[ ] Their beams are significantly more visible.
+
+[ ] Their glow/bloom is clearly visible.
+
+[ ] Supporting fixed spotlights also visibly react through brightness.
+
+[ ] Supporting lights remain physically fixed.
+
+[ ] No spotlight physically moves because of mouse input.
+
+[ ] Cinematic intro does not receive the global dust attraction system.
+
+Public Website
+
+[ ] Dust particles exist throughout the public page.
+
+[ ] Dust is clearly visible against the dark background.
+
+[ ] Dust particles slowly move continuously.
+
+[ ] Movement is organic and varied.
+
+[ ] Particles do not look like large stars.
+
+[ ] Particles look like atmospheric illuminated dust.
+
+[ ] Mouse attraction is visible but slow and elegant.
+
+[ ] Particles do not snap to the cursor.
+
+[ ] Particle movement does not distract from content.
+
+Existing Features
+
+[ ] Lineup spotlight still follows scroll direction.
+
+[ ] /tickets remains separate.
+
+[ ] Admin remains functional.
+
+[ ] Approver remains functional.
+
+[ ] Check-in remains functional.
+
+[ ] No console errors.
+
+[ ] No broken routes.
+
+[ ] No hydration/runtime errors.
+
+[ ] Desktop remains smooth.
+
+[ ] Mobile remains smooth.
+
+FINAL DESIGN TARGET
+
+The finished website should feel like:
+
+a dark theatrical stage filled with visible beams of light and slowly floating illuminated dust.
+
+When the visitor moves the mouse during the cinematic opening:
+
+the fixed spotlights breathe brighter and dimmer without physically moving.
+
+When the visitor explores the rest of the website:
+
+tiny atmospheric dust particles continuously float through the dark violet environment and gently gather around the cursor.
+
+The overall feeling should be:
+
+cinematic + magical + theatrical + premium + mysterious + immersive
+
+Do not make it look like a generic website animation.
+
+Make it feel like the visitor has entered the world of Memoria'26 — The Eclipse of Memories.
