@@ -31,12 +31,12 @@ interface FallingBlossomsProps {
 
 export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
   stageAwakened = true,
-  leftBeamAngleDeg = 32,
-  rightBeamAngleDeg = -32,
+  leftBeamAngleDeg,
+  rightBeamAngleDeg,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const leftAngleRef = useRef(leftBeamAngleDeg);
-  const rightAngleRef = useRef(rightBeamAngleDeg);
+  const leftAngleRef = useRef<number | undefined>(leftBeamAngleDeg);
+  const rightAngleRef = useRef<number | undefined>(rightBeamAngleDeg);
   const stageAwakenedRef = useRef(stageAwakened);
 
   useEffect(() => {
@@ -62,8 +62,8 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
 
     const isMobile = width < 768;
     const isTablet = width >= 768 && width < 1024;
-    // Section 26: Desktop 125 petals, Tablet 85, Mobile 50
-    const petalCount = prefersReducedMotion ? (isMobile ? 20 : 35) : isMobile ? 50 : isTablet ? 85 : 125;
+    // Fix 8, Section 3 & 4: Delicate petal count (Desktop: 88, Tablet: 60, Mobile: 36)
+    const petalCount = prefersReducedMotion ? (isMobile ? 18 : 28) : isMobile ? 36 : isTablet ? 60 : 88;
 
     const handleResize = () => {
       if (!canvas) return;
@@ -72,34 +72,36 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
     };
     window.addEventListener('resize', handleResize);
 
-    // Section 15: Align emission origin zones with the trees visible in hero-stage-scene.jpg
-    const getSpawnPoint = (): { x: number; y: number } => {
+    // Fix 8, Section 4 & 5: Stronger emission at Left & Right tree canopies, significantly reduced in the center
+    const getSpawnPoint = (): { x: number; y: number; driftBias: number } => {
       const zoneChoice = Math.random();
       let x = 0;
       let y = 0;
+      let driftBias = 0;
 
-      if (zoneChoice < 0.40) {
-        // Left Tree Canopy: x in [0% - 28%], y in [1% - 38%]
-        x = width * (Math.random() * 0.28);
-        y = height * (Math.random() * 0.38);
-      } else if (zoneChoice < 0.80) {
-        // Right Tree Canopy: x in [58% - 98%], y in [1% - 42%]
-        x = width * (0.58 + Math.random() * 0.40);
-        y = height * (Math.random() * 0.42);
-      } else if (zoneChoice < 0.90) {
-        // Center-Left Overhead Branch: x in [25% - 38%], y in [1% - 18%]
-        x = width * (0.25 + Math.random() * 0.13);
-        y = height * (Math.random() * 0.18);
+      if (zoneChoice < 0.48) {
+        // Left Tree Canopy (48% of petals): x in [1% - 26%], y in [1% - 38%]
+        x = width * (0.01 + Math.random() * 0.25);
+        y = height * (0.01 + Math.random() * 0.37);
+        // Slight drift keeping center clear
+        driftBias = Math.random() * 0.30 - 0.20;
+      } else if (zoneChoice < 0.96) {
+        // Right Tree Canopy (48% of petals): x in [68% - 99%], y in [1% - 42%]
+        x = width * (0.68 + Math.random() * 0.31);
+        y = height * (0.01 + Math.random() * 0.41);
+        // Slight drift keeping center clear
+        driftBias = Math.random() * 0.30 - 0.10;
       } else {
-        // Center-Right Overhead Branch: x in [52% - 66%], y in [1% - 16%]
-        x = width * (0.52 + Math.random() * 0.14);
-        y = height * (Math.random() * 0.16);
+        // Center Overhead Branch Tips (Only 4% of petals - Section 4 & 5): x in [38% - 62%], y in [1% - 12%]
+        x = width * (0.38 + Math.random() * 0.24);
+        y = height * (0.01 + Math.random() * 0.11);
+        driftBias = (Math.random() - 0.5) * 0.25;
       }
 
-      return { x, y };
+      return { x, y, driftBias };
     };
 
-    // Color palettes for luminous cherry blossom petals (Fix 7, Section 14)
+    // Color palettes for luminous cherry blossom petals (Fix 7 & 8)
     const petalPalettes = [
       { start: '#FFF5F8', end: '#FFB3D9' }, // Moonlit white-pink
       { start: '#FFE4EF', end: '#FF8FC7' }, // Classic cherry blossom rose
@@ -114,28 +116,29 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
 
       const layerTier = Math.random();
       let layer: 'bg' | 'mid' | 'fg' = 'mid';
-      let size = 11;
-      let baseAlpha = 0.75;
-      let baseVy = 0.75;
+      let size = 8;
+      let baseAlpha = 0.65;
+      let baseVy = 0.65;
 
+      // Fix 8, Section 3 & 7: Slightly smaller, delicate, elegant petals matching tree scale
       if (layerTier < 0.35) {
-        // Background: smaller, dimmer, slower (Section 19)
+        // Background: smaller, dimmer, slower (Section 7)
         layer = 'bg';
-        size = Math.random() * 3 + 6; // 6px - 9px
-        baseAlpha = Math.random() * 0.20 + 0.35; // 0.35 - 0.55
-        baseVy = Math.random() * 0.25 + 0.40; // 0.40 - 0.65 px/frame
-      } else if (layerTier < 0.80) {
-        // Midground: standard visible blossom (Section 19)
+        size = Math.random() * 2.2 + 4.2; // 4.2px - 6.4px (delicate background blossom)
+        baseAlpha = Math.random() * 0.18 + 0.32; // 0.32 - 0.50
+        baseVy = Math.random() * 0.20 + 0.35; // 0.35 - 0.55 px/frame (gracefully slow)
+      } else if (layerTier < 0.82) {
+        // Midground: standard delicate blossom (Section 7)
         layer = 'mid';
-        size = Math.random() * 4 + 10; // 10px - 14px
-        baseAlpha = Math.random() * 0.20 + 0.65; // 0.65 - 0.85
-        baseVy = Math.random() * 0.35 + 0.65; // 0.65 - 1.00 px/frame
+        size = Math.random() * 2.8 + 6.8; // 6.8px - 9.6px (natural blossom scale)
+        baseAlpha = Math.random() * 0.18 + 0.55; // 0.55 - 0.73
+        baseVy = Math.random() * 0.30 + 0.50; // 0.50 - 0.80 px/frame
       } else {
-        // Foreground: larger, luminous, soft bloom (Section 19)
+        // Foreground: slightly larger, luminous highlight (Section 7)
         layer = 'fg';
-        size = Math.random() * 6 + 15; // 15px - 21px
-        baseAlpha = Math.random() * 0.15 + 0.82; // 0.82 - 0.97
-        baseVy = Math.random() * 0.45 + 0.90; // 0.90 - 1.35 px/frame
+        size = Math.random() * 3.2 + 10.0; // 10.0px - 13.2px (delicate foreground petal)
+        baseAlpha = Math.random() * 0.16 + 0.72; // 0.72 - 0.88
+        baseVy = Math.random() * 0.35 + 0.70; // 0.70 - 1.05 px/frame
       }
 
       const palette = petalPalettes[Math.floor(Math.random() * petalPalettes.length)];
@@ -143,18 +146,18 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
       return {
         x: pt.x,
         y: initialY,
-        vx: (Math.random() - 0.5) * 0.3,
+        vx: pt.driftBias,
         vy: baseVy,
         baseVy,
-        swaySpeed: Math.random() * 0.025 + 0.015,
-        swayAmp: Math.random() * 0.8 + 0.5,
+        swaySpeed: Math.random() * 0.022 + 0.012,
+        swayAmp: Math.random() * 0.7 + 0.4,
         swayPhase: Math.random() * Math.PI * 2,
-        tumbleSpeed: Math.random() * 0.035 + 0.015,
+        tumbleSpeed: Math.random() * 0.030 + 0.012,
         tumblePhase: Math.random() * Math.PI * 2,
         rotation: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() * 0.02 + 0.006) * (Math.random() > 0.5 ? 1 : -1),
+        rotSpeed: (Math.random() * 0.018 + 0.005) * (Math.random() > 0.5 ? 1 : -1),
         size,
-        aspectRatio: Math.random() * 0.4 + 1.2, // 1.2 to 1.6
+        aspectRatio: Math.random() * 0.35 + 1.25, // 1.25 to 1.6
         alpha: baseAlpha,
         baseAlpha,
         layer,
@@ -177,8 +180,8 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
       time += 0.016;
 
       const isAwakened = stageAwakenedRef.current;
-      const leftAngleRad = (leftAngleRef.current * Math.PI) / 180;
-      const rightAngleRad = (rightAngleRef.current * Math.PI) / 180;
+      const leftAngleRad = typeof leftAngleRef.current === 'number' ? (leftAngleRef.current * Math.PI) / 180 : null;
+      const rightAngleRad = typeof rightAngleRef.current === 'number' ? (rightAngleRef.current * Math.PI) / 180 : null;
 
       // Spotlight origins for calculating beam illumination on passing petals (Section 23)
       const leftLightOrigin = { x: width * 0.03, y: height * 0.02 };
@@ -212,31 +215,35 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
           }
         }
 
-        // 3. Spotlight beam illumination interaction (Section 23: petals passing through light cones brighten softly)
+        // 3. Spotlight beam illumination interaction (if spotlight beams are active)
         let beamBoost = 0;
         if (isAwakened) {
           // Check Left Beam cone proximity
-          const ldx = p.x - leftLightOrigin.x;
-          const ldy = p.y - leftLightOrigin.y;
-          const lDist = Math.hypot(ldx, ldy);
-          if (lDist > 20) {
-            const lAngle = Math.atan2(ldx, ldy); // angle from vertical
-            const lAngleDiff = Math.abs(lAngle - leftAngleRad);
-            if (lAngleDiff < 0.28) {
-              // Within ~16 deg of left cone
-              beamBoost = Math.max(beamBoost, (1 - lAngleDiff / 0.28) * 0.45);
+          if (leftAngleRad !== null) {
+            const ldx = p.x - leftLightOrigin.x;
+            const ldy = p.y - leftLightOrigin.y;
+            const lDist = Math.hypot(ldx, ldy);
+            if (lDist > 20) {
+              const lAngle = Math.atan2(ldx, ldy); // angle from vertical
+              const lAngleDiff = Math.abs(lAngle - leftAngleRad);
+              if (lAngleDiff < 0.28) {
+                // Within ~16 deg of left cone
+                beamBoost = Math.max(beamBoost, (1 - lAngleDiff / 0.28) * 0.45);
+              }
             }
           }
 
           // Check Right Beam cone proximity
-          const rdx = p.x - rightLightOrigin.x;
-          const rdy = p.y - rightLightOrigin.y;
-          const rDist = Math.hypot(rdx, rdy);
-          if (rDist > 20) {
-            const rAngle = Math.atan2(rdx, rdy);
-            const rAngleDiff = Math.abs(rAngle - rightAngleRad);
-            if (rAngleDiff < 0.28) {
-              beamBoost = Math.max(beamBoost, (1 - rAngleDiff / 0.28) * 0.45);
+          if (rightAngleRad !== null) {
+            const rdx = p.x - rightLightOrigin.x;
+            const rdy = p.y - rightLightOrigin.y;
+            const rDist = Math.hypot(rdx, rdy);
+            if (rDist > 20) {
+              const rAngle = Math.atan2(rdx, rdy);
+              const rAngleDiff = Math.abs(rAngle - rightAngleRad);
+              if (rAngleDiff < 0.28) {
+                beamBoost = Math.max(beamBoost, (1 - rAngleDiff / 0.28) * 0.45);
+              }
             }
           }
         }
@@ -250,7 +257,10 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
         const tumbleScale = prefersReducedMotion ? 1 : Math.cos(p.tumblePhase);
         ctx.scale(Math.abs(tumbleScale) * 0.85 + 0.15, 1);
 
-        const currentAlpha = Math.min(1, p.alpha + beamBoost);
+        // Fix 8, Section 8: Prioritize center stage readability
+        const isNearCenter = p.x > width * 0.36 && p.x < width * 0.64;
+        const centerClarityFactor = isNearCenter ? 0.65 : 1.0;
+        const currentAlpha = Math.min(1, (p.alpha + beamBoost) * centerClarityFactor);
         ctx.globalAlpha = Math.max(0, currentAlpha);
 
         // Luminous blossom gradient from tip to base

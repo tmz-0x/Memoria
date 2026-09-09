@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, useMotionValue } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, Ticket } from 'lucide-react';
 import { FallingBlossoms } from './FallingBlossoms';
@@ -10,42 +10,11 @@ interface CinematicIntroProps {
 
 export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete }) => {
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const [stageAwakened, setStageAwakened] = useState(false);
   const [moonAppeared, setMoonAppeared] = useState(false);
   const [titleRevealed, setTitleRevealed] = useState(false);
   const [heroSettled, setHeroSettled] = useState(false);
-
-  // Fix 7, Part 1: Concert Spotlight Tracking An Artist Across Stage
-  // Left and Right spotlights are permanently mounted at the left and right corners.
-  // Their beam rotation angles follow the mouse position across the stage smoothly.
-  const leftAngleValue = useMotionValue(34);
-  const rightAngleValue = useMotionValue(-34);
-
-  const smoothLeftAngle = useSpring(leftAngleValue, { stiffness: 45, damping: 20 });
-  const smoothRightAngle = useSpring(rightAngleValue, { stiffness: 45, damping: 20 });
-
-  const leftTransform = useTransform(smoothLeftAngle, (deg) => `rotate(${deg}deg)`);
-  const rightTransform = useTransform(smoothRightAngle, (deg) => `rotate(${deg}deg)`);
-
-  // Subscribed state to pass dynamic beam angles to FallingBlossoms for light cone illumination
-  const [currentLeftAngle, setCurrentLeftAngle] = useState(34);
-  const [currentRightAngle, setCurrentRightAngle] = useState(-34);
-
-  useEffect(() => {
-    const unsubLeft = smoothLeftAngle.on('change', (v) => setCurrentLeftAngle(v));
-    const unsubRight = smoothRightAngle.on('change', (v) => setCurrentRightAngle(v));
-    return () => {
-      unsubLeft();
-      unsubRight();
-    };
-  }, [smoothLeftAngle, smoothRightAngle]);
-
-  // Stage floor pool tracks subtly with the beam intersection
-  const mouseNormX = useMotionValue(0.5);
-  const smoothNormX = useSpring(mouseNormX, { stiffness: 45, damping: 22 });
-  const stagePoolX = useTransform(smoothNormX, [0, 1], ['-15%', '15%']);
 
   // Secondary center stage pool and overhead wash
   const centerPoolOpacity = useMotionValue(0.75);
@@ -83,43 +52,6 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
     };
   }, [onIntroComplete]);
 
-  // Fix 7, Items 4-8: Dynamic beam rotation aiming at the visitor's cursor across stage
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    // Keep target at or below mid-stage so beams aim downward across the performance area
-    const mouseY = Math.max(rect.height * 0.35, e.clientY - rect.top);
-    const normX = Math.max(0, Math.min(1, mouseX / rect.width));
-    mouseNormX.set(normX);
-
-    // Left spotlight anchor is at fixed corner: (rect.width * 0.035, rect.height * 0.02)
-    const leftAnchorX = rect.width * 0.035;
-    const leftAnchorY = rect.height * 0.02;
-    const ldx = mouseX - leftAnchorX;
-    const ldy = mouseY - leftAnchorY;
-    const lAngleDeg = (Math.atan2(ldx, ldy) * 180) / Math.PI;
-    // Controlled theatrical concert range: 12deg (far left) to 58deg (far right)
-    const clampedLeft = Math.max(12, Math.min(58, lAngleDeg));
-    leftAngleValue.set(clampedLeft);
-
-    // Right spotlight anchor is at fixed corner: (rect.width * 0.965, rect.height * 0.02)
-    const rightAnchorX = rect.width * 0.965;
-    const rightAnchorY = rect.height * 0.02;
-    const rdx = mouseX - rightAnchorX;
-    const rdy = mouseY - rightAnchorY;
-    const rAngleDeg = (Math.atan2(rdx, rdy) * 180) / Math.PI;
-    // Controlled theatrical concert range: -58deg (far left) to -12deg (far right)
-    const clampedRight = Math.max(-58, Math.min(-12, rAngleDeg));
-    rightAngleValue.set(clampedRight);
-  };
-
-  const handleMouseLeave = () => {
-    mouseNormX.set(0.5);
-    leftAngleValue.set(34);
-    rightAngleValue.set(-34);
-  };
-
   const scrollToAbout = () => {
     const el = document.getElementById('about');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -127,9 +59,6 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
 
   return (
     <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       className="relative w-full h-screen min-h-[640px] max-h-[1100px] overflow-hidden flex items-center justify-center select-none bg-[#0D0518]"
     >
       {/* Layer 1: Theatrical Stage Backdrop (hero-stage-scene.jpg) */}
@@ -141,12 +70,8 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         />
       </div>
 
-      {/* Layer 2: FIX 7 — ANIMATED FALLING BLOSSOM PETALS FROM FLOWER TREES */}
-      <FallingBlossoms
-        stageAwakened={stageAwakened}
-        leftBeamAngleDeg={currentLeftAngle}
-        rightBeamAngleDeg={currentRightAngle}
-      />
+      {/* Layer 2: FIX 7 & 8 — ANIMATED FALLING BLOSSOM PETALS FROM FLOWER TREES */}
+      <FallingBlossoms stageAwakened={stageAwakened} />
 
       {/* Layer 3: Darkness & Anticipation Overlay (Lifts smoothly after 2 seconds) */}
       <motion.div
@@ -195,64 +120,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         </motion.div>
       </div>
 
-      {/* Layer 5: FIX 7, PART 1 — TWO COMPACT FIXED-CORNER CONCERT SPOTLIGHTS WITH MOUSE TRACKING */}
-      {/* 5a. LEFT CORNER SPOTLIGHT: Permanently fixed at top-left corner, beam rotates to track mouse */}
-      <div className="absolute top-3 left-4 sm:left-8 z-25 pointer-events-none">
-        {/* Compact Theatrical Stage Fixture Housing (Fixed Source - NEVER translates) */}
-        <div className="relative -translate-x-1/2 flex flex-col items-center">
-          <div className="w-6 h-1 bg-slate-400/80 rounded-full mb-0.5 border border-slate-300/40 shadow-xs" />
-          <div className="w-7 h-7 rounded-full bg-gradient-to-b from-slate-700 via-slate-900 to-black border border-[#D4AF37]/80 shadow-[0_0_15px_rgba(212,175,55,0.7)] flex items-center justify-center">
-            <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_10px_#FFF,0_0_18px_#E066FF]" />
-          </div>
-        </div>
-
-        {/* Rotating Concert Beam: Pivots smoothly from fixed fixture lens */}
-        <motion.div
-          style={{
-            opacity: stageAwakened ? 0.92 : 0,
-            transform: leftTransform,
-            transformOrigin: 'top center',
-          }}
-          transition={{ opacity: { duration: 1.2 } }}
-          className="absolute top-[14px] -left-[160px] sm:-left-[180px] w-[320px] sm:w-[360px] h-[780px] sm:h-[950px] pointer-events-none z-20 mix-blend-screen will-change-transform"
-        >
-          <img
-            src="/assets/spotlight-beam.png"
-            alt="Left Corner Concert Spotlight Beam"
-            className="w-full h-full object-fill filter drop-shadow-[0_0_40px_rgba(224,102,255,0.75)] drop-shadow-[0_0_70px_rgba(212,175,55,0.6)]"
-          />
-        </motion.div>
-      </div>
-
-      {/* 5b. RIGHT CORNER SPOTLIGHT: Permanently fixed at top-right corner, beam rotates to track mouse */}
-      <div className="absolute top-3 right-4 sm:right-8 z-25 pointer-events-none">
-        {/* Compact Theatrical Stage Fixture Housing (Fixed Source - NEVER translates) */}
-        <div className="relative translate-x-1/2 flex flex-col items-center">
-          <div className="w-6 h-1 bg-slate-400/80 rounded-full mb-0.5 border border-slate-300/40 shadow-xs" />
-          <div className="w-7 h-7 rounded-full bg-gradient-to-b from-slate-700 via-slate-900 to-black border border-[#D4AF37]/80 shadow-[0_0_15px_rgba(212,175,55,0.7)] flex items-center justify-center">
-            <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_10px_#FFF,0_0_18px_#D4AF37]" />
-          </div>
-        </div>
-
-        {/* Rotating Concert Beam: Pivots smoothly from fixed fixture lens */}
-        <motion.div
-          style={{
-            opacity: stageAwakened ? 0.92 : 0,
-            transform: rightTransform,
-            transformOrigin: 'top center',
-          }}
-          transition={{ opacity: { duration: 1.2 } }}
-          className="absolute top-[14px] -left-[160px] sm:-left-[180px] w-[320px] sm:w-[360px] h-[780px] sm:h-[950px] pointer-events-none z-20 mix-blend-screen will-change-transform"
-        >
-          <img
-            src="/assets/spotlight-beam.png"
-            alt="Right Corner Concert Spotlight Beam"
-            className="w-full h-full object-fill filter drop-shadow-[0_0_40px_rgba(212,175,55,0.75)] drop-shadow-[0_0_70px_rgba(224,102,255,0.6)]"
-          />
-        </motion.div>
-      </div>
-
-      {/* 5c. Supporting Fixed Overhead Downlight (Subordinate Secondary Light) */}
+      {/* Layer 5: Supporting Overhead Stage Downlight & Illumination */}
       <motion.div
         style={{
           opacity: supportingLightOpacity,
@@ -272,9 +140,8 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         style={{
           opacity: centerPoolOpacity,
           scale: centerPoolScale,
-          x: stagePoolX,
         }}
-        className="absolute bottom-[5%] w-[85vw] max-w-3xl h-[190px] rounded-[50%] bg-gradient-radial from-[#E066FF]/65 via-[#D4AF37]/45 to-transparent blur-2xl pointer-events-none z-20"
+        className="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-[85vw] max-w-3xl h-[190px] rounded-[50%] bg-gradient-radial from-[#E066FF]/65 via-[#D4AF37]/45 to-transparent blur-2xl pointer-events-none z-20"
       />
 
       {/* Layer 7: Atmospheric Stage Vignette */}
