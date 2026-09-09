@@ -1,0 +1,250 @@
+FIX 8 — CINEMATIC SPOTLIGHT & FLOWER PARTICLE REFINEMENT
+
+IMPORTANT: Do NOT rebuild the website. Do NOT redesign the existing system. Inspect the current implementation and modify only the relevant cinematic intro, flower-petal animation, and particle behavior.
+
+1. CINEMATIC INTRO — TWO MAIN SPOTLIGHTS
+
+Keep the existing two main spotlights in the cinematic intro.
+
+Fixed positions
+
+There must be exactly two primary cinematic spotlights:
+
+One fixed at the left edge/corner of the cinematic intro.
+One fixed at the right edge/corner of the cinematic intro.
+
+They should look like professional concert/stage spotlights.
+
+CRITICAL — DO NOT MOVE THE SPOTLIGHTS
+
+The physical spotlight sources must remain completely fixed.
+
+DO NOT:
+
+Move the spotlight position.
+Translate the spotlight left/right/up/down.
+Scale the spotlight.
+Make the spotlight larger.
+Change its anchor point.
+Move the light source toward the center.
+Make the beam physically follow the mouse.
+
+The two lights must always remain anchored at their original fixed positions.
+
+2. MOUSE INTERACTION — BRIGHTNESS ONLY
+
+For Fix 8, simplify the mouse interaction.
+
+The main two spotlight brightness/intensity should respond subtly to mouse movement.
+
+The mouse should NOT cause obvious beam movement or rotation.
+
+Desired behavior
+
+When the cursor moves:
+
+Left spotlight brightness changes slightly.
+Right spotlight brightness changes slightly.
+The change should be smooth and subtle.
+The light should feel responsive to the user's presence.
+Keep the effect cinematic and realistic.
+
+Think of a real stage light whose intensity subtly reacts, rather than a spotlight physically moving.
+
+Keep visibility small
+
+Do NOT make the brightness effect excessive.
+
+Use:
+
+Small intensity variation.
+Smooth interpolation.
+No sudden flashing.
+No dramatic pulsing.
+No large glow expansion.
+No large spotlight enlargement.
+
+The spotlight itself remains visually consistent in size.
+
+3. FLOWER / PETAL SIZE
+
+The falling flowers/petals currently appear too large.
+
+Make the falling flowers/petals slightly smaller.
+
+Desired result
+
+Reduce the average petal size enough that:
+
+They look delicate.
+They feel natural.
+They do not dominate the cinematic intro.
+They remain clearly visible.
+They match the scale of the flowers visible in hero-stage-scene.jpg.
+
+Do NOT make them extremely tiny.
+
+The goal is:
+
+Current → slightly too large
+
+Fix 8 → smaller, delicate, elegant petals
+
+Keep variation in size so every petal does not look identical.
+
+4. REDUCE PETAL FALLING IN THE CENTER
+
+There are currently too many falling petals concentrated around the middle/center area of the cinematic intro.
+
+Reduce the number of petals falling directly through the center.
+
+IMPORTANT
+
+The center of the screen should remain relatively clear so the main cinematic composition and stage remain visible.
+
+Instead:
+
+Keep more petals around the left and right tree areas.
+Allow some petals to travel toward the center naturally.
+But significantly reduce the density of petals continuously falling through the exact center.
+
+Do NOT completely remove center petals.
+
+The distribution should feel natural rather than artificially divided.
+
+5. PETAL EMISSION AREAS
+
+Use the actual flower/tree positions from:
+
+assetshero-stage-scene.jpg
+
+Petals should primarily originate from the visible flower trees.
+
+Create or adjust emission zones so that:
+
+LEFT TREE AREA
+→ higher petal emission
+
+RIGHT TREE AREA
+→ higher petal emission
+
+CENTER AREA
+→ lower petal emission
+
+This should make the animation visually connected to the flower trees in the background.
+
+6. PETAL MOTION
+
+Keep the existing slow cinematic falling behavior.
+
+Petals should:
+
+Fall slowly.
+Drift slightly sideways.
+Rotate gently.
+Have different trajectories.
+Have different starting positions.
+Have different delays.
+Avoid synchronized movement.
+
+Do NOT make the petals fall quickly.
+
+Do NOT make them behave like confetti.
+
+They should feel like delicate blossom petals naturally falling from the trees.
+
+7. LAYERING
+
+Keep the existing depth system.
+
+Background petals
+Smaller.
+More subtle.
+Slightly blurred.
+Slower.
+Midground petals
+Medium size.
+Clearly visible.
+Natural movement.
+Foreground petals
+Slightly larger than background petals.
+Still smaller than the current oversized petals.
+Slightly more visible.
+
+Maintain depth without allowing the petals to overpower the stage.
+
+8. CENTER COMPOSITION PRIORITY
+
+The cinematic intro should prioritize the central stage composition.
+
+The visual hierarchy should be:
+
+1. Stage / Memoria cinematic composition
+
+2. Two side spotlights
+
+3. Flower trees
+
+4. Falling petals
+
+The petals are an atmospheric enhancement, not the main visual element.
+
+Keep the center visually readable.
+
+9. DO NOT BREAK EXISTING FEATURES
+
+Do not remove or modify unrelated existing functionality.
+
+Preserve:
+
+Cinematic intro sequence.
+Stage background.
+hero-stage-scene.jpg.
+Navigation reveal timing.
+Existing mouse interactions outside the spotlight behavior.
+Global particle system.
+Lineup section.
+Ticket system.
+Student ticket system.
+Outsider ticket system.
+Registration-number validation.
+Admin.
+Approver.
+Staff check-in.
+Existing routes.
+Existing APIs/mock APIs.
+Responsive behavior.
+10. PERFORMANCE
+
+Keep the petal animation optimized.
+
+Prefer the existing particle/canvas/requestAnimationFrame system if already implemented.
+
+Do not create hundreds of unnecessary DOM elements.
+
+The animation must remain smooth on:
+
+Desktop
+Tablet
+Mobile
+
+Respect reduced-motion preferences where applicable.
+
+FINAL VISUAL TARGET
+
+The cinematic intro should now feel like a premium theatrical stage:
+
+Two compact spotlights fixed at the far left and far right edges.
+Spotlight positions NEVER move.
+Spotlight size NEVER becomes larger.
+Mouse only causes a small, subtle brightness/intensity response.
+Delicate flower petals fall slowly from the visible flower trees.
+Petals are slightly smaller than before.
+Petal density is reduced in the central area.
+Left and right tree areas have stronger natural petal emission.
+Center remains visually clean enough to preserve the main stage composition.
+Petals have natural variation and gentle motion.
+Overall result remains cinematic, elegant, atmospheric, and professional.
+
+Do not interpret this as a request to redesign the intro. This is a refinement/fix of the existing implementation only.. 
+

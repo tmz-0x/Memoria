@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicHome } from './pages/PublicHome';
+import { TicketsPage } from './pages/TicketsPage';
 import { AdminPage } from './pages/AdminPage';
 import { ApprovePage } from './pages/ApprovePage';
 import { CheckinPage } from './pages/CheckinPage';
@@ -13,6 +14,9 @@ export const App: React.FC = () => {
       <Routes>
         {/* Public Theatrical Surface */}
         <Route path="/" element={<PublicHome />} />
+
+        {/* Dedicated Full-Screen Ticketing Surface */}
+        <Route path="/tickets" element={<TicketsPage />} />
 
         {/* Management Portal Authentication */}
         <Route path="/login" element={<LoginPage />} />

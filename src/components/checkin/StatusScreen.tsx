@@ -57,6 +57,16 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
               <strong className="text-white text-sm">{submission.name}</strong>
             </div>
             <div className="flex justify-between border-b border-emerald-500/20 pb-2">
+              <span className="text-slate-400">Category:</span>
+              <span className="font-semibold text-emerald-300">
+                {submission.ticketType === 'student' ? (
+                  <>Student {submission.universityRegistrationNumber ? `(${submission.universityRegistrationNumber})` : ''}</>
+                ) : (
+                  'Outsider'
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between border-b border-emerald-500/20 pb-2">
               <span className="text-slate-400">Pass Allocation:</span>
               <span className="text-emerald-400 font-bold font-mono text-sm">
                 {submission.quantity} Attendee{submission.quantity > 1 ? 's' : ''}

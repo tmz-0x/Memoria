@@ -1,0 +1,699 @@
+MEMORIA'26 — FIX 7
+Fixed Corner Concert Spotlights + Mouse Tracking + Falling Blossom Animation
+
+IMPORTANT: This is Fix 7 for the EXISTING Memoria'26 website.
+
+Do NOT rebuild the project.
+
+Inspect the existing implementation first and modify the current cinematic intro and hero scene.
+
+Preserve all existing:
+
+routing
+ticket system
+/tickets
+student/outsider ticket logic
+admin
+approval
+check-in
+QR system
+particle system
+lineup
+responsive behavior
+Memoria'26 visual design
+
+This fix focuses specifically on:
+
+Correcting the cinematic spotlight positioning and behavior.
+Animating the flowers from hero-stage-scene.jpg so petals slowly fall from the trees toward the ground.
+PART 1 — CINEMATIC INTRO SPOTLIGHTS
+1. DO NOT MAKE THE MAIN SPOTLIGHTS BIGGER
+
+This is an important correction.
+
+The previous implementation made the main spotlight effect too large/prominent.
+
+Do NOT increase the physical size of the spotlight sources.
+
+Do NOT create huge spotlight circles.
+
+Do NOT make the light sources occupy large portions of the screen.
+
+The spotlight sources should remain:
+
+compact theatrical lights positioned at the edges/corners of the cinematic stage.
+
+2. TWO FIXED CORNER SPOTLIGHTS
+
+There must be exactly two primary cinematic spotlights.
+
+LEFT SPOTLIGHT
+
+Place the spotlight at the:
+
+LEFT EDGE / LEFT CORNER
+
+of the cinematic intro.
+
+RIGHT SPOTLIGHT
+
+Place the spotlight at the:
+
+RIGHT EDGE / RIGHT CORNER
+
+of the cinematic intro.
+
+They should feel like actual concert/stage spotlights mounted at the two sides of a stage.
+
+Conceptually:
+
+┌──────────────────────────────────────────────┐
+│                                              │
+│  ●                                         ● │
+│   \                                       /  │
+│    \                                     /   │
+│     \                                   /    │
+│      \                                 /     │
+│       \                               /      │
+│              CENTRAL STAGE                   │
+│                                              │
+└──────────────────────────────────────────────┘
+
+The important point is:
+
+the light sources stay at those fixed edge positions.
+
+3. THE SPOTLIGHT SOURCE NEVER MOVES
+
+The physical spotlight itself must remain fixed.
+
+Do NOT move:
+
+X position
+Y position
+scale
+anchor point
+screen position
+
+The mouse must NOT translate the spotlight.
+
+The spotlight remains anchored to its corner/edge.
+
+For example:
+
+LEFT LIGHT
+     ●
+
+must always remain:
+
+LEFT LIGHT
+     ●
+
+regardless of where the mouse moves.
+
+4. THE BEAM / LIGHT DIRECTION FOLLOWS THE MOUSE
+
+This is the main behavior required.
+
+Use the visual behavior of a live musical concert spotlight following an artist.
+
+Imagine an artist standing on the stage.
+
+The spotlight is physically mounted at the side.
+
+When the artist moves:
+
+the spotlight operator rotates the beam to keep the artist illuminated.
+
+We want this same visual concept.
+
+The light source remains fixed.
+
+Only the beam direction / rotation changes.
+
+5. MOUSE TRACKING BEHAVIOR
+
+When the mouse moves:
+
+Mouse toward LEFT
+
+The left spotlight beam should rotate/aim toward the cursor.
+
+Mouse toward CENTER
+
+Both beams should naturally adjust toward the center stage.
+
+Mouse toward RIGHT
+
+The right spotlight should rotate/aim toward the cursor.
+
+The effect should feel like:
+
+two professional concert spotlights tracking the visitor's position.
+
+6. CRITICAL DISTINCTION
+
+The following must NEVER happen:
+
+❌ spotlight source moves with mouse
+❌ spotlight source translates
+❌ spotlight source grows
+❌ spotlight source shrinks
+❌ spotlight source follows cursor
+❌ spotlight source jumps between positions
+
+Instead:
+
+FIXED LIGHT SOURCE
+       ●
+        \
+         \
+          \     ← rotating beam
+           \
+            ARTIST / CURSOR
+
+The light stays at ●.
+
+Only the beam rotates.
+
+7. ROTATION SHOULD BE VISIBLY NOTICEABLE
+
+The previous rotation was too subtle.
+
+Make the beam rotation clearly visible.
+
+If the mouse moves significantly across the screen, the beam should visibly change angle.
+
+However, keep the movement:
+
+smooth
+controlled
+theatrical
+realistic
+
+Use interpolation/lerp/spring animation.
+
+Do NOT instantly snap the beam to the cursor.
+
+8. REALISTIC CONCERT-SPOTLIGHT BEHAVIOR
+
+The rotation should feel like a real stage light.
+
+For example:
+
+Mouse LEFT:
+
+●\
+  \
+   \
+    STAGE
+
+
+Mouse CENTER:
+
+●
+ \
+  \
+   STAGE
+
+
+Mouse RIGHT:
+
+●
+  \
+   \
+    STAGE
+
+The beam should continuously track the mouse position from the fixed anchor.
+
+The right-side spotlight should behave symmetrically from its own fixed anchor.
+
+9. KEEP THE SPOTLIGHT SIZE CONSISTENT
+
+Do NOT dynamically change spotlight size based on mouse position.
+
+Keep:
+
+source size
+beam scale
+general beam width
+
+relatively consistent.
+
+Only the beam rotation/aim should be the primary mouse interaction.
+
+Brightness can remain within the existing cinematic lighting system, but do not make brightness the main effect of this fix.
+
+The most noticeable interaction should now be:
+
+FIXED LIGHT → ROTATING BEAM → TRACKING MOUSE
+
+10. SPOTLIGHT BEAM QUALITY
+
+The beam should have:
+
+soft edges
+atmospheric haze
+subtle volumetric appearance
+visible cone
+smooth falloff
+cinematic bloom
+theatrical lighting
+
+The beam should be clearly visible against the dark violet environment.
+
+Do not turn it into a solid white triangle.
+
+It should look like actual light passing through atmospheric particles.
+
+PART 2 — HERO STAGE FLOWER TREES
+11. USE THE EXISTING hero-stage-scene.jpg
+
+The existing:
+
+hero-stage-scene.jpg
+
+contains flower/cherry-blossom-style trees.
+
+Do NOT replace the background image.
+
+Do NOT modify the original image destructively.
+
+Keep it as the primary visual background.
+
+The goal is to create the illusion that the flowers from those trees are actually falling into the stage environment.
+
+12. ANIMATE FLOWERS FALLING FROM THE TREES
+
+Create a separate animated flower/petal layer over the hero stage scene.
+
+The flowers should appear to originate from the tree areas visible in:
+
+hero-stage-scene.jpg
+
+and slowly fall downward toward the ground.
+
+Conceptually:
+
+       FLOWER TREE
+      🌸 🌸 🌸 🌸
+        🌸   🌸
+          🌸
+           ↓
+          🌸
+             ↓
+       🌸        🌸
+            ↓
+              🌸
+────────────────────────
+          STAGE FLOOR
+
+The falling flowers should feel connected to the trees in the background.
+
+13. FLOWERS MUST FALL SLOWLY
+
+The falling animation should be:
+
+SLOW + GRACEFUL + NATURAL
+
+Do NOT make the petals fall rapidly.
+
+They should gently drift downward.
+
+Each petal should have slightly different:
+
+speed
+direction
+rotation
+delay
+starting position
+
+This prevents the animation from looking like a repeated loop.
+
+14. MORE VISIBILITY FOR FALLING FLOWERS
+
+The falling petals should be clearly visible.
+
+Do not make them so faint that the visitor cannot see them.
+
+Use:
+
+visible blossom pink
+soft glow where appropriate
+subtle depth blur
+different opacity
+varying sizes
+
+Some petals should be closer and slightly larger.
+
+Some should be farther away and smaller/fainter.
+
+This creates depth.
+
+15. PETALS SHOULD COME FROM TREE AREAS
+
+Do not distribute petals uniformly across the entire screen.
+
+They should primarily originate from the visible flower trees.
+
+For example:
+
+LEFT TREE AREA
+      ↓ ↓ ↓
+
+                  CENTER TREE AREA
+                       ↓ ↓
+
+RIGHT TREE AREA
+       ↓ ↓ ↓
+
+Create several emission/origin zones corresponding to the visible tree locations.
+
+Inspect the existing hero-stage-scene.jpg and align the particle emission areas visually with the actual trees.
+
+16. PETAL MOVEMENT
+
+Do not make petals fall in a straight vertical line.
+
+Give them gentle natural movement:
+
+downward drift
+slight left/right movement
+gentle sideways sway
+slow rotation
+subtle changes in direction
+
+Conceptually:
+
+       🌸
+        \
+         🌸
+          \
+         🌸
+       /
+     🌸
+
+Each petal should have a slightly different trajectory.
+
+17. WIND / AIR MOVEMENT
+
+Add extremely subtle environmental movement.
+
+Petals can occasionally drift sideways as they fall.
+
+The effect should feel like:
+
+a gentle evening breeze moving through the flower trees.
+
+Do NOT create strong wind.
+
+Do NOT make petals fly horizontally.
+
+The dominant movement must remain:
+
+DOWNWARD
+
+with subtle sideways drifting.
+
+18. PETAL ROTATION
+
+Petals should slowly rotate while falling.
+
+Use different rotation directions and speeds.
+
+Some petals:
+
+rotate clockwise
+rotate counter-clockwise
+barely rotate
+rotate slightly more
+
+This adds realism.
+
+19. PETAL DEPTH
+
+Create a layered depth system.
+
+Background petals
+smaller
+dimmer
+slightly blurred
+slower
+Midground petals
+medium size
+visible
+normal opacity
+Foreground petals
+slightly larger
+brighter
+slightly more blurred/glowing
+slower/faster variation
+
+This should create a cinematic 3D-like atmosphere without requiring actual 3D.
+
+20. PETALS SHOULD NOT LOOK LIKE CONFETTI
+
+Avoid:
+
+❌ uniform spacing
+❌ identical petals
+❌ identical trajectories
+❌ identical animation timing
+❌ rapid falling
+❌ horizontal confetti
+❌ repeating obvious loops
+
+The petals should feel naturally released from trees.
+
+21. CONTINUOUS BUT SEAMLESS FLOW
+
+The flower animation should continuously generate/fall petals.
+
+Avoid a noticeable point where:
+
+all petals disappear and restart simultaneously.
+
+Use staggered spawning and randomized delays.
+
+The user should perceive:
+
+continuous natural blossom fall.
+
+22. GROUND ACCUMULATION — OPTIONAL SUBTLE EFFECT
+
+If practical with the existing implementation, allow some petals to visually reach the lower stage/ground area.
+
+They do not necessarily need to physically accumulate.
+
+A subtle impression of petals reaching the stage floor is enough.
+
+Do not cover the stage.
+
+Do not create a large pile.
+
+PART 3 — COMBINE FLOWERS WITH EXISTING ATMOSPHERE
+23. FLOWERS + DUST + LIGHT
+
+The falling petals should interact visually with the existing atmospheric environment.
+
+The final cinematic scene should contain:
+
+fixed left spotlight
+
+
+
+
+fixed right spotlight
+
+
+
+
+rotating beams tracking mouse
+
+
+
+
+flower trees
+
+
+
+
+slowly falling blossom petals
+
+
+
+
+cinematic stage
+
+
+
+
+eclipse/moon atmosphere
+
+The spotlights should make some petals more visible as they pass through the light beams.
+
+24. DO NOT CONFUSE PETALS WITH GLOBAL DUST
+
+Keep two separate particle systems:
+
+GLOBAL DUST
+
+Used throughout the public website and ticketing experience.
+
+CINEMATIC PETALS
+
+Used specifically for the flower-tree animation in the cinematic hero scene.
+
+Do not merge the two systems.
+
+This allows the flower animation to have:
+
+different size
+different physics
+different movement
+different spawn locations
+different visual styling
+25. PERFORMANCE
+
+Implement the falling petals efficiently.
+
+Prefer:
+
+Canvas
+requestAnimationFrame
+reusable particle objects
+efficient transforms
+pooled particles
+
+Avoid creating and destroying large numbers of DOM nodes continuously.
+
+The cinematic intro should remain smooth.
+
+26. RESPONSIVE BEHAVIOR
+
+On desktop:
+
+Use the full two-sided spotlight composition and rich falling petals.
+
+On mobile:
+
+keep left/right spotlight anchors within the viewport
+reduce beam rotation range
+preserve the fixed-source behavior
+reduce petal count if necessary
+keep the falling animation visible
+ensure petals do not cover important text
+27. REDUCED MOTION
+
+Respect:
+
+prefers-reduced-motion.
+
+When enabled:
+
+reduce spotlight rotation
+reduce petal movement
+reduce number of active petals
+preserve the static flower-tree composition
+preserve basic lighting
+28. FINAL ACCEPTANCE TEST — SPOTLIGHTS
+
+[ ] There are exactly two primary cinematic spotlights.
+
+[ ] One is anchored on the left edge/corner.
+
+[ ] One is anchored on the right edge/corner.
+
+[ ] They are NOT oversized.
+
+[ ] Their physical positions never change.
+
+[ ] Their sources never follow the mouse.
+
+[ ] Their sources never translate.
+
+[ ] Their beams rotate from their fixed anchor points.
+
+[ ] Mouse movement visibly changes beam direction.
+
+[ ] Rotation is smooth.
+
+[ ] Rotation feels like a concert spotlight tracking an artist.
+
+[ ] Both beams remain theatrical and clearly visible.
+
+[ ] The lights do not randomly move around the screen.
+
+29. FINAL ACCEPTANCE TEST — FLOWERS
+
+[ ] hero-stage-scene.jpg remains the background.
+
+[ ] Existing flower trees remain visible.
+
+[ ] Falling flowers originate visually from the tree areas.
+
+[ ] Petals are clearly visible.
+
+[ ] Petals fall slowly.
+
+[ ] Petals have varied trajectories.
+
+[ ] Petals gently rotate.
+
+[ ] Petals have varied sizes and opacity.
+
+[ ] Petals have subtle depth.
+
+[ ] Petals do not look like confetti.
+
+[ ] Petals do not all fall simultaneously.
+
+[ ] The animation loops seamlessly.
+
+[ ] The effect remains cinematic and elegant.
+
+FINAL CREATIVE TARGET
+
+The cinematic intro should feel like a live musical performance before the artist begins.
+
+There are two compact professional stage spotlights fixed at the:
+
+LEFT EDGE
+
+and
+
+RIGHT EDGE
+
+of the stage.
+
+They do not move.
+
+When the visitor moves the mouse, the spotlight beams rotate from their fixed mounting points, just like real concert spotlights tracking an artist moving across a stage.
+
+The light sources remain anchored.
+
+Only the beam direction changes.
+
+Behind and around the stage, the flower trees from:
+
+hero-stage-scene.jpg
+
+come alive.
+
+Blossoms slowly release from the branches and drift down toward the stage.
+
+The flowers should be:
+
+visible + graceful + slow + varied + cinematic.
+
+Some petals pass through the spotlight beams and become more visible.
+
+The final scene should feel like:
+
+a moonlit theatrical stage + live concert lighting + falling blossoms + magical atmospheric depth.
+
+Do not make it look like a generic web animation.
+
+Make it feel like the visitor has stepped directly into the opening scene of:
+
+MEMORIA'26 — THE ECLIPSE OF MEMORIES.

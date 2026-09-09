@@ -70,6 +70,26 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Attendee Details Grid */}
         <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-200/70 pb-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Ticket Category</span>
+            {submission.ticketType === 'student' ? (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-purple-100 text-purple-700">
+                University Student
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-slate-100 text-slate-700">
+                Outsider
+              </span>
+            )}
+          </div>
+
+          {submission.ticketType === 'student' && submission.universityRegistrationNumber && (
+            <div className="flex items-center justify-between border-b border-slate-200/70 pb-2.5 text-xs">
+              <span className="text-slate-500 font-medium">University Reg No:</span>
+              <span className="font-mono font-bold text-purple-700 text-sm">{submission.universityRegistrationNumber}</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2.5 text-xs text-slate-600">
             <Mail className="w-4 h-4 text-slate-400 shrink-0" />
             <span className="font-semibold text-slate-800">{submission.email}</span>
@@ -83,7 +103,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             <span>
               Requested Allocation:{' '}
               <strong className="text-slate-900 font-bold">
-                {submission.quantity} Passes &bull; Rs. {(submission.quantity * 1000).toLocaleString()}
+                {submission.quantity} {submission.quantity > 1 ? 'Passes' : 'Pass'} &bull; Rs. {(submission.totalPrice ?? (submission.ticketType === 'student' ? 200 : submission.quantity * 1000)).toLocaleString()}
               </strong>
             </span>
           </div>
@@ -120,7 +140,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             />
           </div>
           <p className="text-[11px] text-slate-500 mt-1.5">
-            Verify account number: <strong>8942-0012-3841-992</strong> and amount equals <strong>Rs. {(submission.quantity * 1000).toLocaleString()}</strong>.
+            Verify account number: <strong>8942-0012-3841-992</strong> and amount equals <strong>Rs. {(submission.totalPrice ?? (submission.ticketType === 'student' ? 200 : submission.quantity * 1000)).toLocaleString()}</strong>.
           </p>
         </div>
 

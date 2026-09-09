@@ -30,6 +30,11 @@ const FAQS: FAQItem[] = [
       'Your e-ticket arrives as a secure mobile-ready PDF with a unique cryptographically signed QR code. You can present it directly on your smartphone screen at the entrance scanners, or bring a printed copy.',
   },
   {
+    question: 'What is the difference between University Student and Outsider tickets?',
+    answer:
+      'University Student passes are priced at Rs. 200 and require a valid, unique University Registration Number (e.g. FC122716). Each registration number is strictly eligible for only one student pass. Outsider passes are Rs. 1,000 for external guests, alumni, and general attendees (up to 5 passes per reservation).',
+  },
+  {
     question: 'Why would a ticket submission be rejected and what is the process?',
     answer:
       'Submissions are only rejected if the uploaded payment slip is unreadable, indicates an incorrect transfer amount, or lacks a matching bank reference number. In such cases, our approver notes the reason, and you can submit a corrected slip.',
@@ -44,7 +49,7 @@ export const FAQ: React.FC = () => {
   };
 
   return (
-    <section id="faq" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-[#0D0518]">
+    <section id="faq" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-transparent">
       <div className="max-w-4xl mx-auto">
         <SectionDivider />
 

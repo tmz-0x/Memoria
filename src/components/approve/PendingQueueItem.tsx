@@ -41,11 +41,18 @@ export const PendingQueueItem: React.FC<PendingQueueItemProps> = ({
             {submission.email} &bull; {submission.phone}
           </p>
 
-          <div className="flex items-center gap-2 mt-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-              <Ticket className="w-3 h-3" />
-              {submission.quantity} {submission.quantity > 1 ? 'Tickets' : 'Ticket'} (Rs. {(submission.quantity * 1000).toLocaleString()})
-            </span>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            {submission.ticketType === 'student' ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                <Ticket className="w-3 h-3" />
+                Student {submission.universityRegistrationNumber ? `• ${submission.universityRegistrationNumber}` : ''} (Rs. {(submission.totalPrice ?? 200).toLocaleString()})
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                <Ticket className="w-3 h-3" />
+                {submission.quantity} Outsider Pass{submission.quantity > 1 ? 'es' : ''} (Rs. {(submission.totalPrice ?? submission.quantity * 1000).toLocaleString()})
+              </span>
+            )}
             <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
               <Clock className="w-3 h-3" />
               {new Date(submission.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

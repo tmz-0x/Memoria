@@ -5,13 +5,13 @@ import { Sparkles } from 'lucide-react';
 
 export const About: React.FC = () => {
   return (
-    <section id="about" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0D0518] via-[#1A0D2E]/80 to-[#0D0518]">
+    <section id="about" className="relative pt-6 pb-20 px-4 sm:px-6 lg:px-8 bg-transparent">
       <div className="max-w-6xl mx-auto">
         {/* Theatrical Scene Transition Divider */}
-        <SectionDivider />
+        <SectionDivider className="!py-6" />
 
         {/* Story Intro Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-14">
           <motion.span
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -39,7 +39,7 @@ export const About: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="font-body text-base sm:text-lg text-[#F0E6FA]/80 mt-6 leading-relaxed font-light"
+            className="font-body text-base sm:text-lg text-[#F0E6FA]/80 mt-5 leading-relaxed font-light"
           >
             Memoria&apos;26 is not merely a concert. It is an immersive nocturnal odyssey where music, theatrical drama, and celestial wonder intertwine. An eclipse marks the rare, breathtaking cosmic convergence where the light gives way to sacred memory—and tonight, we bring that shadow to life.
           </motion.p>

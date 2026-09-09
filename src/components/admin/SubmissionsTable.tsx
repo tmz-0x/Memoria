@@ -17,6 +17,7 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions 
     const matchesSearch =
       s.name.toLowerCase().includes(term) ||
       s.email.toLowerCase().includes(term) ||
+      (s.universityRegistrationNumber && s.universityRegistrationNumber.toLowerCase().includes(term)) ||
       (s.ticketId && s.ticketId.toLowerCase().includes(term)) ||
       s.id.toLowerCase().includes(term);
     return matchesFilter && matchesSearch;
@@ -41,8 +42,8 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions 
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, or ticket ID..."
-              className="pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs w-64 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              placeholder="Search by name, email, reg no, ticket ID..."
+              className="pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs w-68 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
 
@@ -72,8 +73,8 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions 
             <tr>
               <th className="px-6 py-3.5">Submission ID</th>
               <th className="px-6 py-3.5">Attendee</th>
-              <th className="px-6 py-3.5">Contact</th>
-              <th className="px-6 py-3.5">Qty</th>
+              <th className="px-6 py-3.5">Category</th>
+              <th className="px-6 py-3.5">Passes & Fee</th>
               <th className="px-6 py-3.5">Status</th>
               <th className="px-6 py-3.5">Ticket ID</th>
               <th className="px-6 py-3.5">Gate Status</th>
@@ -86,13 +87,34 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions 
                 <td className="px-6 py-4 font-mono font-medium text-slate-700">{sub.id}</td>
                 <td className="px-6 py-4">
                   <span className="font-semibold text-slate-900 block">{sub.name}</span>
-                  <span className="text-[11px] text-slate-400">{new Date(sub.submittedAt).toLocaleDateString()}</span>
+                  <span className="text-[11px] text-slate-400">{sub.email} &bull; {sub.phone}</span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="block text-slate-700">{sub.email}</span>
-                  <span className="text-[11px] text-slate-400">{sub.phone}</span>
+                  {sub.ticketType === 'student' ? (
+                    <div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
+                        Student
+                      </span>
+                      {sub.universityRegistrationNumber && (
+                        <span className="block font-mono text-[11px] font-bold text-slate-700 mt-0.5">
+                          {sub.universityRegistrationNumber}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+                      Outsider
+                    </span>
+                  )}
                 </td>
-                <td className="px-6 py-4 font-semibold text-slate-900">{sub.quantity}</td>
+                <td className="px-6 py-4">
+                  <span className="font-semibold text-slate-900 block">
+                    {sub.quantity} {sub.quantity > 1 ? 'Passes' : 'Pass'}
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-600 font-bold">
+                    Rs. {(sub.totalPrice ?? (sub.ticketType === 'student' ? 200 : sub.quantity * 1000)).toLocaleString()}
+                  </span>
+                </td>
                 <td className="px-6 py-4">
                   {sub.status === 'approved' && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">

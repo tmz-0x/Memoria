@@ -1,0 +1,1306 @@
+MEMORIA'26 — FIX PASS 3
+2-Second Cinematic Intro + Fixed Spotlight + Mouse-Reactive Dust/Sparkle Gathering
+
+You are modifying the existing Memoria'26 website.
+
+This is Fix Pass 3.
+
+Do NOT rebuild the website.
+
+Do NOT replace the existing architecture unnecessarily.
+
+Do NOT remove working functionality.
+
+Do NOT undo the requirements from Fix Pass 1 and Fix Pass 2 unless this prompt explicitly changes them.
+
+First inspect the current implementation and then make only the necessary changes.
+
+1. IMPORTANT — UNDERSTAND THE NEW SPOTLIGHT RULE
+
+There is a critical change to the cinematic intro.
+
+The spotlight inside:
+
+CinematicIntro
+
+must now be COMPLETELY FIXED IN POSITION.
+
+It must NOT:
+
+rotate
+sweep
+move left/right
+follow scroll
+follow mouse position
+translate across the stage
+automatically animate its position
+
+The physical spotlight beam remains stationary.
+
+Only its:
+
+BRIGHTNESS / INTENSITY
+
+should respond subtly to the visitor's mouse movement.
+
+This is the most important change in Fix Pass 3.
+
+2. REDUCE CINEMATIC INTRO TIME
+
+The previous cinematic introduction used approximately:
+
+3 seconds
+
+Change this to:
+
+2 SECONDS
+
+The initial cinematic anticipation should now be approximately 2 seconds.
+
+Desired sequence:
+
+PAGE LOAD
+
+↓
+
+Dark theatre
+
+↓
+
+Fixed spotlight focused on stage
+
+↓
+
+2-second anticipation
+
+↓
+
+Automatic cinematic reveal
+
+↓
+
+Hero becomes visible
+
+↓
+
+Navigation appears
+
+↓
+
+Normal website interaction
+
+Do NOT make the visitor wait 3 seconds anymore.
+
+3. 2-SECOND INTRO TIMELINE
+
+Use approximately this timing:
+
+0.0 seconds
+
+Website loads.
+
+Screen is dark.
+
+Fixed spotlight is already positioned toward the stage.
+
+Very subtle atmospheric lighting.
+
+No navigation.
+
+No large title.
+
+No ticket interface.
+
+0.0–2.0 seconds
+
+The visitor experiences the theatrical anticipation.
+
+The spotlight remains physically fixed.
+
+Do NOT move the spotlight.
+
+Do NOT rotate it.
+
+Do NOT sweep it.
+
+Only its brightness may subtly react to mouse movement.
+
+Around 2.0 seconds
+
+Automatically begin revealing the starting page.
+
+Reveal the existing cinematic elements naturally:
+
+stage
+atmosphere
+moon/crescent
+event identity
+hero content
+navigation
+CTA
+
+Do not reveal everything in a single hard cut.
+
+Use a short coordinated reveal.
+
+4. THE CINEMATIC SPOTLIGHT MUST BE FIXED
+
+Inside CinematicIntro, establish one fixed spotlight position.
+
+For example:
+
+beam originates from the upper-left or upper corner
+beam remains aimed at the stage
+position never changes
+rotation never changes
+
+The exact visual position should preserve the existing cinematic design.
+
+The important requirement is:
+
+POSITION = CONSTANT
+ROTATION = CONSTANT
+SCALE = CONSTANT
+
+Only light intensity may change.
+
+5. REMOVE ALL CINEMATIC SPOTLIGHT MOVEMENT
+
+Inspect the existing CinematicIntro code.
+
+Remove or disable any animation affecting spotlight:
+
+x
+y
+rotate
+translateX
+translateY
+positional useTransform
+positional useSpring
+scroll-linked spotlight movement
+automatic spotlight keyframes
+
+Do not leave a hidden competing animation running.
+
+There must be exactly one visual state for the spotlight's physical position.
+
+The spotlight should appear as if it is mounted in a fixed theatrical lighting position.
+
+6. MOUSE SHOULD CONTROL ONLY BRIGHTNESS
+
+The mouse interaction inside CinematicIntro should affect only the light intensity.
+
+When the mouse moves:
+
+The spotlight should become subtly brighter or dimmer depending on the mouse's relationship to the stage/light area.
+
+It should NOT physically follow the mouse.
+
+Example behavior:
+
+Mouse approaches relevant area:
+
+↓
+
+spotlight becomes slightly brighter
+
+Mouse moves away:
+
+↓
+
+spotlight becomes slightly dimmer
+
+The effect must be extremely subtle.
+
+The visitor should feel:
+
+"The light is reacting to me."
+
+Not:
+
+"The spotlight is following my cursor."
+
+7. BRIGHTNESS RESPONSE MUST BE SMOOTH
+
+Do not instantly change opacity based on mouse coordinates.
+
+Use smoothing.
+
+Recommended approach:
+
+calculate mouse position
+calculate normalized influence
+convert influence to light intensity
+smooth the result with a MotionValue / spring / interpolation
+
+The spotlight should have slight inertia.
+
+Example conceptual range:
+
+Normal brightness:
+
+~0.55–0.70
+
+Mouse influence:
+
+increase toward ~0.75–0.90
+
+Do not make the spotlight suddenly flash at full brightness.
+
+Avoid dramatic brightness pulsing.
+
+8. MOUSE INTERACTION MUST NOT CHANGE SPOTLIGHT POSITION
+
+This is a strict rule.
+
+Mouse movement may change:
+
+opacity
+brightness
+glow intensity
+very subtle atmospheric illumination
+
+Mouse movement must NOT change:
+
+X
+Y
+rotation
+scale
+beam direction
+
+The spotlight remains fixed.
+
+9. DO NOT USE SCROLL FOR CINEMATIC INTRO
+
+The Fix 2 requirement remains active.
+
+The opening cinematic must remain:
+
+AUTOMATIC
+
+The visitor does not need to scroll to trigger the introduction.
+
+Do not reintroduce scroll-controlled cinematic behavior.
+
+The page should automatically reveal the hero after approximately 2 seconds.
+
+10. NORMAL PAGE SCROLLING REMAINS
+
+Do NOT disable normal scrolling for the whole website.
+
+After the automatic intro:
+
+The visitor can scroll normally through:
+
+Hero
+
+↓
+
+Story
+
+↓
+
+Lineup
+
+↓
+
+Other sections
+
+↓
+
+Footer
+
+The distinction is:
+
+CinematicIntro
+
+Automatic.
+
+Main website
+
+Normally scrollable.
+
+Lineup spotlight
+
+Still scroll-linked.
+
+11. IMPORTANT — LINEUP SPOTLIGHT IS NOT CHANGED
+
+Do NOT apply the fixed spotlight rule from CinematicIntro to the Lineup spotlight.
+
+The Lineup spotlight must continue to work according to Fix 2.
+
+When scrolling DOWN:
+
+LEFT → RIGHT
+
+When scrolling UP:
+
+RIGHT → LEFT
+
+It must use the full width of the Lineup section.
+
+The Lineup spotlight remains scroll-controlled.
+
+Only the spotlight inside CinematicIntro becomes fixed.
+
+12. NEW STAR-SPARKLE / DUST BEHAVIOR
+
+The star-sparkle system must now behave differently.
+
+When referring to "star sparkles", treat them primarily as:
+
+tiny glowing particles / dust / atmospheric particles
+
+rather than large decorative stars.
+
+They should feel like illuminated dust floating in the air.
+
+Visual characteristics:
+
+very small
+soft glow
+low opacity
+slightly blurred
+different sizes
+slow movement
+atmospheric
+elegant
+sparse
+
+Avoid large obvious five-point stars.
+
+13. IMPORTANT — NO PARTICLES INSIDE CINEMATICINTRO
+
+The new mouse-reactive dust/sparkle gathering effect must NOT exist inside:
+
+CinematicIntro
+
+Keep the cinematic intro visually clean.
+
+The intro should focus on:
+
+darkness
+stage
+fixed spotlight
+cinematic reveal
+moon/eclipsed atmosphere
+event identity
+
+Do not fill the intro with the new mouse-reactive dust gathering system.
+
+If there is already a particle effect inside CinematicIntro, reduce/remove it if necessary so it does not conflict with this requirement.
+
+14. PARTICLES MUST EXIST THROUGHOUT THE OTHER PUBLIC SECTIONS
+
+The mouse-reactive dust/sparkle system should exist across the rest of the public website.
+
+Use it in sections such as:
+
+Hero after intro
+Story/About
+Lineup
+Event information
+Charity
+Contact
+Footer
+
+Do NOT place it inside the cinematic introduction.
+
+The goal is to make the main website feel like it exists inside a continuous magical night atmosphere.
+
+15. PARTICLES SHOULD SLOWLY GATHER TOWARD THE MOUSE
+
+This is the core new interaction.
+
+When the mouse moves:
+
+Nearby dust particles should slowly begin gathering toward the mouse pointer.
+
+Conceptually:
+
+NORMAL STATE
+
+Particles are naturally distributed.
+
+↓
+
+MOUSE MOVES
+
+↓
+
+Nearby particles detect the pointer.
+
+↓
+
+Particles slowly drift toward the pointer.
+
+↓
+
+A subtle cluster forms around the mouse.
+
+↓
+
+Mouse moves elsewhere.
+
+↓
+
+The previous particles slowly disperse / settle.
+
+↓
+
+Particles around the new position begin gathering.
+
+This should feel like:
+
+magical dust responding to the visitor's presence.
+
+16. DO NOT MAKE PARTICLES CHASE THE MOUSE
+
+This is NOT a cursor-following particle effect.
+
+Do not make every particle follow the mouse.
+
+Do not make the particles move aggressively.
+
+Do not make them snap into a circle around the cursor.
+
+Do not make them form a perfect geometric shape.
+
+The movement should be:
+
+slow
+organic
+imperfect
+subtle
+atmospheric
+
+The user should notice the environment responding, not the implementation mechanics.
+
+17. PARTICLE INFLUENCE RADIUS
+
+Only particles reasonably close to the mouse should be significantly affected.
+
+Example concept:
+
+Mouse influence radius:
+
+approximately 120–220px
+
+Particles outside that area:
+
+almost unaffected.
+
+Particles close to mouse:
+
+slowly attracted.
+
+Particles directly near mouse:
+
+slightly stronger attraction.
+
+Do not pull the entire particle field toward one location.
+
+18. PARTICLE GATHERING STRENGTH
+
+Keep the attraction relatively weak.
+
+The particle should not instantly reach the pointer.
+
+Use a low attraction force and smooth interpolation.
+
+Conceptual behavior:
+
+distance far:
+
+attraction = very low
+
+distance medium:
+
+attraction = moderate
+
+distance close:
+
+attraction = slightly stronger
+
+The result should be a soft gathering effect.
+
+19. PARTICLE MOVEMENT SHOULD HAVE NATURAL DRIFT
+
+Even without mouse interaction, particles should continue their normal atmospheric movement.
+
+They should:
+
+drift slowly
+move vertically
+have subtle horizontal movement
+vary in opacity
+vary in size
+move at different speeds
+
+Mouse interaction should influence this existing movement rather than completely replacing it.
+
+Therefore:
+
+NORMAL PARTICLE MOTION
+
+
+
+
+SUBTLE MOUSE ATTRACTION
+
+=
+
+FINAL EFFECT
+
+20. PARTICLE SYSTEM MUST BE SHARED
+
+Do not create a separate particle system for every section.
+
+Prefer one reusable:
+
+ParticleField
+
+or equivalent system.
+
+It can be mounted at the appropriate public-page/root level and visually positioned behind sections.
+
+The implementation should avoid:
+
+duplicate particle systems
+multiple animation loops
+unnecessary React state
+separate mouse listeners for every section
+21. PARTICLE LAYERING
+
+Particles must appear:
+
+ABOVE:
+
+background
+
+section backgrounds
+
+atmospheric textures
+
+BELOW:
+
+text
+
+buttons
+
+navigation
+
+cards
+
+forms
+
+interactive UI
+
+They must never block interaction.
+
+Use appropriate:
+
+z-index
+
+and:
+
+pointer-events: none
+
+where necessary.
+
+The mouse detection should happen through one controlled listener/system rather than particles intercepting pointer events.
+
+22. PARTICLE MOUSE TRACKING
+
+Use the mouse position efficiently.
+
+Do not trigger a React component re-render for every mouse movement.
+
+Prefer:
+
+Framer Motion MotionValues
+refs
+requestAnimationFrame
+transforms
+spring interpolation
+
+The system must remain performant.
+
+23. DESKTOP MOUSE BEHAVIOR
+
+On desktop:
+
+Mouse movement:
+
+↓
+
+Nearby dust reacts.
+
+↓
+
+Particles gently gather.
+
+↓
+
+Mouse stops:
+
+↓
+
+Particles slowly settle.
+
+The interaction should continue throughout the public website except CinematicIntro.
+
+24. MOBILE BEHAVIOR
+
+There is no mouse on mobile.
+
+Therefore:
+
+Disable mouse attraction on touch devices.
+
+Keep the normal particle drift.
+
+Reduce particle count if necessary.
+
+The visual atmosphere must still remain.
+
+Do not create artificial touch-following behavior unless it already exists and is genuinely useful.
+
+25. PARTICLE DENSITY
+
+Use approximately:
+
+Desktop:
+
+40–60 particles
+
+Mobile:
+
+20–35 particles
+
+Adjust based on actual performance.
+
+Do not use hundreds or thousands of DOM particles.
+
+The effect must remain premium, not noisy.
+
+26. PARTICLE VISUAL DESIGN
+
+Avoid making particles look like:
+
+stars from a children's animation
+snow
+fireflies
+glitter explosion
+gaming particles
+neon dots
+
+Instead make them resemble:
+
+fine illuminated dust floating through theatrical moonlight.
+
+Some particles should be barely visible.
+
+Some should glow slightly more.
+
+Some should disappear temporarily.
+
+Variation is important.
+
+27. MAIN WEBSITE ATMOSPHERE
+
+The particles should visually connect the sections.
+
+For example:
+
+Hero:
+
+stronger dust
+
+↓
+
+Story:
+
+particles slowly drift through the scene
+
+↓
+
+Lineup:
+
+dust passes through spotlight
+
+↓
+
+Event information:
+
+subtle moonlit dust
+
+↓
+
+Charity:
+
+soft atmospheric particles
+
+↓
+
+Contact:
+
+minimal dust
+
+↓
+
+Footer:
+
+slightly stronger night atmosphere
+
+This should make the entire website feel like one environment.
+
+28. CINEMATICINTRO SHOULD REMAIN CLEAN
+
+Do not overload the cinematic intro with the new particle gathering effect.
+
+Its hierarchy must remain:
+
+DARKNESS
+
+↓
+
+FIXED SPOTLIGHT
+
+↓
+
+2-SECOND ANTICIPATION
+
+↓
+
+CINEMATIC REVEAL
+
+↓
+
+MOON / ECLIPSE
+
+↓
+
+MEMORIA'26
+
+↓
+
+HERO
+
+The particle gathering effect belongs to the main website atmosphere, not the cinematic entrance.
+
+29. NAVIGATION BEHAVIOR
+
+Keep the Fix 2 behavior.
+
+During the first approximately 2 seconds:
+
+Navigation hidden.
+
+After cinematic reveal:
+
+Navigation appears.
+
+The navigation must not appear instantly at page load.
+
+Do not use a separate unrelated timer for the navbar.
+
+Prefer tying its reveal to the cinematic intro state.
+
+30. TICKET SYSTEM REMAINS SEPARATE
+
+Do not undo Fix 2.
+
+The ticket purchase interface must remain a dedicated page/interface.
+
+Main website:
+
+BOOK TICKET
+
+↓
+
+Navigate to:
+
+/tickets
+
+Ticket interface contains:
+
+event ticket information
+price
+date
+venue
+how to buy
+bank details
+payment form
+payment slip upload
+pending state
+approval state
+
+The main website should NOT contain the checkout form.
+
+31. DO NOT MODIFY ADMIN / APPROVER / CHECK-IN UNNECESSARILY
+
+Keep:
+
+/admin
+
+/approve
+
+/checkin
+
+working.
+
+Do not add the public mouse-reactive particle atmosphere to these administrative interfaces.
+
+Do not add cinematic animations to them.
+
+They remain professional interfaces.
+
+32. PERFORMANCE REQUIREMENTS
+
+This interaction must be lightweight.
+
+Do NOT:
+
+update React state for every particle on every mouse event
+create a separate event listener per particle
+create a separate requestAnimationFrame loop per section
+create hundreds of DOM nodes
+use expensive blur filters on every particle
+cause layout recalculation continuously
+
+Use GPU-friendly transforms.
+
+Prefer:
+
+transform
+
+opacity
+
+and limited filter effects.
+
+33. CLEANUP REQUIREMENTS
+
+If the particle system or mouse tracker uses:
+
+event listeners
+requestAnimationFrame
+timers
+subscriptions
+
+clean them up when the component unmounts.
+
+Do not leave global listeners running after navigation.
+
+This is particularly important because users can navigate:
+
+Main website
+
+↓
+
+Tickets
+
+↓
+
+Back to Event
+
+The particle system must initialize/cleanup correctly.
+
+34. REDUCED MOTION
+
+Respect:
+
+prefers-reduced-motion
+
+If enabled:
+
+CinematicIntro
+shorten or simplify the 2-second cinematic
+keep spotlight fixed
+minimize brightness animation
+reveal content clearly
+Particles
+disable mouse attraction
+reduce or disable continuous particle movement
+keep a static/subtle atmosphere
+Main website
+
+All content must remain fully usable.
+
+35. IMPORTANT CODE ARCHITECTURE
+
+Before changing the code, identify:
+
+CinematicIntro
+spotlight component
+ParticleField
+public page root
+Hero
+Lineup
+navigation
+ticket route
+
+Then modify the existing components.
+
+Do not create:
+
+CinematicIntroV2
+
+ParticleFieldNew
+
+SpotlightNew
+
+or duplicate systems unless absolutely necessary.
+
+Refactor the existing components instead.
+
+36. SPOTLIGHT IMPLEMENTATION CHECK
+
+After modification, verify that the CinematicIntro spotlight has:
+
+Position
+
+FIXED
+
+Rotation
+
+FIXED
+
+Scroll influence
+
+NONE
+
+Mouse position influence
+
+NONE
+
+Mouse brightness influence
+
+YES
+
+Automatic position animation
+
+NONE
+
+Automatic brightness variation
+
+Only subtle if desired
+
+The spotlight must visually remain in the same location.
+
+37. PARTICLE IMPLEMENTATION CHECK
+
+After modification, verify:
+
+CinematicIntro
+
+New gathering particles:
+
+OFF
+
+Main public website
+
+Dust particles:
+
+ON
+
+Mouse attraction
+
+ON
+
+Particle movement
+
+Slow gathering toward mouse
+
+Particle behavior
+
+Organic, not robotic
+
+Mobile mouse interaction
+
+OFF
+
+Particle layer
+
+Behind UI
+
+Performance
+
+Optimized
+
+38. FINAL USER EXPERIENCE
+
+The final experience should feel like this:
+
+OPEN
+
+User enters the website.
+
+↓
+
+Dark theatrical environment.
+
+↓
+
+Fixed spotlight is focused on the stage.
+
+↓
+
+Approximately 2 seconds of anticipation.
+
+↓
+
+The cinematic scene automatically reveals.
+
+↓
+
+Moon / atmosphere / event identity emerge.
+
+↓
+
+Hero becomes visible.
+
+↓
+
+Navigation appears.
+
+↓
+
+The fixed spotlight remains physically fixed.
+
+↓
+
+Mouse movement subtly changes the brightness of the spotlight.
+
+MAIN WEBSITE
+
+User scrolls normally.
+
+↓
+
+Story
+
+↓
+
+Lineup
+
+↓
+
+Event information
+
+↓
+
+Charity
+
+↓
+
+Contact
+
+↓
+
+Footer
+
+Throughout these sections:
+
+Fine atmospheric dust particles float.
+
+When the mouse moves:
+
+Nearby dust slowly gathers toward the mouse.
+
+When the mouse moves away:
+
+The previous cluster slowly disperses.
+
+The environment feels alive.
+
+LINEUP
+
+User scrolls down:
+
+Spotlight moves:
+
+FULL LEFT → FULL RIGHT
+
+User scrolls up:
+
+Spotlight moves:
+
+FULL RIGHT → FULL LEFT
+
+The lineup spotlight remains scroll-controlled.
+
+TICKETS
+
+User clicks:
+
+BOOK TICKET
+
+↓
+
+Dedicated ticket interface.
+
+The main website remains separate from checkout.
+
+39. FINAL ACCEPTANCE TEST
+
+Before considering the fix complete, test the actual running website.
+
+CINEMATIC INTRO
+
+[ ] Opening starts automatically.
+
+[ ] No scroll is required.
+
+[ ] Initial anticipation is approximately 2 seconds.
+
+[ ] It is NOT 3 seconds.
+
+[ ] Spotlight is focused on the stage.
+
+[ ] Spotlight position remains completely fixed.
+
+[ ] Spotlight does not rotate.
+
+[ ] Spotlight does not move left/right.
+
+[ ] Spotlight does not follow the mouse.
+
+[ ] Mouse only affects spotlight brightness/intensity.
+
+[ ] Brightness response is subtle.
+
+[ ] Brightness response is smooth.
+
+[ ] Cinematic reveal happens automatically.
+
+[ ] Navigation appears after reveal.
+
+[ ] Page does not automatically scroll to another section.
+
+PARTICLES
+
+[ ] New dust/sparkle system is NOT active inside CinematicIntro.
+
+[ ] Dust particles exist throughout the rest of the public website.
+
+[ ] Particles look like atmospheric dust.
+
+[ ] Particles have varied size/opacity.
+
+[ ] Particles drift naturally.
+
+[ ] Mouse movement causes nearby particles to gather slowly.
+
+[ ] Particles do not aggressively chase the mouse.
+
+[ ] Particles do not all gather together.
+
+[ ] Mouse influence is localized.
+
+[ ] Particles slowly settle when mouse stops.
+
+[ ] Particles remain behind UI.
+
+[ ] Particles do not block buttons.
+
+[ ] Desktop interaction works.
+
+[ ] Mobile disables mouse attraction.
+
+LINEUP
+
+[ ] Spotlight remains scroll-controlled.
+
+[ ] Scrolling down moves spotlight LEFT → RIGHT.
+
+[ ] Scrolling up moves spotlight RIGHT → LEFT.
+
+[ ] Movement covers the full lineup width.
+
+[ ] Spotlight does not autoplay.
+
+TICKET
+
+[ ] Main website does not contain checkout form.
+
+[ ] Book Ticket navigates to dedicated ticket interface.
+
+[ ] Ticket interface works.
+
+[ ] Back to Event works.
+
+[ ] Existing submission workflow remains functional.
+
+[ ] Approver can still process submissions.
+
+TECHNICAL
+
+[ ] No console errors.
+
+[ ] No broken imports.
+
+[ ] No broken assets.
+
+[ ] No duplicate particle systems.
+
+[ ] No duplicate mouse listeners.
+
+[ ] No memory leaks.
+
+[ ] No excessive React renders.
+
+[ ] Desktop works.
+
+[ ] Mobile works.
+
+[ ] Reduced-motion mode works.
+
+[ ] Admin works.
+
+[ ] Approver works.
+
+[ ] Check-in works.
+
+40. FINAL NON-NEGOTIABLE RULES
+
+Remember these five rules above everything else:
+
+RULE 1
+
+CinematicIntro spotlight NEVER MOVES.
+
+It is physically fixed.
+
+RULE 2
+
+CinematicIntro spotlight brightness MAY react to mouse movement.
+
+Brightness only.
+
+RULE 3
+
+Cinematic intro anticipation = approximately 2 seconds.
+
+Not 3 seconds.
+
+RULE 4
+
+Mouse-reactive dust particles belong throughout the main public website, NOT inside CinematicIntro.
+
+RULE 5
+
+Dust particles slowly gather toward the mouse; they do NOT chase or snap to it.
+
+The final result should feel like:
+
+A fixed theatrical spotlight illuminating a living atmosphere of magical dust.
+
+Not a moving spotlight.
+
+Not a cursor-following animation.
+
+Not a generic particle background.
+
+The interaction should be subtle enough that it feels like part of the physical environment of Memoria'26.

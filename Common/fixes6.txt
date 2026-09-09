@@ -1,0 +1,966 @@
+# MEMORIA'26 — FIX 6
+
+## Fixed Spotlight Positions + Mouse-Controlled Spotlight Rotation + Stronger Star Dust + Student Ticket System
+
+**IMPORTANT: This is a modification pass on the EXISTING Memoria'26 website.**
+
+Do NOT rebuild the application from scratch.
+
+First inspect the current project and understand the existing implementation of:
+
+* `CinematicIntro`
+* spotlight components
+* particle system
+* public sections
+* lineup
+* `/tickets`
+* ticket data model
+* ticket API
+* admin
+* approval system
+* check-in system
+
+Modify the existing implementation while preserving all existing functionality.
+
+---
+
+# PART 1 — CINEMATIC INTRO SPOTLIGHTS
+
+## 1. TWO MAIN SPOTLIGHTS MUST BE ON OPPOSITE SIDES
+
+The cinematic intro must contain **two primary theatrical spotlights**.
+
+### LEFT MAIN SPOTLIGHT
+
+The first spotlight is permanently positioned on the:
+
+**LEFT SIDE of the cinematic intro**
+
+### RIGHT MAIN SPOTLIGHT
+
+The second spotlight is permanently positioned on the:
+
+**RIGHT SIDE of the cinematic intro**
+
+They should face toward the central stage area.
+
+Conceptually:
+
+```text
+     LEFT LIGHT                         RIGHT LIGHT
+         \                                  /
+          \                                /
+           \                              /
+            \                            /
+             \                          /
+              \                        /
+               \                      /
+                  CENTRAL STAGE
+```
+
+The two lights should frame the central cinematic stage.
+
+---
+
+# 2. SPOTLIGHT POSITION MUST NEVER MOVE
+
+This is the most important correction.
+
+The physical position of both main spotlights must remain completely fixed.
+
+The following must NEVER change:
+
+* X position
+* Y position
+* screen position
+* beam origin
+* distance from the edge
+* vertical placement
+
+The mouse must NOT translate the spotlights.
+
+Do NOT use:
+
+* `translateX`
+* `translateY`
+* mouse X → position
+* mouse Y → position
+* orbiting
+* panning
+* moving the light source
+
+The light sources stay at their original fixed positions.
+
+---
+
+# 3. ONLY ROTATION/ANGLE RESPONDS TO MOUSE
+
+The **rotation/aiming angle of the light beam** should respond to mouse movement.
+
+This is different from moving the spotlight.
+
+Think of a physical theatre spotlight mounted at a fixed point:
+
+```text
+FIXED LIGHT ●
+             \
+              \
+               \
+                STAGE
+```
+
+When the visitor moves the mouse, the spotlight remains at:
+
+```text
+FIXED LIGHT ●
+```
+
+but the **beam direction/angle rotates** from that fixed point:
+
+```text
+       Mouse left:
+
+       ● \
+          \
+           \
+            STAGE
+
+
+       Mouse center:
+
+       ●
+        \
+         \
+          STAGE
+
+
+       Mouse right:
+
+       ●
+        \
+         \
+          STAGE
+```
+
+The light source itself does NOT move.
+
+Only its beam/rotation changes.
+
+---
+
+# 4. ROTATION RESPONSE MUST BE CLEARLY VISIBLE
+
+The previous implementation was too subtle.
+
+Make the mouse-controlled rotation noticeably visible.
+
+When the mouse moves from left to right:
+
+* left spotlight beam should visibly adjust its angle
+* right spotlight beam should visibly adjust its angle
+* both remain anchored to their fixed positions
+* rotation should be smooth
+* movement should have cinematic easing
+
+The user should clearly notice:
+
+**"The spotlights are following my mouse with their light direction."**
+
+But they should NOT feel like the entire light source is moving.
+
+---
+
+# 5. ROTATION LIMITS
+
+Keep the rotation controlled.
+
+Do not allow the spotlights to rotate wildly.
+
+Use a limited theatrical range.
+
+For example:
+
+* approximately ±8° to ±15° depending on screen size
+
+Adjust according to the existing visual composition.
+
+The two lights should remain aimed toward the stage.
+
+They should never rotate so far that they point completely away from the central stage.
+
+---
+
+# 6. MAIN SPOTLIGHT VISIBILITY
+
+Make the two primary spotlight beams considerably more visible.
+
+Increase:
+
+* beam opacity
+* light intensity
+* glow
+* volumetric effect
+* bloom
+* atmospheric haze
+* illuminated stage area
+* light falloff
+
+The beams should clearly stand out against:
+
+**deep violet / indigo darkness.**
+
+The visitor should immediately see the two theatrical light cones.
+
+Do not simply make the whole background brighter.
+
+The light should remain localized around the beams.
+
+---
+
+# 7. ROTATION + BRIGHTNESS
+
+The main spotlights can have both:
+
+### Mouse-controlled rotation
+
+and
+
+### Mouse-responsive brightness
+
+But keep the effects smooth.
+
+The mouse can control:
+
+* horizontal mouse position → spotlight rotation/aim
+* mouse proximity/influence → subtle intensity variation
+
+The most important visual effect is:
+
+**ROTATION OF THE BEAM FROM A FIXED POINT.**
+
+Do NOT move the spotlight source itself.
+
+---
+
+# 8. SUPPORTING SPOTLIGHTS
+
+Keep any existing secondary/supporting spotlights.
+
+They should remain visually subordinate to the two main spotlights.
+
+Do not accidentally make every light follow the cursor.
+
+The primary interaction should be focused on the two main cinematic spotlights.
+
+---
+
+# PART 2 — PARTICLES / STAR DUST
+
+## 9. PARTICLES ARE STILL TOO SUBTLE
+
+The particle system needs another major increase.
+
+The current particles are not sufficiently visible.
+
+Make the atmospheric dust significantly more obvious.
+
+Increase both:
+
+**PARTICLE COUNT**
+
+and
+
+**PARTICLE VISIBILITY**
+
+---
+
+# 10. MORE PARTICLES THROUGHOUT THE MAIN PAGE
+
+The particle field should continue throughout the entire public page.
+
+Include:
+
+* Hero
+* Story
+* About
+* Event information
+* Lineup
+* Charity
+* Contact
+* Footer
+* all lower page sections
+
+Do not allow the lower sections to become visually empty.
+
+---
+
+# 11. PARTICULARLY STRENGTHEN LOWER SECTIONS
+
+The lower portion of the main website must have noticeably more particles.
+
+Increase particle density especially around:
+
+* lower Story/About
+* Event information
+* Lineup
+* Charity
+* Contact
+* Footer
+
+The atmosphere should remain present from the top of the website all the way to the bottom.
+
+---
+
+# 12. PARTICLES SHOULD LOOK LIKE VISIBLE DUST
+
+The particles should resemble:
+
+**tiny dust particles floating through theatrical light.**
+
+They should NOT look like:
+
+* large stars
+* snow
+* confetti
+* bubbles
+* glitter
+* UI decorations
+
+Use mostly tiny particles with a smaller number of brighter particles.
+
+---
+
+# 13. STAR-LIKE BLINKING
+
+Add a subtle star-twinkling behavior to a portion of the particles.
+
+Most particles should remain atmospheric dust.
+
+A smaller percentage should occasionally:
+
+* brighten
+* softly glow
+* fade
+* twinkle
+* return to normal opacity
+
+Example:
+
+```text
+Dust dust dust dust
+
+       * → glow → fade
+
+dust        dust
+
+             * → tiny twinkle
+
+dust dust dust
+```
+
+The stars should be tiny.
+
+Do NOT create large flashing stars.
+
+---
+
+# 14. RANDOMIZED BLINKING
+
+Do not synchronize the blinking.
+
+Each star-like particle should have randomized:
+
+* blink timing
+* brightness
+* duration
+* opacity
+* size
+
+Example:
+
+```text
+Particle 1 → twinkles now
+Particle 2 → twinkles 2 seconds later
+Particle 3 → remains dim
+Particle 4 → twinkles later
+Particle 5 → slowly fades
+```
+
+This should create a natural night-sky atmosphere.
+
+---
+
+# 15. PARTICLE MOTION MUST BE CLEARLY VISIBLE
+
+The particles must visibly move.
+
+This is important.
+
+The visitor should be able to watch the page for several seconds and clearly notice the dust slowly drifting.
+
+Use:
+
+* slow horizontal drift
+* slow vertical drift
+* diagonal movement
+* different speeds
+* different directions
+* small floating paths
+
+Do not make them static.
+
+Do not make them move quickly.
+
+Do not synchronize all particles.
+
+---
+
+# 16. PARTICLE DENSITY
+
+Use substantially more particles than the previous implementation.
+
+Suggested target:
+
+### Desktop
+
+**150–250 particles per major section**
+
+### Tablet
+
+**100–170 particles per major section**
+
+### Mobile
+
+**60–100 particles per major section**
+
+Use an efficient rendering method.
+
+If the current system already uses Canvas:
+
+**keep and improve the Canvas system.**
+
+Do not create hundreds of expensive React components unnecessarily.
+
+---
+
+# 17. PARTICLES IN THE TICKETING PATH
+
+The particle atmosphere must also exist throughout:
+
+`/tickets`
+
+including:
+
+* ticket landing
+* ticket type selection
+* student/outsider selection
+* ticket form
+* submission
+* confirmation
+* success state
+
+The ticketing interface should feel like a continuation of the Memoria'26 world.
+
+---
+
+# 18. MOUSE PARTICLE INTERACTION
+
+Keep the existing particle mouse interaction outside the cinematic intro.
+
+Nearby particles should gently react to the cursor.
+
+They can:
+
+* drift toward the cursor
+* slightly change direction
+* gather gently
+* subtly brighten
+
+Do not make the effect aggressive.
+
+No:
+
+* snapping
+* explosions
+* rapid chasing
+* chaotic particle movement
+
+---
+
+# PART 3 — NEW TICKET TYPES
+
+## 19. ADD TWO TICKET CATEGORIES
+
+The ticket system must support:
+
+### UNIVERSITY STUDENT
+
+**Rs. 200**
+
+### OUTSIDER
+
+**Rs. 1,000**
+
+Both should be presented clearly in the ticketing interface.
+
+---
+
+# 20. UNIVERSITY STUDENT REQUIREMENT
+
+If the user selects:
+
+**University Student — Rs. 200**
+
+they MUST provide their:
+
+**University Registration Number**
+
+This field is mandatory.
+
+Example:
+
+`FC122716`
+
+The format represents:
+
+`[FacultyCode][Number]`
+
+Example:
+
+`FC122716`
+
+---
+
+# 21. REGISTRATION NUMBER VALIDATION
+
+Validate the registration number before accepting the ticket request.
+
+It must:
+
+* not be empty
+* follow the configured university registration format
+* be normalized consistently
+* be unique
+* contain the required faculty code + number structure
+
+Display a clear error if invalid.
+
+Example:
+
+> Please enter a valid university registration number.
+
+Do not accept arbitrary text.
+
+---
+
+# 22. ONE STUDENT TICKET PER REGISTRATION NUMBER
+
+This is a strict business rule.
+
+A university registration number can receive:
+
+**ONLY ONE UNIVERSITY STUDENT TICKET.**
+
+For example:
+
+```text
+FC122716 → Student Ticket #1
+```
+
+A second attempt:
+
+```text
+FC122716 → Student Ticket #2
+```
+
+MUST be rejected.
+
+Display a clear message:
+
+> A university student ticket has already been issued for this registration number.
+
+---
+
+# 23. DUPLICATE VALIDATION MUST BE SERVER-SIDE
+
+Do NOT rely only on the frontend.
+
+The backend/API must check whether the registration number already exists.
+
+Correct flow:
+
+```text
+Select Student Ticket
+        ↓
+Enter Registration Number
+        ↓
+Frontend format validation
+        ↓
+Submit request
+        ↓
+Backend validation
+        ↓
+Check existing student tickets
+        ↓
+Already exists?
+     /        \
+   YES         NO
+    ↓           ↓
+ Reject      Create Ticket
+```
+
+This must protect against:
+
+* duplicate submissions
+* page refreshes
+* multiple tabs
+* manually crafted API requests
+* race conditions
+
+---
+
+# 24. DATABASE UNIQUENESS
+
+Where a persistent database/data layer exists, enforce a uniqueness constraint on the university registration number for student tickets.
+
+Conceptually:
+
+```text
+student_registration_number
+        UNIQUE
+```
+
+This is an additional protection beyond frontend validation.
+
+Use an atomic operation/transaction where applicable so two simultaneous requests cannot both create tickets for the same registration number.
+
+---
+
+# 25. OUTSIDER TICKETS
+
+For:
+
+**Outsider — Rs. 1,000**
+
+do NOT require a university registration number.
+
+The student registration field should:
+
+* disappear when Outsider is selected
+* not be required by validation
+* not be stored as a student registration number
+
+---
+
+# 26. TICKET PRICE MUST BE CONTROLLED BY BACKEND
+
+The frontend must NOT be trusted to determine the price.
+
+Backend logic should determine:
+
+```text
+student → Rs. 200
+outsider → Rs. 1,000
+```
+
+If someone modifies the frontend request and sends a different price, the backend must ignore that manipulated price and calculate the correct amount from the ticket type.
+
+---
+
+# 27. TICKET DATA MODEL
+
+Update the existing ticket model as necessary.
+
+Conceptually:
+
+```ts
+ticketType: "student" | "outsider"
+```
+
+Student:
+
+```ts
+universityRegistrationNumber: string
+price: 200
+```
+
+Outsider:
+
+```ts
+universityRegistrationNumber: null
+price: 1000
+```
+
+Adapt this to the existing project's actual data model rather than blindly replacing it.
+
+---
+
+# 28. TICKET INTERFACE DESIGN
+
+Create two visually distinct ticket choices.
+
+### UNIVERSITY STUDENT
+
+**Rs. 200**
+
+University registration number required.
+
+### OUTSIDER
+
+**Rs. 1,000**
+
+Open to external attendees.
+
+When Student is selected:
+
+show:
+
+**University Registration Number**
+
+Placeholder:
+
+`FC122716`
+
+Helper text:
+
+`Enter your unique university registration number.`
+
+When Outsider is selected:
+
+hide the registration number field.
+
+---
+
+# 29. ADMIN / APPROVAL
+
+Update the existing admin and approval interfaces so staff can distinguish:
+
+* University Student — Rs. 200
+* Outsider — Rs. 1,000
+
+For student tickets, authorized staff should be able to view the university registration number for verification.
+
+Do not expose unnecessary student information publicly.
+
+Preserve the existing approval workflow.
+
+---
+
+# 30. CHECK-IN
+
+The existing QR/check-in system must continue working.
+
+When scanning a ticket:
+
+* validate ticket
+* identify ticket type
+* verify approval/status
+* prevent duplicate check-in
+* show relevant ticket information
+
+Student tickets should retain their registration number in the internal ticket record.
+
+Do not break existing QR functionality.
+
+---
+
+# PART 4 — RESPONSIVENESS & PERFORMANCE
+
+## 31. MOBILE
+
+On mobile:
+
+* keep the two cinematic spotlights anchored to the left/right sides
+* do not move the light source
+* mouse interaction can be disabled because touch has no cursor
+* preserve strong lighting
+* preserve visible moving dust
+* reduce particle count if necessary
+
+---
+
+# 32. PERFORMANCE
+
+Because the particle count is increasing significantly:
+
+Use an efficient implementation.
+
+Prefer:
+
+* Canvas
+* requestAnimationFrame
+* refs
+* MotionValues
+* GPU-friendly transforms
+* interpolation
+
+Avoid:
+
+* React state updates for every particle
+* hundreds of independent animated DOM elements
+* expensive filters on every particle
+* layout-triggering animations
+
+Maintain smooth performance.
+
+---
+
+# 33. REDUCED MOTION
+
+Respect:
+
+`prefers-reduced-motion`
+
+When enabled:
+
+* reduce particle movement
+* disable mouse particle attraction
+* reduce star blinking
+* simplify spotlight rotation
+* preserve the main visual composition
+
+---
+
+# PART 5 — FINAL ACCEPTANCE TEST
+
+## CINEMATIC INTRO
+
+[ ] Two primary spotlights are on opposite sides.
+
+[ ] Left spotlight is anchored to the left.
+
+[ ] Right spotlight is anchored to the right.
+
+[ ] Both point toward the central stage.
+
+[ ] Spotlight positions never move.
+
+[ ] Mouse does NOT translate the spotlights.
+
+[ ] Mouse DOES change spotlight rotation/aim.
+
+[ ] Rotation is clearly visible.
+
+[ ] Rotation remains smooth.
+
+[ ] Rotation stays within a controlled theatrical range.
+
+[ ] Main beams are highly visible.
+
+[ ] Main beams have strong cinematic glow.
+
+---
+
+## PARTICLES
+
+[ ] Particle count is significantly increased.
+
+[ ] Particles are clearly visible.
+
+[ ] Lower page sections have strong particle presence.
+
+[ ] Dust visibly moves slowly.
+
+[ ] Movement is varied and organic.
+
+[ ] Some particles twinkle like tiny stars.
+
+[ ] Twinkling is randomized.
+
+[ ] Not every particle blinks.
+
+[ ] Mouse interaction works outside CinematicIntro.
+
+[ ] Ticketing pages also contain particles.
+
+[ ] Particles remain behind the UI.
+
+---
+
+## TICKETS
+
+[ ] University Student ticket = Rs. 200.
+
+[ ] Outsider ticket = Rs. 1,000.
+
+[ ] Student ticket requires university registration number.
+
+[ ] Example `FC122716` is supported if it matches the configured format.
+
+[ ] Invalid registration numbers are rejected.
+
+[ ] Duplicate registration numbers are rejected.
+
+[ ] One registration number can receive only one student ticket.
+
+[ ] Duplicate protection exists server-side.
+
+[ ] Data-layer uniqueness is enforced where applicable.
+
+[ ] Backend determines the correct ticket price.
+
+[ ] Outsider does not require a registration number.
+
+[ ] Admin can identify ticket type.
+
+[ ] Approval workflow continues working.
+
+[ ] QR/check-in continues working.
+
+---
+
+# FINAL VISUAL TARGET
+
+The cinematic opening should look like a **real theatrical stage**.
+
+Two large lights are physically mounted/anchored on the:
+
+**LEFT**
+
+and
+
+**RIGHT**
+
+sides.
+
+They do not move from those positions.
+
+As the visitor moves the mouse:
+
+**the beams rotate from those fixed anchor points.**
+
+The rotation must be clearly visible and smooth.
+
+The beams should be bright enough to feel like real stage lighting passing through atmospheric haze.
+
+Outside the cinematic intro, the entire website should feel filled with a much richer atmosphere:
+
+**hundreds of visible floating dust particles + occasional tiny blinking stars.**
+
+The lower sections must not become empty or visually dead.
+
+The same atmosphere continues through the entire ticketing experience.
+
+The ticketing system now has:
+
+**UNIVERSITY STUDENT — Rs. 200**
+
+and
+
+**OUTSIDER — Rs. 1,000**
+
+Student tickets require a valid unique university registration number such as:
+
+**FC122716**
+
+and:
+
+**ONE REGISTRATION NUMBER = ONE STUDENT TICKET ONLY.**
+
+Enforce this rule at the backend/data layer as well as the frontend.
+
+Do not compromise the existing event website functionality.
+
+The final experience should feel:
+
+**cinematic + theatrical + mystical + premium + immersive + alive.**

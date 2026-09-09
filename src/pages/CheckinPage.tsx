@@ -148,7 +148,7 @@ export const CheckinPage: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter Ticket ID or Name..."
+                    placeholder="Enter Ticket ID, Reg No (e.g. FC122716), or Name..."
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -167,16 +167,24 @@ export const CheckinPage: React.FC = () => {
             <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-xs space-y-2">
               <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Simulate Sample Barcode Scans:</span>
+                <span>Simulate Sample Barcode / Reg No Scans:</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => handleVerify('FC122716')}
+                  className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-purple-300 transition-colors"
+                >
+                  <strong className="block text-white">FC122716</strong>
+                  <span>Student Pass (Kasun)</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => handleVerify('MEM-26-9042')}
                   className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-emerald-300 transition-colors"
                 >
                   <strong className="block text-white">MEM-26-9042</strong>
-                  <span>Valid Pass (Dilhara)</span>
+                  <span>Valid Pass (Kasun)</span>
                 </button>
                 <button
                   type="button"

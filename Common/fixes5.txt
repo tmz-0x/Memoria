@@ -1,0 +1,911 @@
+MEMORIA'26 — FIX 5
+Cinematic Side Spotlights + High-Visibility Atmospheric Particles + Creative Artist Lineup
+
+IMPORTANT: This is Fix 5 for the EXISTING Memoria'26 website.
+
+Do NOT rebuild the application.
+
+Inspect the current implementation first and modify the existing components/styles/animation systems.
+
+Preserve everything that is already working, including:
+
+existing routing
+cinematic intro
+main public website
+separate ticketing interface
+/tickets
+ticket submission flow
+admin
+approver
+staff check-in
+QR/check-in functionality
+mock APIs
+existing responsive behavior
+existing Memoria'26 visual identity
+
+This fix is primarily a visual/interaction enhancement.
+
+1. CINEMATIC INTRO — CORRECT THE TWO MAIN SPOTLIGHT POSITIONS
+
+The previous implementation misunderstood the meaning of the two main spotlights.
+
+The cinematic intro must have TWO LARGE MAIN THEATRICAL SPOTLIGHTS positioned on the TWO SIDES of the cinematic stage.
+
+LEFT MAIN SPOTLIGHT
+
+Position the first main spotlight on the:
+
+LEFT SIDE of the cinematic intro
+
+It should visually originate from the left side/corner of the stage environment and project its beam toward the central stage area.
+
+RIGHT MAIN SPOTLIGHT
+
+Position the second main spotlight on the:
+
+RIGHT SIDE of the cinematic intro
+
+It should visually originate from the right side/corner of the stage environment and project its beam toward the central stage area.
+
+The composition should look like a real theatrical stage:
+
+             DARK CINEMATIC STAGE
+
+        \                         /
+         \                       /
+          \                     /
+           \                   /
+            \                 /
+             \               /
+              \             /
+               \           /
+                \         /
+                 \       /
+                  \     /
+                   \   /
+                    \ /
+                  STAGE
+
+The two large beams should frame the central stage from opposite sides.
+
+2. MAIN CINEMATIC SPOTLIGHTS — FIXED PHYSICAL POSITION
+
+Both main spotlights must remain physically fixed.
+
+They must NOT:
+
+move horizontally
+move vertically
+rotate toward the cursor
+follow the cursor
+orbit
+pan
+tilt
+change their physical position
+
+Their:
+
+position + angle + direction
+
+must remain fixed.
+
+Only their:
+
+brightness + intensity + glow + illumination
+
+may react to the mouse.
+
+3. MAIN SPOTLIGHT MOUSE INTERACTION
+
+The mouse should control the light intensity, not the spotlight position.
+
+When the mouse moves:
+
+spotlight brightness should noticeably change
+beam visibility should increase/decrease
+illuminated stage area should respond
+atmospheric glow should react
+bloom should subtly respond
+
+The effect must be considerably more visible than Fix 4.
+
+The visitor should immediately understand:
+
+"The stage lights are reacting to my movement."
+
+Use smooth interpolation.
+
+No flickering.
+
+No sudden jumps.
+
+No instant opacity changes.
+
+4. MAKE THE TWO SIDE SPOTLIGHTS POWERFUL AND VISIBLE
+
+The two main spotlights should be visually prominent.
+
+Increase:
+
+beam opacity
+beam width where appropriate
+glow
+volumetric appearance
+stage illumination
+bloom
+atmospheric haze
+light falloff
+
+The beams must be clearly visible against the dark violet background.
+
+The central stage should be illuminated without destroying the dark cinematic atmosphere.
+
+Do not simply increase a white overlay.
+
+The result should look like:
+
+real theatrical lighting passing through atmospheric haze.
+
+5. SUPPORTING FIXED SPOTLIGHTS
+
+Keep the other smaller/fixed spotlights from previous fixes.
+
+They should also remain physically fixed.
+
+Their brightness should continue to react to mouse movement.
+
+Make their brightness response visible enough to notice, but weaker than the two primary side spotlights.
+
+This creates a layered theatrical lighting system:
+
+PRIMARY LIGHTS
+
+Two large side spotlights.
+
+SECONDARY LIGHTS
+
+Additional supporting stage spotlights.
+
+The primary lights should dominate.
+
+6. CINEMATIC INTRO — NO GLOBAL PARTICLE SYSTEM
+
+Do NOT apply the new global dust particle system to the cinematic intro.
+
+The cinematic intro should remain visually focused on:
+
+stage
+two side spotlights
+supporting lights
+moon/eclipse
+atmosphere
+cinematic reveal
+Memoria branding
+
+Keep its particle behavior independent.
+
+7. GLOBAL PARTICLE SYSTEM — MAJOR INCREASE
+
+The current dust particles are still far too difficult to see.
+
+Fix this significantly.
+
+The entire public experience should contain a much denser atmospheric dust field.
+
+The particles must be:
+
+numerous + visible + slowly moving + atmospheric
+
+Do NOT just increase opacity of a few existing particles.
+
+Increase BOTH:
+
+PARTICLE COUNT
+
+AND
+
+PARTICLE VISIBILITY
+8. PARTICLE DENSITY
+
+Use substantially more particles throughout the public experience.
+
+Target approximately:
+
+Desktop
+
+100–160 particles per major section
+
+depending on performance and section height.
+
+Tablet
+
+70–110 particles per major section
+
+Mobile
+
+45–80 particles per major section
+
+Do not blindly create hundreds of individual DOM elements if this causes performance problems.
+
+If possible, use the existing particle engine/canvas system efficiently.
+
+If a canvas particle implementation already exists:
+
+extend it rather than replacing it.
+
+9. PARTICLES MUST EXIST THROUGHOUT THE ENTIRE PUBLIC EXPERIENCE
+
+The dust system must not only exist on the homepage.
+
+It must be present throughout:
+
+MAIN WEBSITE
+Hero
+Story
+About
+Event information
+Lineup
+Charity
+Contact
+Footer
+any other public section
+TICKETING EXPERIENCE
+
+The same atmospheric dust environment should also exist throughout:
+
+Ticket landing screen
+Ticket selection
+Ticket information
+Ticket form
+checkout/submission interface
+confirmation/success state
+
+The ticketing interface should feel like it belongs to the same Memoria'26 universe.
+
+Do NOT make the ticketing interface visually disconnected.
+
+10. TICKETING PARTICLES
+
+The /tickets interface should have its own atmospheric particle layer.
+
+It should use the same visual language as the main website:
+
+violet darkness
+subtle magenta glow
+soft gold accents
+floating luminous dust
+cinematic atmosphere
+
+However, the ticket UI itself must remain highly readable.
+
+Particles should stay behind:
+
+forms
+ticket cards
+buttons
+text
+inputs
+QR/ticket information
+
+Use:
+
+pointer-events: none
+
+for the particle layer.
+
+11. MAKE PARTICLES CLEARLY VISIBLE
+
+The particles should no longer disappear into the background.
+
+Increase their visual contrast.
+
+Use a combination of:
+
+brighter particles
+slightly larger particles
+higher opacity
+soft glow
+subtle blur
+varied brightness
+varied size
+
+Create particle size variation such as:
+
+tiny dust
+small dust
+medium dust
+occasional brighter micro-particles
+
+Avoid making every particle identical.
+
+12. PARTICLE VISUAL STYLE
+
+The particles must look like:
+
+dust illuminated by theatrical light.
+
+Not:
+
+large stars
+star icons
+glitter
+confetti
+snow
+bubbles
+decorative circles
+
+They should feel like tiny particles floating through a dark stage environment.
+
+The visual reference is:
+
+A dark theatre after the lights turn on, where thousands of tiny dust particles become visible in the beams of light.
+
+13. PARTICLE MOVEMENT MUST BE NOTICEABLE
+
+The particles must visibly move.
+
+This was too subtle previously.
+
+The user should be able to watch the screen and notice:
+
+the dust is slowly floating.
+
+Movement should be:
+
+slow
+continuous
+organic
+varied
+independent
+
+Examples:
+
+particle A → slowly drifts upward
+particle B ↘ slowly drifts diagonally
+particle C ↑ slowly rises
+particle D ← slowly moves sideways
+particle E ↗ slowly floats upward-right
+
+Do NOT make all particles move in the same direction.
+
+Do NOT make the movement fast.
+
+14. PARTICLE MOTION
+
+Use very slow animation cycles.
+
+Particles can have:
+
+different velocities
+different directions
+different movement amplitudes
+slightly different opacity cycles
+different starting positions
+
+Use smooth interpolation.
+
+Avoid:
+
+sudden teleporting
+resetting visibly
+synchronized movement
+mechanical patterns
+
+The result should feel like a living atmosphere.
+
+15. MOUSE INTERACTION — GLOBAL PUBLIC PARTICLES
+
+Keep the mouse interaction from the previous fixes.
+
+Outside the cinematic intro:
+
+when the cursor moves through the page, nearby particles should gently react.
+
+Particles can:
+
+slowly drift toward the cursor
+gather slightly
+change trajectory
+subtly brighten
+
+But the effect must remain atmospheric.
+
+No snapping.
+
+No aggressive magnetic effect.
+
+No particle explosion.
+
+No chaotic movement.
+
+The user should notice:
+
+"The dust is responding to my mouse."
+
+without the effect becoming distracting.
+
+16. PARTICLE LAYERING
+
+Place particles behind the UI content.
+
+Recommended conceptual layering:
+
+BACKGROUND
+    ↓
+ATMOSPHERIC GLOW
+    ↓
+DUST PARTICLES
+    ↓
+DECORATIVE LIGHTING
+    ↓
+CONTENT
+    ↓
+BUTTONS / CARDS / FORMS
+
+Particles must never make text difficult to read.
+
+17. LINEUP SECTION — COMPLETE VISUAL UPGRADE
+
+The lineup section should become a major artist showcase section, not simply a list of names.
+
+It should visually feel like a theatrical stage introducing performers.
+
+The lineup section must contain:
+
+artists
+artist names
+music band images
+supporting artist information
+dedicated visual space for uploaded artist images
+
+I will upload the actual artist/band images later.
+
+Therefore:
+
+DO NOT hard-code fake final artist images.
+
+Instead, create beautiful image placeholders and a clean asset structure so the uploaded images can easily replace them.
+
+18. LINEUP — TWO SPOTLIGHTS
+
+The lineup section should have:
+
+ONE SPOTLIGHT FROM THE LEFT
+
+and
+
+ONE SPOTLIGHT FROM THE RIGHT.
+
+These should frame the artist showcase.
+
+Conceptually:
+
+       LEFT LIGHT              RIGHT LIGHT
+           \                       /
+            \                     /
+             \                   /
+              \                 /
+               \               /
+                ARTISTS
+             ARTIST IMAGES
+              BAND IMAGES
+
+The two lights should create a theatrical presentation around the performers.
+
+19. LINEUP SPOTLIGHT BEHAVIOR
+
+Keep the existing scroll interaction concept from previous fixes.
+
+When scrolling DOWN:
+
+the spotlight system should travel from LEFT → RIGHT
+
+When scrolling UP:
+
+the spotlight system should travel from RIGHT → LEFT
+
+But the visual system should still contain two opposing spotlight sources.
+
+Do NOT convert this into a single spotlight.
+
+Both left and right sides must remain visually represented.
+
+The scroll interaction should control the overall lighting emphasis/illumination balance rather than physically breaking the stage composition.
+
+20. LINEUP ARTIST CARDS
+
+Create a premium artist presentation system.
+
+Each artist should have a dedicated visual area containing:
+
+Artist Image
+
+Large image area with elegant framing.
+
+Artist/Band Name
+
+Highly visible typography.
+
+Optional supporting information
+
+Such as:
+
+artist
+music band
+performance type
+short description
+
+Only include fields that already exist in the application's data model or leave them as clearly marked placeholders.
+
+Do not invent real artist information.
+
+21. ARTIST IMAGE PLACEHOLDERS
+
+Since the actual artist images will be uploaded later:
+
+Create intentional placeholder areas.
+
+Do NOT use generic random stock images.
+
+Instead use a designed placeholder that already matches the Memoria'26 aesthetic.
+
+For example:
+
+dark violet image frame
+gold border
+subtle magenta glow
+spotlight illumination
+atmospheric dust
+elegant empty image area
+
+When the actual image is added, it should seamlessly occupy the same space.
+
+22. CREATIVE ARTIST LAYOUT
+
+Do NOT make the lineup a boring:
+
+Artist 1
+Artist 2
+Artist 3
+Artist 4
+
+Instead create a theatrical composition.
+
+Possible structure:
+
+                LINEUP
+
+       ┌──────────┐      ┌──────────┐
+       │ ARTIST 1 │      │ ARTIST 2 │
+       │  IMAGE   │      │  IMAGE   │
+       └──────────┘      └──────────┘
+
+              ★ MAIN ACT ★
+          ┌────────────────┐
+          │                │
+          │   BAND IMAGE   │
+          │                │
+          └────────────────┘
+
+       ┌──────────┐      ┌──────────┐
+       │ ARTIST 3 │      │ ARTIST 4 │
+       │  IMAGE   │      │  IMAGE   │
+       └──────────┘      └──────────┘
+
+But adapt the actual layout to the existing website design.
+
+The goal is:
+
+premium event lineup presentation
+
+rather than a generic card grid.
+
+23. MAIN ARTIST / BAND EMPHASIS
+
+If the data contains a primary/main performer or band, provide a larger visual treatment.
+
+For example:
+
+larger image
+stronger spotlight
+larger name
+stronger gold/magenta glow
+central positioning
+
+Supporting performers can have slightly smaller treatments.
+
+Do not assume which artist is the main act if the existing data does not specify it.
+
+24. LINEUP IMAGE EFFECTS
+
+When artist images are uploaded, apply subtle visual treatment:
+
+cinematic lighting
+soft glow
+elegant border
+subtle vignette
+atmospheric dust
+gentle hover effect
+slight image scale on hover
+
+Do NOT over-process the images.
+
+The actual uploaded artist photographs must remain recognizable.
+
+25. LINEUP HOVER INTERACTION
+
+On desktop:
+
+When hovering over an artist image/card:
+
+image can slightly scale
+surrounding glow can increase
+nearby spotlight intensity can subtly increase
+artist name can become more prominent
+dust around that area can subtly react
+
+Use a very smooth transition.
+
+No exaggerated zoom.
+
+No card bouncing.
+
+No flashy UI effects.
+
+26. LINEUP MOBILE
+
+On mobile:
+
+preserve the theatrical lighting
+stack artist presentations intelligently
+maintain readable names
+preserve image aspect ratios
+reduce particle density if necessary
+keep particles visibly moving
+ensure spotlights do not obscure artist images
+
+Do not simply shrink the desktop grid.
+
+Design the mobile layout intentionally.
+
+27. ASSET STRUCTURE FOR FUTURE ARTIST UPLOADS
+
+Prepare a clear structure for future artist assets.
+
+For example:
+
+assets/
+  artists/
+    artist-01.*
+    artist-02.*
+    artist-03.*
+    artist-04.*
+
+Use the actual project's existing asset conventions if they differ.
+
+Create a clean data-driven artist configuration so images can be replaced without rewriting the lineup component.
+
+For example conceptually:
+
+{
+  name: "...",
+  image: "...",
+  type: "...",
+  description: "..."
+}
+
+Do not invent final artist names.
+
+Use placeholders until the actual assets are supplied.
+
+28. GLOBAL VISUAL CONSISTENCY
+
+The main website and ticketing interface must now feel like one connected world.
+
+Use the existing Memoria'26 palette:
+
+Deep violet
+Indigo night
+Magenta-violet glow
+Antique gold
+Blossom pink
+Dark cinematic backgrounds
+
+The stronger particles and spotlights should enhance this atmosphere.
+
+Do not turn the website into a bright neon interface.
+
+29. PERFORMANCE
+
+Because particle density is increasing significantly:
+
+DO NOT sacrifice performance.
+
+Prefer:
+
+canvas-based rendering
+requestAnimationFrame
+GPU-friendly transforms
+MotionValues
+refs
+efficient particle calculations
+
+Avoid:
+
+React state per particle
+hundreds of continuously re-rendering React components
+expensive CSS filters on every particle
+layout-triggering animations
+
+The visual effect should remain smooth.
+
+30. REDUCED MOTION
+
+Respect:
+
+prefers-reduced-motion
+
+When enabled:
+
+significantly reduce particle movement
+disable cursor attraction
+reduce spotlight transitions
+preserve static atmospheric particles
+preserve the overall visual design
+31. DO NOT BREAK EXISTING TICKET FLOW
+
+The ticketing experience remains a separate interface.
+
+The main website should continue to use:
+
+Book Ticket → /tickets
+
+Do not move the ticket form back into the main homepage.
+
+The ticket interface should simply receive the enhanced atmospheric treatment.
+
+32. FINAL ACCEPTANCE TEST
+
+Before considering Fix 5 complete, verify:
+
+CINEMATIC INTRO
+
+[ ] Two large main spotlights are positioned on the LEFT and RIGHT sides.
+
+[ ] They visually project toward the central stage.
+
+[ ] They remain physically fixed.
+
+[ ] They do not follow mouse position.
+
+[ ] Mouse changes their brightness/intensity.
+
+[ ] Their beams are highly visible.
+
+[ ] Supporting spotlights remain fixed.
+
+[ ] Supporting spotlight brightness responds to mouse.
+
+[ ] Cinematic intro remains dark, cinematic and premium.
+
+GLOBAL PARTICLES
+
+[ ] Particle count is significantly higher.
+
+[ ] Particles are considerably more visible.
+
+[ ] Particles visibly move slowly.
+
+[ ] Particle movement is organic.
+
+[ ] Particles have varied sizes and brightness.
+
+[ ] Particles resemble atmospheric dust.
+
+[ ] Mouse interaction remains subtle and visible.
+
+[ ] Particles appear throughout the entire main website.
+
+[ ] Particles appear throughout /tickets.
+
+[ ] Particles remain behind UI.
+
+[ ] Particles do not reduce text readability.
+
+LINEUP
+
+[ ] Lineup has left spotlight.
+
+[ ] Lineup has right spotlight.
+
+[ ] Spotlight system responds to scroll direction.
+
+[ ] Down scroll = left → right lighting emphasis.
+
+[ ] Up scroll = right → left lighting emphasis.
+
+[ ] Artist image spaces are prepared.
+
+[ ] Artist names are supported.
+
+[ ] Music band images are supported.
+
+[ ] Actual uploaded artist images can replace placeholders easily.
+
+[ ] Layout is creative and theatrical.
+
+[ ] Main/featured artist can receive larger treatment if data supports it.
+
+[ ] Artist cards have subtle cinematic interactions.
+
+[ ] Mobile lineup is intentionally designed.
+
+SYSTEM
+
+[ ] /tickets still works.
+
+[ ] Ticket submission still works.
+
+[ ] Admin still works.
+
+[ ] Approver still works.
+
+[ ] Check-in still works.
+
+[ ] Existing routes still work.
+
+[ ] No console errors.
+
+[ ] No broken assets.
+
+[ ] No React runtime errors.
+
+[ ] No major performance regression.
+
+FINAL CREATIVE TARGET
+
+The experience should now feel like entering a real theatrical memory world.
+
+CINEMATIC INTRO
+
+Two powerful spotlights stand at the far left and far right, framing the stage.
+
+Their beams are visible through atmospheric haze.
+
+As the visitor moves the mouse:
+
+the lights breathe brighter and dimmer.
+
+They never physically move.
+
+REST OF WEBSITE
+
+The entire environment is filled with hundreds of tiny visible dust particles, slowly floating through the violet darkness.
+
+The visitor can clearly see them moving.
+
+As the cursor moves:
+
+the nearby dust gently gathers and responds.
+
+LINEUP
+
+The artists appear as if they are being introduced on a grand stage.
+
+Two opposing spotlights illuminate the lineup from both sides.
+
+Artist photographs and band images occupy carefully designed cinematic spaces.
+
+The names appear elegantly.
+
+The entire lineup should feel like:
+
+a live performance reveal — not an ordinary event website.
+
+The final atmosphere should communicate:
+
+MEMORIA'26
+
+THE ECLIPSE OF MEMORIES
+
+A NIGHT OF MUSIC, LIGHT, MEMORY AND PERFORMANCE.
