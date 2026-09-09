@@ -68,12 +68,12 @@ export const HowToBuyModal: React.FC<HowToBuyModalProps> = ({ isOpen, onClose })
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
-                    <strong className="text-[#D4AF37] block font-heading text-[11px] mb-1">01. Fill Details</strong>
-                    <span>Provide your full legal name, active email, mobile, and required pass quantity.</span>
+                    <strong className="text-[#D4AF37] block font-heading text-[11px] mb-1">01. Fill Details & Category</strong>
+                    <span>Select University Student (with valid Reg No, 1 ticket) or Outsider (1–5 passes), then enter your contact details.</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
                     <strong className="text-[#D4AF37] block font-heading text-[11px] mb-1">02. Transfer Funds</strong>
-                    <span>Transfer Rs. 1000 × quantity to the official Bank of Ceylon committee account.</span>
+                    <span>Transfer the exact amount (Student: Rs. 200 | Outsider: Rs. 1,000 × quantity) to the official Bank of Ceylon account.</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
                     <strong className="text-[#D4AF37] block font-heading text-[11px] mb-1">03. Reference Remarks</strong>
@@ -111,7 +111,7 @@ export const HowToBuyModal: React.FC<HowToBuyModalProps> = ({ isOpen, onClose })
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D4AF37] font-bold">&bull;</span>
-                    <span><strong>External Attendees Only:</strong> Online registration is designated for external attendees. University of Sri Jayewardenepura undergraduates and staff obtain physical passes at the campus booth.</span>
+                    <span><strong>Ticket Categories:</strong> University Student tickets (Rs. 200) strictly require a valid university registration number (limit 1 ticket per student ID). Outsider tickets (Rs. 1,000) are open to alumni, external guests, and the general public.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D4AF37] font-bold">&bull;</span>

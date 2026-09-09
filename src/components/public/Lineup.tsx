@@ -93,7 +93,7 @@ export const Lineup: React.FC = () => {
     <section
       ref={sectionRef}
       id="lineup"
-      className="relative py-28 px-4 sm:px-6 lg:px-8 bg-[#0D0518] overflow-hidden"
+      className="relative py-28 px-4 sm:px-6 lg:px-8 bg-transparent overflow-hidden"
     >
       {/* Fix Pass 5: System of TWO OPPOSING THEATRICAL SPOTLIGHTS (Section 18) */}
       {/* Spotlight 1: Originating from the LEFT */}

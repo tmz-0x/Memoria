@@ -31,7 +31,7 @@ export const TicketInfo: React.FC = () => {
   return (
     <section
       id="ticket-overview"
-      className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0D0518] via-[#1A0D2E]/90 to-[#0D0518]"
+      className="relative py-20 px-4 sm:px-6 lg:px-8 bg-transparent"
     >
       <div className="max-w-6xl mx-auto">
         <SectionDivider />
@@ -46,7 +46,7 @@ export const TicketInfo: React.FC = () => {
           <h2 className="font-heading text-3xl sm:text-5xl font-extrabold uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#F0E6FA] via-[#FF8FC7] to-[#D4AF37] mt-3">
             Pass Allocation
           </h2>
-          <p className="font-body text-base text-[#F0E6FA]/70 mt-3 font-light">
+          <p className="font-body text-base text-[#F0E6FA]/80 mt-3 font-light">
             Admission passes are strictly limited to theatre capacity. Secure your seat under the eclipse.
           </p>
         </div>
@@ -74,7 +74,7 @@ export const TicketInfo: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-[#D4AF37]/30 sm:pr-24">
               <div>
                 <span className="text-[11px] font-heading font-bold uppercase tracking-[0.3em] text-[#FF8FC7] block">
-                  Official Admission Pass &bull; General Admission
+                  Official Admission Pass &bull; General & Student Admission
                 </span>
                 <h3 className="font-wordmark text-4xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37] mt-1 select-none">
                   Memoria&apos;26
@@ -84,14 +84,27 @@ export const TicketInfo: React.FC = () => {
                 </span>
               </div>
 
-              <div className="sm:text-right bg-[#0D0518]/80 px-6 py-4 rounded-2xl border border-[#D4AF37]/40 shadow-inner">
-                <span className="text-[10px] font-heading uppercase tracking-widest text-[#F0E6FA]/60 block">
-                  Official Price
-                </span>
-                <div className="text-3xl sm:text-4xl font-heading font-black text-[#D4AF37]">
-                  Rs. {price.toLocaleString()}
+              {/* Two Ticket Tiers (Fix 6) */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="bg-[#0D0518]/90 px-4 py-2.5 rounded-2xl border border-[#D4AF37]/50 text-center shadow-inner">
+                  <span className="text-[10px] font-heading uppercase tracking-widest text-[#FF8FC7] block font-bold">
+                    University Student
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-heading font-black text-[#D4AF37]">
+                    Rs. 200
+                  </div>
+                  <span className="text-[10px] text-[#F0E6FA]/60 font-body block">With Student Reg ID</span>
                 </div>
-                <span className="text-[11px] text-[#FFB3D9] font-body">Per Attendee / Single Entry</span>
+
+                <div className="bg-[#0D0518]/90 px-4 py-2.5 rounded-2xl border border-[#D4AF37]/30 text-center shadow-inner">
+                  <span className="text-[10px] font-heading uppercase tracking-widest text-[#F0E6FA]/60 block font-semibold">
+                    Outsider
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-heading font-black text-white">
+                    Rs. 1,000
+                  </div>
+                  <span className="text-[10px] text-[#F0E6FA]/60 font-body block">General Admission</span>
+                </div>
               </div>
             </div>
 
@@ -157,7 +170,7 @@ export const TicketInfo: React.FC = () => {
                 onClick={() => navigate('/tickets')}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_35px_rgba(224,102,255,0.8)] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Book Your Ticket &bull; Rs. 1000</span>
+                <span>Book Your Ticket &bull; From Rs. 200</span>
                 <ArrowRight className="w-4 h-4 text-[#0D0518]" />
               </button>
             </div>

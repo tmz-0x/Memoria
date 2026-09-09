@@ -4,7 +4,7 @@ import { Sparkles, MessageSquare, Mail, Phone, Clock, Send } from 'lucide-react'
 
 export const Contact: React.FC = () => {
   return (
-    <section id="contact" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-[#0D0518]">
+    <section id="contact" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-transparent">
       <div className="max-w-5xl mx-auto">
         <SectionDivider />
 

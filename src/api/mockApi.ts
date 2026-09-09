@@ -7,6 +7,9 @@ export interface Submission {
   email: string;
   phone: string;
   quantity: number;
+  ticketType: 'student' | 'outsider';
+  universityRegistrationNumber?: string | null;
+  totalPrice: number;
   paymentSlipUrl: string;
   status: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
@@ -51,7 +54,7 @@ export interface ApprovalHistoryItem {
   reason?: string;
 }
 
-const STORAGE_KEY_SUBMISSIONS = 'memoria_submissions_v1';
+const STORAGE_KEY_SUBMISSIONS = 'memoria_submissions_v2';
 const STORAGE_KEY_USERS = 'memoria_users_v1';
 const STORAGE_KEY_SETTINGS = 'memoria_settings_v1';
 const STORAGE_KEY_HISTORY = 'memoria_history_v1';
@@ -68,6 +71,9 @@ const initialSubmissions: Submission[] = [
     email: 'kavinda.p@gmail.com',
     phone: '+94 77 123 4567',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'approved',
     submittedAt: '2026-10-18T10:14:00Z',
@@ -82,6 +88,9 @@ const initialSubmissions: Submission[] = [
     email: 'ananya.j@outlook.com',
     phone: '+94 71 987 6543',
     quantity: 1,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 1000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-20T09:12:00Z',
@@ -93,6 +102,9 @@ const initialSubmissions: Submission[] = [
     email: 'nuwan.sena@gmail.com',
     phone: '+94 76 543 2198',
     quantity: 4,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 4000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-20T11:45:00Z',
@@ -105,6 +117,9 @@ const initialSubmissions: Submission[] = [
     email: 'dilhara.f@gmail.com',
     phone: '+94 70 334 5566',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'approved',
     submittedAt: '2026-10-19T13:20:00Z',
@@ -118,6 +133,9 @@ const initialSubmissions: Submission[] = [
     email: 'sanduni.w@yahoo.com',
     phone: '+94 77 889 0011',
     quantity: 1,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 1000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-21T08:30:00Z',
@@ -129,6 +147,9 @@ const initialSubmissions: Submission[] = [
     email: 'sahan.r@gmail.com',
     phone: '+94 75 112 2334',
     quantity: 3,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 3000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'rejected',
     rejectionReason: 'Invalid bank transaction reference. Amount mismatched.',
@@ -141,6 +162,9 @@ const initialSubmissions: Submission[] = [
     email: 'minoli.ds@gmail.com',
     phone: '+94 71 445 5667',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-21T14:10:00Z',
@@ -153,6 +177,9 @@ const initialSubmissions: Submission[] = [
     email: 'harsha.b@gmail.com',
     phone: '+94 78 223 3445',
     quantity: 1,
+    ticketType: 'student',
+    universityRegistrationNumber: 'FC119402',
+    totalPrice: 200,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'approved',
     submittedAt: '2026-10-19T17:15:00Z',
@@ -167,6 +194,9 @@ const initialSubmissions: Submission[] = [
     email: 'tharindu.alwis@gmail.com',
     phone: '+94 77 667 7889',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-22T07:50:00Z',
@@ -179,6 +209,9 @@ const initialSubmissions: Submission[] = [
     email: 'ruwanthi.k@gmail.com',
     phone: '+94 76 990 0112',
     quantity: 1,
+    ticketType: 'student',
+    universityRegistrationNumber: 'AS104921',
+    totalPrice: 200,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'approved',
     submittedAt: '2026-10-18T18:40:00Z',
@@ -192,6 +225,9 @@ const initialSubmissions: Submission[] = [
     email: 'nipuna.m@gmail.com',
     phone: '+94 72 332 2110',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-22T10:05:00Z',
@@ -204,6 +240,9 @@ const initialSubmissions: Submission[] = [
     email: 'chamari.a@gmail.com',
     phone: '+94 77 554 4332',
     quantity: 4,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 4000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'approved',
     submittedAt: '2026-10-18T09:20:00Z',
@@ -217,6 +256,9 @@ const initialSubmissions: Submission[] = [
     email: 'dasun.s@gmail.com',
     phone: '+94 70 887 7665',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-22T12:30:00Z',
@@ -228,6 +270,9 @@ const initialSubmissions: Submission[] = [
     email: 'gayathri.l@gmail.com',
     phone: '+94 71 223 3441',
     quantity: 1,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 1000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'pending',
     submittedAt: '2026-10-22T13:15:00Z',
@@ -240,6 +285,9 @@ const initialSubmissions: Submission[] = [
     email: 'praveen.j@gmail.com',
     phone: '+94 78 119 9882',
     quantity: 2,
+    ticketType: 'outsider',
+    universityRegistrationNumber: null,
+    totalPrice: 2000,
     paymentSlipUrl: '/assets/candlelit-venue.jpg',
     status: 'approved',
     submittedAt: '2026-10-17T12:00:00Z',
@@ -330,7 +378,17 @@ const initialHistory: ApprovalHistoryItem[] = [
 function getStored<T>(key: string, fallback: T): T {
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
+    if (!item) return fallback;
+    const parsed = JSON.parse(item);
+    if (key === STORAGE_KEY_SUBMISSIONS && Array.isArray(parsed)) {
+      return parsed.map((s: any) => ({
+        ...s,
+        ticketType: s.ticketType || 'outsider',
+        universityRegistrationNumber: s.universityRegistrationNumber || null,
+        totalPrice: s.totalPrice ?? (s.ticketType === 'student' ? 200 : (s.quantity || 1) * 1000),
+      })) as unknown as T;
+    }
+    return parsed;
   } catch {
     return fallback;
   }
@@ -345,7 +403,25 @@ function setStored<T>(key: string, data: T) {
 }
 
 // Ensure initial state exists
-if (!localStorage.getItem(STORAGE_KEY_SUBMISSIONS)) setStored(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+if (!localStorage.getItem(STORAGE_KEY_SUBMISSIONS)) {
+  const oldV1 = localStorage.getItem('memoria_submissions_v1');
+  if (oldV1) {
+    try {
+      const parsed = JSON.parse(oldV1);
+      const migrated = parsed.map((s: any) => ({
+        ...s,
+        ticketType: s.ticketType || 'outsider',
+        universityRegistrationNumber: s.universityRegistrationNumber || null,
+        totalPrice: s.totalPrice ?? (s.ticketType === 'student' ? 200 : (s.quantity || 1) * 1000),
+      }));
+      setStored(STORAGE_KEY_SUBMISSIONS, migrated);
+    } catch {
+      setStored(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+    }
+  } else {
+    setStored(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+  }
+}
 if (!localStorage.getItem(STORAGE_KEY_USERS)) setStored(STORAGE_KEY_USERS, initialUsers);
 if (!localStorage.getItem(STORAGE_KEY_SETTINGS)) setStored(STORAGE_KEY_SETTINGS, initialSettings);
 if (!localStorage.getItem(STORAGE_KEY_HISTORY)) setStored(STORAGE_KEY_HISTORY, initialHistory);
@@ -356,12 +432,52 @@ export const api = {
     name: string;
     email: string;
     phone: string;
-    quantity: number;
+    quantity?: number;
     paymentSlip: File | string;
+    ticketType: 'student' | 'outsider';
+    universityRegistrationNumber?: string | null;
   }): Promise<{ success: boolean; submissionId: string; message: string }> => {
     await delay();
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
-    
+
+    const ticketType: 'student' | 'outsider' = data.ticketType === 'student' ? 'student' : 'outsider';
+    let validatedRegNumber: string | null = null;
+    let quantity = 1;
+    let totalPrice = 1000;
+
+    if (ticketType === 'student') {
+      const rawReg = (data.universityRegistrationNumber || '').trim();
+      if (!rawReg) {
+        throw new Error('Please enter a valid university registration number.');
+      }
+      const normalizedReg = rawReg.toUpperCase();
+      // Format requirement: Faculty Code + Number (e.g. FC122716, 2-3 letters + 5-7 digits)
+      const regPattern = /^[A-Z]{2,3}\d{5,7}$/;
+      if (!regPattern.test(normalizedReg)) {
+        throw new Error('Please enter a valid university registration number (e.g. FC122716).');
+      }
+
+      // Strict uniqueness requirement: One student ticket per registration number
+      const alreadyIssued = subs.some(
+        (s) =>
+          s.ticketType === 'student' &&
+          s.universityRegistrationNumber?.toUpperCase() === normalizedReg &&
+          s.status !== 'rejected'
+      );
+
+      if (alreadyIssued) {
+        throw new Error('A university student ticket has already been issued for this registration number.');
+      }
+
+      validatedRegNumber = normalizedReg;
+      quantity = 1; // Strict: 1 student ticket per registration number
+      totalPrice = 200; // Strict backend price calculation: Rs. 200
+    } else {
+      validatedRegNumber = null;
+      quantity = Math.max(1, Math.min(5, Number(data.quantity) || 1));
+      totalPrice = quantity * 1000; // Strict backend price calculation: Rs. 1,000 per pass
+    }
+
     // Create base64 or fallback preview
     let slipUrl = '/assets/candlelit-venue.jpg';
     if (typeof data.paymentSlip === 'string') {
@@ -375,7 +491,10 @@ export const api = {
       name: data.name,
       email: data.email,
       phone: data.phone,
-      quantity: data.quantity,
+      quantity,
+      ticketType,
+      universityRegistrationNumber: validatedRegNumber,
+      totalPrice,
       paymentSlipUrl: slipUrl,
       status: 'pending',
       submittedAt: new Date().toISOString(),
@@ -387,7 +506,7 @@ export const api = {
 
     // Update remaining allocation
     const settings = getStored<EventSettings>(STORAGE_KEY_SETTINGS, initialSettings);
-    settings.remainingAllocation = Math.max(0, settings.remainingAllocation - data.quantity);
+    settings.remainingAllocation = Math.max(0, settings.remainingAllocation - quantity);
     setStored(STORAGE_KEY_SETTINGS, settings);
 
     return {
@@ -409,7 +528,10 @@ export const api = {
     const checkedIn = approved.filter((s) => s.checkedIn);
 
     const ticketsSold = approved.reduce((acc, curr) => acc + curr.quantity, 0);
-    const totalRevenue = ticketsSold * settings.ticketPrice;
+    const totalRevenue = approved.reduce(
+      (acc, curr) => acc + (curr.totalPrice ?? (curr.ticketType === 'student' ? 200 : curr.quantity * 1000)),
+      0
+    );
     const pendingTickets = pending.reduce((acc, curr) => acc + curr.quantity, 0);
 
     return {
@@ -597,7 +719,8 @@ export const api = {
         (s.ticketId && s.ticketId.toUpperCase() === normalized) ||
         s.id.toUpperCase() === normalized ||
         s.name.toUpperCase().includes(normalized) ||
-        s.email.toUpperCase() === normalized
+        s.email.toUpperCase() === normalized ||
+        (s.universityRegistrationNumber && s.universityRegistrationNumber.toUpperCase() === normalized)
     );
 
     if (!sub) {

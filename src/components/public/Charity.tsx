@@ -5,7 +5,7 @@ import { Sparkles, Heart, GraduationCap, Music, Users } from 'lucide-react';
 
 export const Charity: React.FC = () => {
   return (
-    <section id="charity" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0D0518] via-[#1A0D2E]/90 to-[#0D0518]">
+    <section id="charity" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-transparent">
       <div className="max-w-5xl mx-auto">
         <SectionDivider />
 

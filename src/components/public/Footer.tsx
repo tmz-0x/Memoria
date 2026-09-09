@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="relative bg-[#07020C] text-[#F0E6FA] border-t border-[#D4AF37]/30 pt-16 pb-12 overflow-hidden">
+    <footer className="relative bg-[#07020C]/75 backdrop-blur-xs text-[#F0E6FA] border-t border-[#D4AF37]/30 pt-16 pb-12 overflow-hidden">
       {/* Background Starfield and Crescent Moon */}
       <div className="absolute inset-0 pointer-events-none opacity-25">
         <img

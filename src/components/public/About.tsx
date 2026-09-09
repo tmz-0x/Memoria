@@ -5,7 +5,7 @@ import { Sparkles } from 'lucide-react';
 
 export const About: React.FC = () => {
   return (
-    <section id="about" className="relative pt-6 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0D0518] via-[#1A0D2E]/80 to-[#0D0518]">
+    <section id="about" className="relative pt-6 pb-20 px-4 sm:px-6 lg:px-8 bg-transparent">
       <div className="max-w-6xl mx-auto">
         {/* Theatrical Scene Transition Divider */}
         <SectionDivider className="!py-6" />
