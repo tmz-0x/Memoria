@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ParticleField } from '../components/public/ParticleField';
 import { Navbar } from '../components/public/Navbar';
 import { Hero } from '../components/public/Hero';
@@ -15,6 +16,11 @@ export const PublicHome: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    // If loaded with a direct hash anchor (e.g., #lineup), immediately unlock rest of page
+    if (window.location.hash && window.location.hash !== '#hero') {
+      setIntroReady(true);
+    }
+
     const handleScroll = () => {
       if (window.scrollY > 80) setScrolled(true);
     };
@@ -22,32 +28,42 @@ export const PublicHome: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Section 13 & 14: Mouse-reactive dust particles are inactive during CinematicIntro anticipation,
-  // and activate across the public sections once the hero settles or user scrolls
   const particlesActive = introReady || scrolled;
 
   return (
-    <div className="relative min-h-screen bg-[#0D0518] text-[#F0E6FA] overflow-x-hidden">
-      {/* Universal Stardust Particle Canvas (Inactive during 2s intro, active on main website) */}
+    <div
+      className={`relative min-h-screen bg-[#0D0518] text-[#F0E6FA] ${
+        !introReady ? 'h-screen overflow-hidden' : 'overflow-x-hidden'
+      }`}
+    >
+      {/* Universal Stardust Particle Canvas (Inactive during intro, active once intro completes) */}
       <ParticleField enabled={particlesActive} />
 
-      {/* Theatrical Navbar (Hidden during 2s anticipation, reveals automatically) */}
-      <Navbar forceVisible={particlesActive} />
+      {/* Theatrical Navbar (Hidden during intro, reveals automatically once intro completes) */}
+      <Navbar forceVisible={introReady} />
 
-      {/* Automatic Theatrical Opening Presentation & Hero (2s anticipation, fixed spotlight) */}
+      {/* Full-screen Automatic Theatrical Opening Presentation */}
       <Hero onIntroComplete={() => setIntroReady(true)} />
 
-      {/* Main Theatrical Odyssey (Normal user scrolling) */}
-      <main className="relative z-20">
-        <About />
-        <Lineup />
-        <TicketInfo />
-        <Charity />
-        <FAQ />
-        <Contact />
-      </main>
+      {/* Main Theatrical Odyssey: Only appears AFTER cinematic intro is done */}
+      {introReady && (
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+          <main className="relative z-20">
+            <About />
+            <Lineup />
+            <TicketInfo />
+            <Charity />
+            <FAQ />
+            <Contact />
+          </main>
 
-      <Footer />
+          <Footer />
+        </motion.div>
+      )}
     </div>
   );
 };

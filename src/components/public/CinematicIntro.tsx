@@ -33,15 +33,15 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
       return;
     }
 
-    // Exactly 2-second theatrical anticipation
+    // Exactly 2-second theatrical anticipation followed by sequenced revelations
     const t1 = setTimeout(() => {
       setStageAwakened(true);
-      if (onIntroComplete) onIntroComplete();
     }, 2000);
     const t2 = setTimeout(() => setMoonAppeared(true), 2800);
     const t3 = setTimeout(() => setTitleRevealed(true), 3800);
     const t4 = setTimeout(() => {
       setHeroSettled(true);
+      if (onIntroComplete) onIntroComplete();
     }, 5000);
 
     return () => {
@@ -52,15 +52,40 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
     };
   }, [onIntroComplete]);
 
+  const handleSkip = () => {
+    setStageAwakened(true);
+    setMoonAppeared(true);
+    setTitleRevealed(true);
+    setHeroSettled(true);
+    if (onIntroComplete) onIntroComplete();
+  };
+
   const scrollToAbout = () => {
     const el = document.getElementById('about');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setTimeout(() => {
+        const retryEl = document.getElementById('about');
+        if (retryEl) retryEl.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
   };
 
   return (
     <div
       className="relative w-full h-screen min-h-[640px] max-h-[1100px] overflow-hidden flex items-center justify-center select-none bg-[#0D0518]"
     >
+      {/* Skip Intro button (only visible while intro animation is in progress) */}
+      {!heroSettled && (
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="absolute top-5 right-5 z-40 text-[11px] font-heading tracking-[0.25em] uppercase text-[#F0E6FA]/60 hover:text-[#D4AF37] px-3.5 py-1.5 rounded-full border border-white/10 hover:border-[#D4AF37]/40 bg-[#0D0518]/70 backdrop-blur-xs transition-all duration-300 cursor-pointer select-none"
+        >
+          Skip Intro
+        </button>
+      )}
       {/* Layer 1: Theatrical Stage Backdrop (hero-stage-scene.jpg) */}
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <img
