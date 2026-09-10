@@ -1,0 +1,411 @@
+FIX — LINEUP ARTIST IMAGE INTEGRATION
+
+IMPORTANT: Do NOT rebuild the website and do not redesign unrelated sections. Inspect the existing React/Vite project and modify only the Lineup section and the assets/components required for it.
+
+The goal is to turn the existing Lineup section into a premium, cinematic artist showcase that matches the existing Memoria'26 — The Eclipse of Memories visual identity.
+
+1. USE THE ARTIST IMAGES ALREADY PROVIDED
+
+I have added artist images to:
+
+/public/artists/
+
+First, inspect this folder and identify every image currently inside it.
+
+Do NOT ask me to manually provide the filenames.
+
+Use the images that are actually present in /public/artists/.
+
+Artist naming rule
+
+The filenames contain the first name of each artist.
+
+Use the filename to determine the artist's displayed first name.
+
+For example:
+
+/public/artists/artistname.jpg
+
+should display the artist name:
+
+ARTISTNAME
+
+Normalize the filename appropriately for display:
+
+Remove file extension.
+Replace _ or - with spaces if necessary.
+Use proper capitalization.
+Do not display the filename extension.
+
+If the existing project already contains artist-name data that clearly corresponds to the images, preserve and use that data instead of creating conflicting names.
+
+2. CREATE A DATA-DRIVEN ARTIST LIST
+
+Do not hard-code each artist card independently.
+
+Create a reusable artist data structure/component.
+
+Example conceptual structure:
+
+{
+  name: "Artist Name",
+  image: "/artists/artistname.jpg"
+}
+
+The implementation should make it easy for me to add another artist image later.
+
+If possible, structure the system so adding another image to /public/artists/ requires only a small data update rather than rebuilding the Lineup section.
+
+3. CREATIVE ARTIST SHOWCASE
+
+Do NOT use a boring standard:
+
+[IMAGE]
+Artist Name
+
+card grid.
+
+The Lineup should feel like a concert poster / cinematic artist reveal.
+
+Use the existing Memoria visual language:
+
+Deep violet / indigo night
+Magenta-violet glow
+Antique gold
+Blossom pink
+Soft cinematic bloom
+Atmospheric darkness
+Elegant theatrical lighting
+Subtle star/dust particles
+
+The artist images should feel like they are part of the stage environment, not simply placed inside cards.
+
+4. ARTIST IMAGE PRESENTATION
+
+Create a visually interesting image treatment.
+
+Recommended approach:
+
+Large portrait frames
+
+Use large portrait-oriented artist images with:
+
+Cinematic cropping.
+Rounded or elegant asymmetric framing.
+Thin antique-gold borders.
+Subtle magenta glow.
+Soft shadow.
+Atmospheric bloom.
+Slight image depth/parallax.
+Dark gradient overlay near the bottom.
+
+The artist's face should remain clearly visible.
+
+Do NOT excessively crop the faces.
+
+5. ARTIST NAME
+
+Place the artist name directly into the visual composition.
+
+The name should feel like a concert artist title, not ordinary card text.
+
+Suggested hierarchy:
+
+ARTIST
+────────
+Artist Name
+
+or a similar elegant treatment.
+
+Use:
+
+Montserrat for artist names.
+Antique gold / soft blossom pink accents.
+Strong but elegant typography.
+Letter spacing where appropriate.
+
+Do NOT use Great Vibes for all artist names.
+
+Reserve the decorative script style for the Memoria branding where it is already used.
+
+6. CREATIVE LAYOUT
+
+Avoid a repetitive equal-size card grid.
+
+Use an editorial/cinematic composition.
+
+For example:
+
+          ARTIST
+      ┌─────────────┐
+      │             │
+      │   PORTRAIT  │
+      │             │
+      └─────────────┘
+
+  ┌───────────┐          ┌───────────┐
+  │  ARTIST   │          │  ARTIST   │
+  │  PORTRAIT │          │  PORTRAIT │
+  └───────────┘          └───────────┘
+
+However, adapt the exact arrangement dynamically according to the number of artists.
+
+The layout should feel intentionally designed rather than like a generic responsive gallery.
+
+7. ARTIST REVEAL ANIMATION
+
+Add a cinematic entrance animation when the Lineup section enters the viewport.
+
+Each artist should reveal progressively.
+
+Possible sequence:
+
+Artist image fades in from darkness.
+Image slightly rises into position.
+Subtle glow appears around the frame.
+Artist name fades/slides in.
+A small gold light sweep passes across the frame.
+Ambient particles continue behind the artist.
+
+Keep animations elegant and relatively slow.
+
+Do NOT make it feel like a gaming UI.
+
+Do NOT use excessive bouncing, spinning, or flashy transitions.
+
+8. HOVER INTERACTION
+
+On desktop, add a subtle cinematic hover effect.
+
+When the cursor enters an artist image:
+
+Image slightly zooms.
+Image brightness increases subtly.
+Magenta/gold glow becomes slightly stronger.
+Artist name becomes more prominent.
+Optional subtle parallax follows the cursor.
+
+The physical card/frame should NOT dramatically move.
+
+Keep the effect premium and restrained.
+
+On mobile, do not depend on hover.
+
+9. LINEUP SPOTLIGHT INTEGRATION
+
+Preserve the existing Lineup spotlight behavior.
+
+The existing Lineup section has cinematic spotlights.
+
+Do NOT remove them.
+
+Maintain:
+
+Two side spotlights.
+Left/right theatrical lighting.
+Existing scroll-direction behavior.
+
+The artist images should visually interact with the lighting.
+
+When the spotlight emphasis shifts across the Lineup, the artist portraits should naturally receive the atmospheric lighting.
+
+Do not make the spotlight physically cover the artist's face with an unrealistic bright overlay.
+
+10. PARTICLES
+
+Preserve the existing global particle/dust system.
+
+The Lineup section should have visible atmospheric particles.
+
+Use:
+
+Small dust particles.
+Occasional tiny star-like twinkles.
+Very subtle blossom particles where appropriate.
+
+The particles must remain behind the artist content.
+
+Do NOT cover faces with excessive particles.
+
+11. BAND — DIVINE PLACEHOLDER
+
+The band images have NOT been uploaded yet.
+
+Create a dedicated Band section/card within the Lineup experience for:
+
+DIVINE
+
+This must be clearly identified as the band.
+
+However:
+
+DO NOT invent or generate a fake DIVINE band photograph.
+
+Create a beautiful placeholder specifically designed for the future band image.
+
+Example concept:
+
+┌──────────────────────────────────────┐
+│                                      │
+│          BAND IMAGE                  │
+│       UPLOAD PLACEHOLDER             │
+│                                      │
+│              DIVINE                  │
+│                                      │
+└──────────────────────────────────────┘
+
+But make it visually consistent with the website rather than displaying plain placeholder text.
+
+Use:
+
+Dark violet atmospheric background.
+Antique-gold frame.
+Subtle magenta glow.
+Cinematic empty image area.
+Elegant DIVINE typography.
+Optional small text such as BAND.
+A clear internal placeholder indicating where the future image will be placed.
+
+When I later upload the DIVINE band image, I should be able to replace the placeholder easily without redesigning the component.
+
+12. BAND PLACEHOLDER STRUCTURE
+
+Create the band data separately from individual artists.
+
+Conceptually:
+
+{
+  type: "band",
+  name: "DIVINE",
+  image: null
+}
+
+When the image becomes available later:
+
+{
+  type: "band",
+  name: "DIVINE",
+  image: "/artists/divine.jpg"
+}
+
+The component should automatically switch from the placeholder to the actual image.
+
+Do not require rewriting the entire Lineup section.
+
+13. OPTIONAL NEW ASSETS
+
+If the current assets are insufficient for the creative treatment, you may create small supporting UI/visual assets such as:
+
+Decorative gold frame.
+Subtle ornamental corner elements.
+Gold light streak.
+Cinematic texture.
+Elegant divider.
+Glow overlay.
+
+However:
+
+Do NOT replace or modify the existing major event artwork.
+
+Reuse the existing assets and visual language wherever possible.
+
+Do not create unnecessary large image assets when CSS, gradients, SVG, or existing assets can achieve the same result.
+
+14. RESPONSIVE DESIGN
+
+The creative composition must work properly on:
+
+Desktop
+
+Use the full editorial/cinematic composition.
+
+Tablet
+
+Reduce spacing and image sizes while preserving the visual hierarchy.
+
+Mobile
+
+Do NOT simply squeeze the desktop grid.
+
+Create a deliberate mobile composition:
+
+Portraits remain large enough to see the artist.
+Names remain readable.
+Cards stack naturally.
+Animations remain smooth.
+No horizontal overflow.
+No cropped faces.
+
+The DIVINE placeholder must also remain visually attractive on mobile.
+
+15. ACCESSIBILITY & PERFORMANCE
+
+Use:
+
+Proper image alt text.
+Lazy loading where appropriate.
+Efficient animations.
+GPU-friendly transforms.
+No unnecessary continuous JavaScript calculations.
+
+Do not sacrifice performance for decorative effects.
+
+Respect prefers-reduced-motion.
+
+16. IMPORTANT — DO NOT BREAK EXISTING FEATURES
+
+Preserve everything outside this Lineup enhancement:
+
+Cinematic intro.
+Hero section.
+Existing spotlight system.
+Global particles.
+Navigation.
+About/story sections.
+Ticket interface.
+Student ticket system.
+Outsider ticket system.
+Registration number validation.
+Admin.
+Approver.
+Staff check-in.
+Existing routes.
+Existing API/mock API structure.
+Existing authentication/protection.
+Responsive behavior.
+
+Only modify what is necessary for the Lineup enhancement.
+
+17. FINAL VISUAL TARGET
+
+The finished Lineup should feel like a premium music-event artist reveal, not an ordinary website gallery.
+
+The visual story should be:
+
+Atmospheric darkness → theatrical light → artist portrait → artist identity
+
+The artist images from /public/artists/ should become the main visual focus of the Lineup.
+
+Each artist should feel like they have been introduced onto the Memoria stage.
+
+The DIVINE band should have a matching premium placeholder waiting for its future image.
+
+The final result should feel:
+
+Cinematic + Musical + Elegant + Mysterious + Premium + Immersive
+
+and must remain consistent with the existing:
+
+Memoria'26 — The Eclipse of Memories
+
+design language.
+
+BEFORE FINISHING
+Inspect /public/artists/.
+Identify all currently available artist images.
+Map every image to an artist name using the filename.
+Render all available artists in the Lineup.
+Add the DIVINE band placeholder.
+Verify desktop/tablet/mobile layouts.
+Verify that no existing routes or functionality are broken.
+Run the project and visually inspect the Lineup section before considering the task complete.
