@@ -111,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({ forceVisible = false }) => {
             className="flex items-center gap-2 px-5 py-2 rounded-full font-heading text-xs tracking-[0.15em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.4)] hover:shadow-[0_0_25px_rgba(224,102,255,0.7)] transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5" />
-            <span>Get Ticket &bull; Rs. 1000</span>
+            <span>Buy your Ticket &bull;</span>
           </button>
         </div>
 
@@ -190,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({ forceVisible = false }) => {
               className="w-full py-2.5 rounded-full font-heading text-xs uppercase tracking-wider font-bold text-[#0D0518] bg-gradient-to-r from-[#D4AF37] to-[#FF8FC7] flex items-center justify-center gap-2"
             >
               <Ticket className="w-4 h-4" />
-              <span>Book Ticket &bull; Rs. 1000</span>
+              <span>Book Ticket &bull;</span>
             </button>
           </div>
         </div>

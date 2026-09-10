@@ -41,7 +41,7 @@ export const About: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="font-body text-base sm:text-lg text-[#F0E6FA]/80 mt-5 leading-relaxed font-light"
           >
-            Memoria&apos;26 is not merely a concert. It is an immersive nocturnal odyssey where music, theatrical drama, and celestial wonder intertwine. An eclipse marks the rare, breathtaking cosmic convergence where the light gives way to sacred memory—and tonight, we bring that shadow to life.
+            Memoria&apos;26 is more than a concert — it's an immersive musical experience presented by the J'PURA VOICE Filming Division, blending live performance, expressive dance, and interactive moments that celebrate love, connection, and the spirit of youth. Every performance is crafted to create lasting impressions, turning a single evening into a memory that lingers long after the final note fades.
           </motion.p>
         </div>
 
@@ -58,11 +58,11 @@ export const About: React.FC = () => {
             {/* Ambient Glow Aura */}
             <div className="absolute -inset-4 bg-gradient-to-r from-[#C04ECF]/30 via-[#D4AF37]/20 to-[#E066FF]/30 rounded-3xl blur-2xl group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-            {/* Base Image: Authentic Candlelit Auditorium from screen8.png */}
+            {/* Base Image: Authentic Memoria '25 Live Concert Experience */}
             <div className="relative rounded-2xl overflow-hidden border border-[#D4AF37]/30 shadow-2xl bg-[#1A0D2E]">
               <img
-                src="/assets/candlelit-venue.jpg"
-                alt="Intimate Candlelit Theatrical Venue"
+                src="/assets/mem25.png"
+                alt="Memoria '25 Live Concert Experience"
                 className="w-full h-[380px] sm:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
               />
 
@@ -95,18 +95,18 @@ export const About: React.FC = () => {
             {[
               {
                 iconSrc: '/assets/icon-music.png',
-                title: 'Live Orchestration',
-                desc: 'Over 40 elite vocalists and classical instrumentalists performing live arrangements written exclusively for Memoria’26.',
+                title: 'Live Musical Performances',
+                desc: 'Romantic performances by talented university artists and special guest musicians, creating an emotional soundtrack for the evening',
               },
               {
                 iconSrc: '/assets/icon-dance.png',
-                title: 'Theatrical Narrative',
-                desc: 'A story of two celestial bodies in transient harmony. As the eclipse reaches totality, forgotten melodies resurface with orchestral power.',
+                title: 'Dance & Couple Experiences',
+                desc: 'Beautifully choreographed solo, couple, and group performances celebrating different expressions of love — alongside interactive games and live dedications that turn the audience into part of the story.',
               },
               {
                 iconSrc: '/assets/icon-couple.png',
-                title: 'A Night Of Memories',
-                desc: 'Every note resonates beyond the theatre walls. All net proceeds directly empower rural youth music and cultural scholarships across Sri Lanka.',
+                title: 'A Night That Gives Back',
+                desc: 'Beyond entertainment, Memoria26 supports 76 school students through essential educational resources and learning materials — turning the success of the night into a lasting, meaningful contribution.',
               },
             ].map((item, idx) => (
               <motion.div

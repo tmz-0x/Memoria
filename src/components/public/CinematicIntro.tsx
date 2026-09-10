@@ -218,7 +218,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
           className="flex flex-col items-center mt-4 sm:mt-6 space-y-4 sm:space-y-6"
         >
           <p className="text-xs sm:text-sm md:text-base text-[#F0E6FA]/85 tracking-[0.2em] uppercase font-medium max-w-xl">
-            Saturday, November 14, 2026 &bull; Nelum Pokuna Theatre, Colombo
+             &bull; Tuesday, OCTOBER 16, 2026 &bull; 
           </p>
 
           <p className="text-sm sm:text-base text-[#FFB3D9] italic font-light tracking-wide max-w-lg">
@@ -233,7 +233,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
               className="group relative px-8 py-3.5 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_40px_rgba(224,102,255,0.9)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
             >
               <Ticket className="w-4 h-4 text-[#0D0518]" />
-              <span>Book Your Ticket &bull; From Rs. 200</span>
+              <span>Book Your Ticket &bull;</span>
             </button>
 
             <button
