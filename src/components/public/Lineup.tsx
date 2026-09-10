@@ -153,11 +153,11 @@ export const Lineup: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="font-heading text-3xl sm:text-5xl font-extrabold uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#F0E6FA] via-[#FF8FC7] to-[#D4AF37] mt-3"
           >
-            Theatrical Lineup
+            Artist Lineup
           </motion.h2>
 
           <p className="font-body text-base text-[#F0E6FA]/70 mt-4 font-light">
-            Framed by opposing theatrical spotlights, each act takes the stage in an unfolding symphony of memory.
+            Four voices, one night — each artist bringing their own sound to the stage.
           </p>
         </div>
 

@@ -61,19 +61,19 @@ export const About: React.FC = () => {
             {/* Base Image: Authentic Memoria '25 Live Concert Experience */}
             <div className="relative rounded-2xl overflow-hidden border border-[#D4AF37]/30 shadow-2xl bg-[#1A0D2E]">
               <img
-                src="/assets/mem25.png"
+                src="/assets/25memm.png"
                 alt="Memoria '25 Live Concert Experience"
                 className="w-full h-[380px] sm:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
               />
 
-              {/* Floating Moon Atmosphere Overlay from screen7.png */}
+              {/* Floating Moon Atmosphere Overlay from screen7.png
               <div className="absolute top-4 right-4 w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border border-[#D4AF37]/50 shadow-[0_0_30px_rgba(212,175,55,0.5)] pointer-events-none bg-[#0D0518]/60 backdrop-blur-xs">
                 <img
                   src="/assets/moon-starfield.png"
                   alt="Luminous Starfield"
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </div> */}
 
               {/* Gradient Scrim */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/30 pointer-events-none" />
@@ -84,7 +84,7 @@ export const About: React.FC = () => {
                   JPURA Voiceclub Signature Production
                 </span>
                 <h3 className="font-heading text-xl sm:text-2xl font-bold text-white mt-1">
-                  The Symphony of Shadows & Light
+                  Memoria&apos;25 Live Concert Experience
                 </h3>
               </div>
             </div>
