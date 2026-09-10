@@ -12,6 +12,11 @@
   --color-body-text: #F0E6FA;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -19,6 +24,8 @@ body {
   color: var(--color-body-text);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* Custom delicate scrollbar */

@@ -62,8 +62,8 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
 
     const isMobile = width < 768;
     const isTablet = width >= 768 && width < 1024;
-    // Fix 8, Section 3 & 4: Delicate petal count (Desktop: 88, Tablet: 60, Mobile: 36)
-    const petalCount = prefersReducedMotion ? (isMobile ? 18 : 28) : isMobile ? 36 : isTablet ? 60 : 88;
+    // Mobile Performance Optimization: Balanced petal count for smooth 60fps on phones
+    const petalCount = prefersReducedMotion ? (isMobile ? 12 : 20) : isMobile ? 22 : isTablet ? 45 : 88;
 
     const handleResize = () => {
       if (!canvas) return;
@@ -271,8 +271,8 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
 
         ctx.fillStyle = grad;
 
-        // Foreground soft bloom & beam illumination glow
-        if (p.layer === 'fg' || beamBoost > 0.2) {
+        // Foreground soft bloom & beam illumination glow (desktop only for 60fps performance)
+        if (!isMobile && (p.layer === 'fg' || beamBoost > 0.2)) {
           ctx.shadowColor = '#FF8FC7';
           ctx.shadowBlur = p.layer === 'fg' ? 6 : 10;
         }

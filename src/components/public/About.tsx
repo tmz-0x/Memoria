@@ -41,7 +41,7 @@ export const About: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="font-body text-base sm:text-lg text-[#F0E6FA]/80 mt-5 leading-relaxed font-light"
           >
-            Memoria&apos;26 is more than a concert — it's an immersive musical experience presented by the J'PURA VOICE Filming Division, blending live performance, expressive dance, and interactive moments that celebrate love, connection, and the spirit of youth. Every performance is crafted to create lasting impressions, turning a single evening into a memory that lingers long after the final note fades.
+            Memoria&apos;26 is more than a concert — It's an immersive musical experience presented by the J'PURA VOICE Filming Division, blending live performance, expressive dance, and interactive moments that celebrate love, connection, and the spirit of youth. Every performance is crafted to create lasting impressions, turning a single evening into a memory that lingers long after the final note fades.
           </motion.p>
         </div>
 
@@ -63,7 +63,7 @@ export const About: React.FC = () => {
               <img
                 src="/assets/25memm.png"
                 alt="Memoria '25 Live Concert Experience"
-                className="w-full h-[380px] sm:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-[260px] sm:h-[380px] md:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
               />
 
               {/* Floating Moon Atmosphere Overlay from screen7.png
@@ -81,7 +81,7 @@ export const About: React.FC = () => {
               {/* Theatrical Card Label */}
               <div className="absolute bottom-6 left-6 right-6">
                 <span className="font-heading text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase font-bold">
-                  JPURA Voiceclub Signature Production
+                  JPURA Voice Signature Production
                 </span>
                 <h3 className="font-heading text-xl sm:text-2xl font-bold text-white mt-1">
                   Memoria&apos;25 Live Concert Experience
@@ -111,11 +111,11 @@ export const About: React.FC = () => {
             ].map((item, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, x: 25 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.15 * idx }}
-                className="p-5 rounded-xl bg-[#1A0D2E]/60 border border-[#D4AF37]/25 hover:border-[#D4AF37]/70 hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-md"
+                className="p-4 sm:p-5 rounded-xl bg-[#1A0D2E]/60 border border-[#D4AF37]/25 hover:border-[#D4AF37]/70 hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-md"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-xl bg-[#0D0518] border border-[#D4AF37]/50 p-2 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:shadow-[0_0_15px_#D4AF37] transition-all">

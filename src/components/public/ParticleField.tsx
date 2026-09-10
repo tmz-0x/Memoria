@@ -46,8 +46,8 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
     const isTouch = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768;
     const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
 
-    // Fix Pass 6: Substantially higher particle density (Desktop: 150-250 -> 220, Tablet: 100-170 -> 145, Mobile: 60-100 -> 85)
-    const particleCount = isTouch ? 85 : isTablet ? 145 : 220;
+    // Mobile Performance Optimization: 38 delicate dust particles on mobile to maintain rock-solid 60-120fps
+    const particleCount = isTouch ? 38 : isTablet ? 95 : 220;
 
     const mouse = {
       x: -3000,
@@ -220,7 +220,7 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
           ctx.globalAlpha = drawAlpha;
           ctx.fillStyle = p.color;
 
-          if (p.hasGlow) {
+          if (p.hasGlow && !isTouch) {
             ctx.shadowColor = p.color;
             ctx.shadowBlur = p.size * (p.isTwinkler ? 4.8 : 3.2);
           }

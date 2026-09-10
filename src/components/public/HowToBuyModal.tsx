@@ -40,27 +40,28 @@ export const HowToBuyModal: React.FC<HowToBuyModalProps> = ({ isOpen, onClose })
             className="relative w-full max-w-2xl bg-[#1A0D2E] border border-[#D4AF37]/50 rounded-2xl shadow-[0_0_50px_rgba(212,175,55,0.3)] overflow-hidden z-10 my-8"
           >
             {/* Modal Header */}
-            <div className="p-6 border-b border-[#D4AF37]/20 flex items-center justify-between bg-gradient-to-r from-[#1A0D2E] to-[#0D0518]">
+            <div className="p-4 sm:p-6 border-b border-[#D4AF37]/20 flex items-center justify-between bg-gradient-to-r from-[#1A0D2E] to-[#0D0518]">
               <div>
                 <span className="font-heading text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase font-bold flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3" />
                   Official Ticketing Guide
                 </span>
-                <h3 className="font-heading text-lg sm:text-xl font-bold text-white mt-0.5">
+                <h3 className="font-heading text-base sm:text-xl font-bold text-white mt-0.5">
                   How To Reserve & Admission Rules
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-[#F0E6FA]/60 hover:text-white hover:bg-[#D4AF37]/20 transition-colors cursor-pointer"
+                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[#F0E6FA]/70 hover:text-white hover:bg-[#D4AF37]/20 transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs sm:text-sm font-body text-[#F0E6FA]/80">
+            <div className="p-4 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs sm:text-sm font-body text-[#F0E6FA]/80">
               {/* 6 Step Purchase Flow */}
               <div>
                 <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-[#FF8FC7] mb-3">

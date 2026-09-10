@@ -132,7 +132,7 @@ const ArtistCard: React.FC<{
       <div className="absolute -inset-2 bg-gradient-to-b from-[#E066FF]/20 via-[#D4AF37]/15 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
 
       {/* Main Theatrical Portrait Frame (Fix 9, Section 4 & 5) */}
-      <div className="relative h-[480px] sm:h-[520px] lg:h-[550px] w-full rounded-2xl overflow-hidden bg-[#0D0518] border border-[#D4AF37]/35 group-hover:border-[#D4AF37] shadow-[0_10px_35px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_35px_rgba(224,102,255,0.35),0_0_50px_rgba(212,175,55,0.4)] transition-all duration-500 flex flex-col justify-end">
+      <div className="relative h-[440px] sm:h-[480px] lg:h-[550px] w-full rounded-2xl overflow-hidden bg-[#0D0518] border border-[#D4AF37]/35 group-hover:border-[#D4AF37] shadow-[0_10px_35px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_35px_rgba(224,102,255,0.35),0_0_50px_rgba(212,175,55,0.4)] transition-all duration-500 flex flex-col justify-end">
         {/* Antique Gold Corner Accents */}
         <CornerAccent position="tl" />
         <CornerAccent position="tr" />
@@ -165,7 +165,7 @@ const ArtistCard: React.FC<{
         </div>
 
         {/* Artist Name & Typography Composition (Fix 9, Section 5) */}
-        <div className="relative z-20 p-6 pt-0">
+        <div className="relative z-20 p-5 sm:p-6 pt-0">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-heading text-[10px] sm:text-[11px] font-bold tracking-[0.35em] text-[#D4AF37] uppercase">
               ARTIST
@@ -192,7 +192,7 @@ const ArtistCard: React.FC<{
 
           {/* Bottom Accent Bar */}
           <div className="mt-4 pt-3 border-t border-[#D4AF37]/20 flex items-center justify-between text-[10px] font-heading text-[#D4AF37]/80 group-hover:text-[#D4AF37] transition-colors">
-            <span className="tracking-[0.2em] uppercase font-semibold">Live at Nelum Pokuna</span>
+            <span className="tracking-[0.2em] uppercase font-semibold">Live on Stage</span>
             <Star className="w-3 h-3 fill-[#D4AF37]/40 group-hover:fill-[#D4AF37] transition-colors" />
           </div>
         </div>
@@ -238,11 +238,11 @@ const BandCard: React.FC<{ band: BandItem }> = ({ band }) => {
                 <div className="h-[1px] w-12 bg-gradient-to-r from-[#D4AF37] to-transparent" />
               </div>
 
-              <h3 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-[#FFB3D9] to-[#D4AF37] tracking-[0.18em] uppercase mt-2 drop-shadow-[0_2px_15px_rgba(224,102,255,0.4)]">
+              <h3 className="font-heading text-3xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-[#FFB3D9] to-[#D4AF37] tracking-[0.16em] uppercase mt-2 drop-shadow-[0_2px_15px_rgba(224,102,255,0.4)]">
                 {band.name}
               </h3>
 
-              <p className="font-heading text-sm text-[#FF8FC7] uppercase tracking-[0.2em] font-semibold mt-2">
+              <p className="font-heading text-xs sm:text-sm text-[#FF8FC7] uppercase tracking-[0.18em] font-semibold mt-2">
                 {band.role} &bull; {band.genre}
               </p>
 
@@ -251,13 +251,13 @@ const BandCard: React.FC<{ band: BandItem }> = ({ band }) => {
               </p>
             </div>
 
-            <div className="pt-4 border-t border-[#D4AF37]/25 flex items-center justify-between text-xs font-heading text-[#D4AF37]">
+            <div className="pt-4 border-t border-[#D4AF37]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-heading text-[#D4AF37]">
               <span className="tracking-widest uppercase flex items-center gap-2 font-semibold">
-                <Award className="w-4 h-4 text-[#D4AF37]" />
-                Full Symphony Synchronization
+                <Award className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                <span>Full Symphony Synchronization</span>
               </span>
               <span className="text-[#FFB3D9] font-bold tracking-wider">
-                Nelum Pokuna Mainstage
+                Memoria Mainstage
               </span>
             </div>
           </div>
@@ -355,12 +355,12 @@ export const Lineup: React.FC = () => {
           x: leftSpotlightX,
           transformOrigin: 'top left',
         }}
-        className="pointer-events-none absolute -top-24 -left-12 w-[80vw] sm:w-[55vw] h-[130vh] mix-blend-screen z-0 will-change-transform"
+        className="pointer-events-none absolute -top-24 -left-12 w-[85vw] sm:w-[55vw] h-[120vh] mix-blend-screen z-0 will-change-transform"
       >
         <img
           src="/assets/spotlight-beam.png"
           alt="Lineup Left Spotlight"
-          className="w-full h-full object-fill opacity-90 filter drop-shadow-[0_0_60px_#E066FF]"
+          className="w-full h-full object-fill opacity-75 md:opacity-90 md:filter md:drop-shadow-[0_0_60px_#E066FF]"
         />
       </motion.div>
 
@@ -372,12 +372,12 @@ export const Lineup: React.FC = () => {
           x: rightSpotlightX,
           transformOrigin: 'top right',
         }}
-        className="pointer-events-none absolute -top-24 -right-12 w-[80vw] sm:w-[55vw] h-[130vh] mix-blend-screen z-0 will-change-transform"
+        className="pointer-events-none absolute -top-24 -right-12 w-[85vw] sm:w-[55vw] h-[120vh] mix-blend-screen z-0 will-change-transform"
       >
         <img
           src="/assets/spotlight-beam.png"
           alt="Lineup Right Spotlight"
-          className="w-full h-full object-fill opacity-90 -scale-x-100 filter drop-shadow-[0_0_60px_#D4AF37]"
+          className="w-full h-full object-fill opacity-75 md:opacity-90 -scale-x-100 md:filter md:drop-shadow-[0_0_60px_#D4AF37]"
         />
       </motion.div>
 

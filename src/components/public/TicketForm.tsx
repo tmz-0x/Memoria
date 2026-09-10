@@ -298,7 +298,7 @@ export const TicketForm: React.FC = () => {
                         University Registration Number *
                       </label>
                       <span className="text-[10px] font-heading uppercase tracking-wider text-[#FF8FC7]">
-                        Example: FC122716
+                        Example: FCxxxxxx
                       </span>
                     </div>
                     <input
@@ -310,7 +310,7 @@ export const TicketForm: React.FC = () => {
                         setRegError(null);
                         setFileError(null);
                       }}
-                      placeholder="FC122716"
+                      placeholder="FCxxxxxx"
                       className="w-full px-4 py-3 rounded-xl bg-[#0D0518] border border-[#D4AF37]/40 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-sm font-mono uppercase tracking-wider"
                     />
                     <p className="text-[11px] text-[#F0E6FA]/60 mt-1 font-light">

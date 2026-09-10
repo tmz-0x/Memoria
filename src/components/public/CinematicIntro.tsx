@@ -74,14 +74,14 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
 
   return (
     <div
-      className="relative w-full h-screen min-h-[640px] max-h-[1100px] overflow-hidden flex items-center justify-center select-none bg-[#0D0518]"
+      className="relative w-full h-[100dvh] min-h-[500px] max-h-[1100px] overflow-hidden flex items-center justify-center select-none bg-[#0D0518]"
     >
-      {/* Skip Intro button (only visible while intro animation is in progress) */}
+      {/* Skip Intro button (only visible while intro animation is in progress - 44px tap target) */}
       {!heroSettled && (
         <button
           type="button"
           onClick={handleSkip}
-          className="absolute top-5 right-5 z-40 text-[11px] font-heading tracking-[0.25em] uppercase text-[#F0E6FA]/60 hover:text-[#D4AF37] px-3.5 py-1.5 rounded-full border border-white/10 hover:border-[#D4AF37]/40 bg-[#0D0518]/70 backdrop-blur-xs transition-all duration-300 cursor-pointer select-none"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-40 text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-4 py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/80 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
         >
           Skip Intro
         </button>
@@ -107,7 +107,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
       />
 
       {/* Layer 4: Moon & Eclipse Layer behind stage center */}
-      <div className="absolute top-[13%] sm:top-[15%] flex items-center justify-center pointer-events-none z-10">
+      <div className="absolute top-[8%] sm:top-[12%] md:top-[15%] flex items-center justify-center pointer-events-none z-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{
@@ -118,7 +118,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
               : '0 0 0px transparent',
           }}
           transition={{ duration: 1.6, ease: 'easeOut' }}
-          className="relative w-44 h-44 sm:w-60 sm:h-60 rounded-full overflow-hidden flex items-center justify-center"
+          className="relative w-32 h-32 sm:w-48 sm:h-48 md:w-60 md:h-60 rounded-full overflow-hidden flex items-center justify-center"
         >
           {/* Luminous Crescent Moon (screen7.png) */}
           <img
@@ -202,7 +202,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
             y: titleRevealed ? 0 : 20,
           }}
           transition={{ duration: 1, delay: 0.15, ease: 'easeOut' }}
-          className="font-wordmark text-6xl sm:text-8xl md:text-9xl lg:text-[10.5rem] font-normal leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37] drop-shadow-[0_0_35px_rgba(224,102,255,0.75)] py-2 select-none"
+          className="font-wordmark text-5xl sm:text-7xl md:text-9xl lg:text-[10.5rem] font-normal leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37] drop-shadow-[0_0_35px_rgba(224,102,255,0.75)] py-1 sm:py-2 select-none"
         >
           Memoria&apos;26
         </motion.h1>
@@ -215,22 +215,22 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
             y: heroSettled ? 0 : 20,
           }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="flex flex-col items-center mt-4 sm:mt-6 space-y-4 sm:space-y-6"
+          className="flex flex-col items-center mt-3 sm:mt-6 space-y-3 sm:space-y-6 w-full"
         >
-          <p className="text-xs sm:text-sm md:text-base text-[#F0E6FA]/85 tracking-[0.2em] uppercase font-medium max-w-xl">
+          <p className="text-[11px] sm:text-sm md:text-base text-[#F0E6FA]/85 tracking-[0.2em] uppercase font-medium max-w-xl">
              &bull; Tuesday, OCTOBER 16, 2026 &bull; 
           </p>
 
-          <p className="text-sm sm:text-base text-[#FFB3D9] italic font-light tracking-wide max-w-lg">
+          <p className="text-xs sm:text-base text-[#FFB3D9] italic font-light tracking-wide max-w-lg px-2">
             &ldquo;Where echoes of the past meet the light of tonight.&rdquo;
           </p>
 
-          {/* Primary Action Buttons: Navigates to /tickets */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+          {/* Primary Action Buttons: Stacked on mobile with 44px+ tap target */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 pt-1 sm:pt-2 w-full max-w-xs sm:max-w-none">
             <button
               type="button"
               onClick={() => navigate('/tickets')}
-              className="group relative px-8 py-3.5 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_40px_rgba(224,102,255,0.9)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+              className="group relative w-full sm:w-auto px-7 py-3.5 min-h-[44px] rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_40px_rgba(224,102,255,0.9)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
             >
               <Ticket className="w-4 h-4 text-[#0D0518]" />
               <span>Book Your Ticket &bull;</span>
@@ -239,7 +239,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
             <button
               type="button"
               onClick={scrollToAbout}
-              className="px-6 py-3 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-semibold uppercase text-[#F0E6FA] border border-[#D4AF37]/40 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all duration-300 hover:scale-105 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 min-h-[44px] rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-semibold uppercase text-[#F0E6FA] border border-[#D4AF37]/40 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center"
             >
               Explore Experience
             </button>
@@ -253,9 +253,9 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         animate={{ opacity: heroSettled ? 1 : 0 }}
         transition={{ duration: 0.8 }}
         onClick={scrollToAbout}
-        className="absolute bottom-6 z-30 flex flex-col items-center cursor-pointer hover:opacity-100 transition-opacity"
+        className="absolute bottom-3 sm:bottom-6 z-30 flex flex-col items-center cursor-pointer hover:opacity-100 transition-opacity p-2 min-h-[44px] min-w-[44px]"
       >
-        <span className="font-heading text-[10px] tracking-[0.3em] text-[#D4AF37] uppercase mb-1">
+        <span className="font-heading text-[9px] sm:text-[10px] tracking-[0.3em] text-[#D4AF37] uppercase mb-1">
           Explore Event
         </span>
         <ChevronDown className="w-4 h-4 text-[#D4AF37] animate-bounce" />

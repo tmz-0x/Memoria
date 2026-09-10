@@ -104,7 +104,7 @@ export const Footer: React.FC = () => {
               <button
                 type="button"
                 onClick={scrollToTop}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1A0D2E] border border-[#D4AF37]/40 hover:border-[#D4AF37] text-xs font-heading uppercase tracking-wider text-[#D4AF37] transition-all hover:scale-105 cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-[#1A0D2E] border border-[#D4AF37]/40 hover:border-[#D4AF37] text-xs font-heading uppercase tracking-wider text-[#D4AF37] transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <span>Return to top</span>
                 <ArrowUp className="w-3.5 h-3.5" />

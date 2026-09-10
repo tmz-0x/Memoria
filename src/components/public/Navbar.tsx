@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Menu, X } from 'lucide-react';
+import { Ticket, Menu, X, ChevronRight } from 'lucide-react';
 
 interface NavbarProps {
   forceVisible?: boolean;
@@ -116,85 +116,73 @@ export const Navbar: React.FC<NavbarProps> = ({ forceVisible = false }) => {
         </div>
 
         {/* Mobile menu button */}
-        <div className="md:hidden flex items-center gap-3">
+        <div className="md:hidden flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => navigate('/tickets')}
-            className="px-3 py-1.5 rounded-full font-heading text-[10px] tracking-wider font-bold uppercase text-[#0D0518] bg-[#D4AF37]"
+            className="px-3.5 py-1.5 min-h-[36px] rounded-full font-heading text-[11px] tracking-wider font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] to-[#FF8FC7] shadow-sm active:scale-95 transition-transform"
           >
             Tickets
           </button>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-[#F0E6FA] hover:text-[#D4AF37] focus:outline-none cursor-pointer"
-            aria-label="Toggle menu"
+            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#F0E6FA] hover:text-[#D4AF37] rounded-xl hover:bg-white/5 active:bg-white/10 focus:outline-none transition-colors cursor-pointer"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-6 h-6 text-[#D4AF37]" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0D0518]/98 border-b border-[#D4AF37]/30 px-6 py-6 space-y-4 shadow-2xl">
-          <button
-            type="button"
-            onClick={() => scrollToSection('about')}
-            className="block w-full text-left font-heading text-xs uppercase tracking-widest text-[#F0E6FA] hover:text-[#D4AF37]"
+      {/* Mobile menu dropdown with AnimatePresence & touch-friendly links */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="md:hidden overflow-hidden bg-[#0D0518]/98 backdrop-blur-xl border-b border-[#D4AF37]/30 shadow-2xl"
           >
-            Story
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToSection('lineup')}
-            className="block w-full text-left font-heading text-xs uppercase tracking-widest text-[#F0E6FA] hover:text-[#D4AF37]"
-          >
-            Lineup
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToSection('ticket-overview')}
-            className="block w-full text-left font-heading text-xs uppercase tracking-widest text-[#F0E6FA] hover:text-[#D4AF37]"
-          >
-            Event Info
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToSection('charity')}
-            className="block w-full text-left font-heading text-xs uppercase tracking-widest text-[#F0E6FA] hover:text-[#D4AF37]"
-          >
-            Cause
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToSection('faq')}
-            className="block w-full text-left font-heading text-xs uppercase tracking-widest text-[#F0E6FA] hover:text-[#D4AF37]"
-          >
-            FAQ
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToSection('contact')}
-            className="block w-full text-left font-heading text-xs uppercase tracking-widest text-[#F0E6FA] hover:text-[#D4AF37]"
-          >
-            Contact
-          </button>
-          <div className="pt-2 border-t border-[#D4AF37]/20">
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                navigate('/tickets');
-              }}
-              className="w-full py-2.5 rounded-full font-heading text-xs uppercase tracking-wider font-bold text-[#0D0518] bg-gradient-to-r from-[#D4AF37] to-[#FF8FC7] flex items-center justify-center gap-2"
-            >
-              <Ticket className="w-4 h-4" />
-              <span>Book Ticket &bull;</span>
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="px-5 py-5 space-y-1">
+              {[
+                { id: 'about', label: 'Story' },
+                { id: 'lineup', label: 'Lineup' },
+                { id: 'ticket-overview', label: 'Event Info' },
+                { id: 'charity', label: 'Cause' },
+                { id: 'faq', label: 'FAQ' },
+                { id: 'contact', label: 'Contact' },
+              ].map((link) => (
+                <button
+                  key={link.id}
+                  type="button"
+                  onClick={() => scrollToSection(link.id)}
+                  className="w-full text-left py-3 px-3.5 rounded-xl font-heading text-xs uppercase tracking-[0.2em] font-semibold text-[#F0E6FA]/90 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 active:bg-[#D4AF37]/20 flex items-center justify-between transition-colors min-h-[44px]"
+                >
+                  <span>{link.label}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#D4AF37]/60" />
+                </button>
+              ))}
+
+              <div className="pt-3 mt-2 border-t border-[#D4AF37]/20">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/tickets');
+                  }}
+                  className="w-full py-3.5 min-h-[44px] rounded-full font-heading text-xs uppercase tracking-[0.18em] font-bold text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-2 active:scale-98 transition-transform"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>Book Ticket &bull;</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 };

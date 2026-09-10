@@ -143,7 +143,7 @@ export const TicketInfo: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="w-full sm:w-auto px-6 py-3 rounded-full font-heading text-xs tracking-[0.15em] font-semibold uppercase text-[#D4AF37] border border-[#D4AF37]/50 hover:border-[#D4AF37] hover:bg-[#D4AF37]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 min-h-[44px] rounded-full font-heading text-xs tracking-[0.15em] font-semibold uppercase text-[#D4AF37] border border-[#D4AF37]/50 hover:border-[#D4AF37] hover:bg-[#D4AF37]/15 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
               >
                 <HelpCircle className="w-4 h-4 text-[#D4AF37]" />
                 <span>How To Buy & Rules</span>
@@ -152,9 +152,9 @@ export const TicketInfo: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/tickets')}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_35px_rgba(224,102,255,0.8)] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-3.5 min-h-[44px] rounded-full font-heading text-xs sm:text-sm tracking-[0.2em] font-bold uppercase text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_35px_rgba(224,102,255,0.8)] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Book Your Ticket &bull; From Rs. 200</span>
+                <span>Book Your Ticket</span>
                 <ArrowRight className="w-4 h-4 text-[#0D0518]" />
               </button>
             </div>

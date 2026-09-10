@@ -238,8 +238,8 @@ export const TicketsPage: React.FC = () => {
                 <Calendar className="w-6 h-6 text-[#D4AF37] shrink-0" />
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Date & Time</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Sat, Nov 14, 2026</span>
-                  <span className="block text-[10px] text-[#FF8FC7]">Gates: 5:30 PM &bull; Show: 6:30 PM</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Tuesday, October 13, 2026</span>
+                  <span className="block text-[10px] text-[#FF8FC7]">Gates:4:30 PM &bull; Show: 6:30 PM</span>
                 </div>
               </div>
 
@@ -247,8 +247,8 @@ export const TicketsPage: React.FC = () => {
                 <MapPin className="w-6 h-6 text-[#FF8FC7] shrink-0" />
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Venue</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Nelum Pokuna Theatre</span>
-                  <span className="block text-[10px] text-[#F0E6FA]/60">Mahinda Rajapaksa Auditorium</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Gal Pittaniya Premises</span>
+                  <span className="block text-[10px] text-[#F0E6FA]/60">University Of Sri Jayewardenapura</span>
                 </div>
               </div>
 
@@ -508,7 +508,7 @@ export const TicketsPage: React.FC = () => {
                           University Registration Number *
                         </label>
                         <span className="text-[10px] font-heading uppercase tracking-wider text-[#FF8FC7]">
-                          Example: FC122716
+                          Example: FCxxxxxx
                         </span>
                       </div>
                       <input
@@ -520,8 +520,8 @@ export const TicketsPage: React.FC = () => {
                           setRegError(null);
                           setFileError(null);
                         }}
-                        placeholder="FC122716"
-                        className="w-full px-4 py-3 rounded-xl bg-[#0D0518] border border-[#D4AF37]/40 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-sm font-mono uppercase tracking-wider"
+                        placeholder="FCxxxxxx"
+                        className="w-full px-4 py-3 min-h-[44px] rounded-xl bg-[#0D0518] border border-[#D4AF37]/40 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-base sm:text-sm font-mono uppercase tracking-wider"
                       />
                       <p className="text-[11px] text-[#F0E6FA]/60 mt-1 font-light">
                         Enter your unique university registration number.
@@ -546,7 +546,7 @@ export const TicketsPage: React.FC = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Kavinda Perera"
-                      className="w-full px-4 py-3 rounded-xl bg-[#0D0518] border border-[#D4AF37]/30 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-sm"
+                      className="w-full px-4 py-3 min-h-[44px] rounded-xl bg-[#0D0518] border border-[#D4AF37]/30 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-base sm:text-sm"
                     />
                   </div>
 
@@ -562,7 +562,7 @@ export const TicketsPage: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="kavinda@example.com"
-                        className="w-full px-4 py-3 rounded-xl bg-[#0D0518] border border-[#D4AF37]/30 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 min-h-[44px] rounded-xl bg-[#0D0518] border border-[#D4AF37]/30 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-base sm:text-sm"
                       />
                     </div>
 
@@ -576,7 +576,7 @@ export const TicketsPage: React.FC = () => {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+94 77 123 4567"
-                        className="w-full px-4 py-3 rounded-xl bg-[#0D0518] border border-[#D4AF37]/30 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 min-h-[44px] rounded-xl bg-[#0D0518] border border-[#D4AF37]/30 text-white placeholder-[#F0E6FA]/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all text-base sm:text-sm"
                       />
                     </div>
                   </div>
@@ -594,7 +594,7 @@ export const TicketsPage: React.FC = () => {
                               key={q}
                               type="button"
                               onClick={() => setQuantity(q)}
-                              className={`w-9 h-9 rounded-lg font-heading text-xs font-bold transition-all cursor-pointer ${
+                              className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl font-heading text-sm font-bold transition-all cursor-pointer flex items-center justify-center active:scale-95 ${
                                 quantity === q
                                   ? 'bg-gradient-to-r from-[#D4AF37] to-[#FF8FC7] text-[#0D0518] shadow-[0_0_10px_rgba(212,175,55,0.6)]'
                                   : 'bg-[#1A0D2E] border border-[#D4AF37]/30 text-[#F0E6FA] hover:border-[#D4AF37]'

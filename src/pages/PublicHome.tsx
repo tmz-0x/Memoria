@@ -24,16 +24,44 @@ export const PublicHome: React.FC = () => {
     const handleScroll = () => {
       if (window.scrollY > 80) setScrolled(true);
     };
+
+    // Mobile swipe up or wheel down smoothly reveals main content without getting stuck
+    let touchStartY = 0;
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      if (touchStartY - touchEndY > 45) {
+        setIntroReady(true);
+      }
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY > 25) {
+        setIntroReady(true);
+      }
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('wheel', handleWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('wheel', handleWheel);
+    };
   }, []);
 
   const particlesActive = introReady || scrolled;
 
   return (
     <div
-      className={`relative min-h-screen bg-[#0D0518] text-[#F0E6FA] ${
-        !introReady ? 'h-screen overflow-hidden' : 'overflow-x-hidden'
+      className={`relative min-h-[100dvh] bg-[#0D0518] text-[#F0E6FA] ${
+        !introReady ? 'h-[100dvh] overflow-hidden' : 'overflow-x-hidden'
       }`}
     >
       {/* Universal Stardust Particle Canvas (Inactive during intro, active once intro completes) */}
