@@ -218,7 +218,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
           className="flex flex-col items-center mt-3 sm:mt-6 space-y-3 sm:space-y-6 w-full"
         >
           <p className="text-[11px] sm:text-sm md:text-base text-[#F0E6FA]/85 tracking-[0.2em] uppercase font-medium max-w-xl">
-             &bull; Tuesday, OCTOBER 16, 2026 &bull; 
+             &bull; Tuesday, OCTOBER 13, 2026 &bull; 
           </p>
 
           <p className="text-xs sm:text-base text-[#FFB3D9] italic font-light tracking-wide max-w-lg px-2">
