@@ -49,6 +49,7 @@ export const LINEUP_ARTISTS: ArtistItem[] = [
     tagline: 'Soul-stirring vocals & timeless melodies',
     objectPosition: '60% 25%',
   },
+  
   {
     id: 'wasthi',
     name: 'WASTHI',
@@ -56,7 +57,7 @@ export const LINEUP_ARTISTS: ArtistItem[] = [
     genre: 'Dynamic Pop & Folk Fusion Duo',
     image: '/artists/Wasthi.png',
     tagline: 'High-energy anthems & theatrical presence',
-    objectPosition: 'center 15%',
+    objectPosition: 'center top',
   },
   {
     id: 'krishan',
