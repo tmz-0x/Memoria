@@ -21,7 +21,7 @@ export const Charity: React.FC = () => {
           </h2>
 
           <p className="font-body text-base text-[#F0E6FA]/80 mt-3 font-light leading-relaxed">
-            Every ticket purchased for Memoria’26 resonates far beyond the spotlight. 100% of net proceeds fund acoustic instruments and vocal education for underprivileged rural school music departments across Sri Lanka.
+            Every ticket purchased for Memoria '26 resonates far beyond the spotlight. As part of our Corporate Social Responsibility initiative, we're supporting 76 school students with essential educational resources and learning materials.
           </p>
         </div>
 
@@ -37,10 +37,10 @@ export const Charity: React.FC = () => {
                 <Music className="w-6 h-6" />
               </div>
               <h4 className="font-heading text-base font-bold text-white">
-                Instruments Donation
+                Supporting Students
               </h4>
               <p className="font-body text-xs text-[#F0E6FA]/70 leading-relaxed">
-                Providing violins, classical guitars, and percussion sets directly to under-funded schools in rural provinces.
+                Directly reaching 76 school students identified as part of this year's initiative.
               </p>
             </div>
 
@@ -49,10 +49,10 @@ export const Charity: React.FC = () => {
                 <GraduationCap className="w-6 h-6" />
               </div>
               <h4 className="font-heading text-base font-bold text-white">
-                Vocal Scholarships
+                Learning Materials
               </h4>
               <p className="font-body text-xs text-[#F0E6FA]/70 leading-relaxed">
-                Empowering gifted youth singers with year-long collegiate music theory and stage performance coaching.
+                Providing essential educational resources and learning materials to help students learn and grow.
               </p>
             </div>
 
@@ -61,17 +61,17 @@ export const Charity: React.FC = () => {
                 <Users className="w-6 h-6" />
               </div>
               <h4 className="font-heading text-base font-bold text-white">
-                Community Workshops
+                A Lasting Contribution
               </h4>
               <p className="font-body text-xs text-[#F0E6FA]/70 leading-relaxed">
-                Free choral masterclasses conducted by JPURA Voiceclub senior vocalists to spark artistic passion.
+                Turning the success of Memoria '26 into a meaningful, lasting impact beyond a single night.
               </p>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-[#D4AF37]/20 text-center">
             <p className="font-body text-xs sm:text-sm text-[#FFB3D9] italic">
-              &ldquo;Through our voices, we give rise to the dreams of tomorrow’s musicians.&rdquo;
+              &ldquo;Beyond the music - a gift that lasts.&rdquo;
             </p>
             <span className="block font-heading text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase font-semibold mt-1">
               JPURA Voiceclub Social Responsibility Initiative

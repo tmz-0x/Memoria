@@ -86,25 +86,9 @@ export const TicketInfo: React.FC = () => {
 
               {/* Two Ticket Tiers (Fix 6) */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="bg-[#0D0518]/90 px-4 py-2.5 rounded-2xl border border-[#D4AF37]/50 text-center shadow-inner">
-                  <span className="text-[10px] font-heading uppercase tracking-widest text-[#FF8FC7] block font-bold">
-                    University Student
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-heading font-black text-[#D4AF37]">
-                    Rs. 200
-                  </div>
-                  <span className="text-[10px] text-[#F0E6FA]/60 font-body block">With Student Reg ID</span>
-                </div>
+                
 
-                <div className="bg-[#0D0518]/90 px-4 py-2.5 rounded-2xl border border-[#D4AF37]/30 text-center shadow-inner">
-                  <span className="text-[10px] font-heading uppercase tracking-widest text-[#F0E6FA]/60 block font-semibold">
-                    Outsider
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-heading font-black text-white">
-                    Rs. 1,000
-                  </div>
-                  <span className="text-[10px] text-[#F0E6FA]/60 font-body block">General Admission</span>
-                </div>
+               
               </div>
             </div>
 
@@ -114,8 +98,8 @@ export const TicketInfo: React.FC = () => {
                 <Calendar className="w-6 h-6 text-[#D4AF37] shrink-0" />
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Date & Time</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Sat, Nov 14, 2026</span>
-                  <span className="block text-[10px] text-[#FF8FC7]">Gates: 5:30 PM &bull; Show: 6:30 PM</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Tue, October 13, 2026</span>
+                  <span className="block text-[10px] text-[#FF8FC7]">Gates: 4:00 PM &bull; Show: 6:30 PM</span>
                 </div>
               </div>
 
@@ -123,8 +107,8 @@ export const TicketInfo: React.FC = () => {
                 <MapPin className="w-6 h-6 text-[#FF8FC7] shrink-0" />
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Venue</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Nelum Pokuna Theatre</span>
-                  <span className="block text-[10px] text-[#F0E6FA]/60">Mahinda Rajapaksa Auditorium</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Gal Pittaniya premises</span>
+                  
                 </div>
               </div>
 

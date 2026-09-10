@@ -45,7 +45,7 @@ export const Footer: React.FC = () => {
               The Eclipse Of Memories
             </p>
             <p className="font-body text-xs sm:text-sm text-[#F0E6FA]/70 max-w-sm leading-relaxed">
-              An unforgettable theatrical symphony presented by the Voiceclub of University of Sri Jayewardenepura.
+              An unforgettable theatrical symphony presented by the Jpura voice of University of Sri Jayewardenepura.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <button type="button" onClick={() => navigate('/tickets')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
-                  Ticket Purchase &bull; Rs. 1000
+                  Ticket Purchase &bull;
                 </button>
               </li>
               <li>
@@ -91,11 +91,11 @@ export const Footer: React.FC = () => {
             <div className="space-y-2.5 text-xs text-[#F0E6FA]/70 font-body">
               <div className="flex items-start gap-2.5">
                 <Calendar className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                <span>Saturday, November 14, 2026 &bull; Gates Open 5:30 PM &bull; Showtime 6:30 PM</span>
+                <span>Tuesday, October 13, 2026 &bull; Gates Open 5:30 PM &bull; Showtime 6:30 PM</span>
               </div>
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#FF8FC7] shrink-0 mt-0.5" />
-                <span>Nelum Pokuna Mahinda Rajapaksa Theatre, Colombo 07, Sri Lanka</span>
+                <span>Gal Pittaniya premises,University Of Sri Jayewardenapura</span>
               </div>
             </div>
 
@@ -106,7 +106,7 @@ export const Footer: React.FC = () => {
                 onClick={scrollToTop}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1A0D2E] border border-[#D4AF37]/40 hover:border-[#D4AF37] text-xs font-heading uppercase tracking-wider text-[#D4AF37] transition-all hover:scale-105 cursor-pointer"
               >
-                <span>Return to Zenith</span>
+                <span>Return to top</span>
                 <ArrowUp className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -117,7 +117,7 @@ export const Footer: React.FC = () => {
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-body text-[#F0E6FA]/50">
           <p className="flex items-center gap-1">
             <span>&copy; 2026 Memoria&apos;26. Crafted with pride by</span>
-            <strong className="text-[#D4AF37] font-semibold">JPURA Voiceclub</strong>.
+            <strong className="text-[#D4AF37] font-semibold">JPURA Voice</strong>.
           </p>
 
           <div className="flex items-center space-x-6 text-[11px] font-heading uppercase tracking-wider">
