@@ -42,7 +42,7 @@ export function normalizeArtistName(filename: string): string {
 export const LINEUP_ARTISTS: ArtistItem[] = [
   {
     id: 'ridma',
-    name: 'RIDMA',
+    name: 'RIDMA ',
     role: 'Featured Artist',
     genre: 'Contemporary Classical & Fusion',
     image: '/artists/Ridma.jpeg',

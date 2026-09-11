@@ -5,3 +5,12 @@ dist-ssr
 .DS_Store
 *.log
 __pycache__/
+.env
+.env.*
+!.env.example
+data/
+uploads/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

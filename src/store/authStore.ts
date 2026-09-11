@@ -42,27 +42,59 @@ const getStoredUser = (): AuthUser | null => {
 
 const initialUser = getStoredUser();
 
+const STORAGE_AUTH_TOKEN = 'memoria_auth_token_v1';
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: initialUser,
   isAuthenticated: !!initialUser,
 
   login: async (email: string, password: string) => {
-    // Artificial delay
-    await new Promise((r) => setTimeout(r, 600));
-
     const normalizedEmail = email.trim().toLowerCase();
-    const account = DEMO_USERS[normalizedEmail];
+    const trimmedPass = password.trim();
 
-    if (account && account.pass === password.trim()) {
-      localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(account.user));
-      set({ user: account.user, isAuthenticated: true });
-      return { success: true };
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail, password: trimmedPass }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.token && data.user) {
+          localStorage.setItem(STORAGE_AUTH_TOKEN, data.token);
+          localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(data.user));
+          set({ user: data.user, isAuthenticated: true });
+          return { success: true };
+        }
+      }
+
+      const errData = await res.json().catch(() => null);
+      const message = errData?.message || 'Invalid credentials. Please verify your email and password.';
+      return { success: false, message };
+    } catch {
+      // Offline / network fallback using demo users
+      const account = DEMO_USERS[normalizedEmail];
+      if (account && account.pass === trimmedPass) {
+        localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(account.user));
+        set({ user: account.user, isAuthenticated: true });
+        return { success: true };
+      }
+      return { success: false, message: 'Invalid credentials or backend unavailable.' };
     }
-
-    return { success: false, message: 'Invalid credentials. Use one of the demo logins.' };
   },
 
   logout: () => {
+    try {
+      const token = localStorage.getItem(STORAGE_AUTH_TOKEN);
+      if (token) {
+        fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+      }
+    } catch {}
+    localStorage.removeItem(STORAGE_AUTH_TOKEN);
     localStorage.removeItem(STORAGE_AUTH_USER);
     set({ user: null, isAuthenticated: false });
   },

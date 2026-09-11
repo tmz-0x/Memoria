@@ -426,8 +426,21 @@ if (!localStorage.getItem(STORAGE_KEY_USERS)) setStored(STORAGE_KEY_USERS, initi
 if (!localStorage.getItem(STORAGE_KEY_SETTINGS)) setStored(STORAGE_KEY_SETTINGS, initialSettings);
 if (!localStorage.getItem(STORAGE_KEY_HISTORY)) setStored(STORAGE_KEY_HISTORY, initialHistory);
 
+const getAuthHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  try {
+    const token = localStorage.getItem('memoria_auth_token_v1');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {}
+  return headers;
+};
+
 export const api = {
-  // POST /api/submissions
+  // POST /api/tickets
   submitTicket: async (data: {
     name: string;
     email: string;
@@ -437,87 +450,130 @@ export const api = {
     ticketType: 'student' | 'outsider';
     universityRegistrationNumber?: string | null;
   }): Promise<{ success: boolean; submissionId: string; message: string }> => {
-    await delay();
-    const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+    try {
+      let res: Response;
+      if (data.paymentSlip instanceof File) {
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('email', data.email);
+        formData.append('phone', data.phone);
+        formData.append('ticketType', data.ticketType);
+        if (data.quantity) formData.append('quantity', String(data.quantity));
+        if (data.universityRegistrationNumber) {
+          formData.append('universityRegistrationNumber', data.universityRegistrationNumber);
+        }
+        formData.append('paymentSlip', data.paymentSlip);
 
-    const ticketType: 'student' | 'outsider' = data.ticketType === 'student' ? 'student' : 'outsider';
-    let validatedRegNumber: string | null = null;
-    let quantity = 1;
-    let totalPrice = 1000;
-
-    if (ticketType === 'student') {
-      const rawReg = (data.universityRegistrationNumber || '').trim();
-      if (!rawReg) {
-        throw new Error('Please enter a valid university registration number.');
+        res = await fetch('/api/tickets', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        res = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            ticketType: data.ticketType,
+            quantity: data.quantity,
+            universityRegistrationNumber: data.universityRegistrationNumber,
+            paymentSlipUrl: data.paymentSlip,
+          }),
+        });
       }
-      const normalizedReg = rawReg.toUpperCase();
-      // Format requirement: Faculty Code + Number (e.g. FC122716, 2-3 letters + 5-7 digits)
-      const regPattern = /^[A-Z]{2,3}\d{5,7}$/;
-      if (!regPattern.test(normalizedReg)) {
-        throw new Error('Please enter a valid university registration number (e.g. FC122716).');
+
+      if (res.ok) {
+        return await res.json();
+      }
+      const errData = await res.json().catch(() => null);
+      throw new Error(errData?.message || 'Ticket submission failed.');
+    } catch (err: any) {
+      // If error came from backend with structured message, throw it
+      if (err.message && !err.message.includes('fetch') && !err.message.includes('NetworkError') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+      // Offline fallback
+      await delay();
+      const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+
+      const ticketType: 'student' | 'outsider' = data.ticketType === 'student' ? 'student' : 'outsider';
+      let validatedRegNumber: string | null = null;
+      let quantity = 1;
+      let totalPrice = 1000;
+
+      if (ticketType === 'student') {
+        const rawReg = (data.universityRegistrationNumber || '').trim();
+        if (!rawReg) {
+          throw new Error('Please enter a valid university registration number.');
+        }
+        const normalizedReg = rawReg.toUpperCase();
+        const regPattern = /^[A-Z]{2,3}\d{5,7}$/;
+        if (!regPattern.test(normalizedReg)) {
+          throw new Error('Please enter a valid university registration number (e.g. FC122716).');
+        }
+
+        const alreadyIssued = subs.some(
+          (s) =>
+            s.ticketType === 'student' &&
+            s.universityRegistrationNumber?.toUpperCase() === normalizedReg &&
+            s.status !== 'rejected'
+        );
+
+        if (alreadyIssued) {
+          throw new Error('A university student ticket has already been issued for this registration number.');
+        }
+
+        validatedRegNumber = normalizedReg;
+        quantity = 1;
+        totalPrice = 200;
+      } else {
+        validatedRegNumber = null;
+        quantity = Math.max(1, Math.min(5, Number(data.quantity) || 1));
+        totalPrice = quantity * 1000;
       }
 
-      // Strict uniqueness requirement: One student ticket per registration number
-      const alreadyIssued = subs.some(
-        (s) =>
-          s.ticketType === 'student' &&
-          s.universityRegistrationNumber?.toUpperCase() === normalizedReg &&
-          s.status !== 'rejected'
-      );
-
-      if (alreadyIssued) {
-        throw new Error('A university student ticket has already been issued for this registration number.');
+      let slipUrl = '/assets/candlelit-venue.jpg';
+      if (typeof data.paymentSlip === 'string') {
+        slipUrl = data.paymentSlip;
+      } else if (data.paymentSlip instanceof File) {
+        slipUrl = URL.createObjectURL(data.paymentSlip);
       }
 
-      validatedRegNumber = normalizedReg;
-      quantity = 1; // Strict: 1 student ticket per registration number
-      totalPrice = 200; // Strict backend price calculation: Rs. 200
-    } else {
-      validatedRegNumber = null;
-      quantity = Math.max(1, Math.min(5, Number(data.quantity) || 1));
-      totalPrice = quantity * 1000; // Strict backend price calculation: Rs. 1,000 per pass
+      const newSub: Submission = {
+        id: `sub-${Date.now().toString().slice(-4)}`,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        quantity,
+        ticketType,
+        universityRegistrationNumber: validatedRegNumber,
+        totalPrice,
+        paymentSlipUrl: slipUrl,
+        status: 'pending',
+        submittedAt: new Date().toISOString(),
+        checkedIn: false,
+      };
+
+      subs.unshift(newSub);
+      setStored(STORAGE_KEY_SUBMISSIONS, subs);
+
+      return {
+        success: true,
+        submissionId: newSub.id,
+        message: 'Your registration was submitted successfully. Our team will verify your transfer within 24–48 hours.',
+      };
     }
-
-    // Create base64 or fallback preview
-    let slipUrl = '/assets/candlelit-venue.jpg';
-    if (typeof data.paymentSlip === 'string') {
-      slipUrl = data.paymentSlip;
-    } else if (data.paymentSlip instanceof File) {
-      slipUrl = URL.createObjectURL(data.paymentSlip);
-    }
-
-    const newSub: Submission = {
-      id: `sub-${Date.now().toString().slice(-4)}`,
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      quantity,
-      ticketType,
-      universityRegistrationNumber: validatedRegNumber,
-      totalPrice,
-      paymentSlipUrl: slipUrl,
-      status: 'pending',
-      submittedAt: new Date().toISOString(),
-      checkedIn: false,
-    };
-
-    subs.unshift(newSub);
-    setStored(STORAGE_KEY_SUBMISSIONS, subs);
-
-    // Update remaining allocation
-    const settings = getStored<EventSettings>(STORAGE_KEY_SETTINGS, initialSettings);
-    settings.remainingAllocation = Math.max(0, settings.remainingAllocation - quantity);
-    setStored(STORAGE_KEY_SETTINGS, settings);
-
-    return {
-      success: true,
-      submissionId: newSub.id,
-      message: 'Your registration was submitted successfully. Our team will verify your transfer within 24–48 hours.',
-    };
   },
 
   // GET /api/admin/stats
   getAdminStats: async () => {
+    try {
+      const res = await fetch('/api/admin/stats', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     const settings = getStored<EventSettings>(STORAGE_KEY_SETTINGS, initialSettings);
@@ -550,12 +606,26 @@ export const api = {
 
   // GET /api/admin/event-settings
   getEventSettings: async (): Promise<EventSettings> => {
+    try {
+      const res = await fetch('/api/admin/event-settings');
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     return getStored<EventSettings>(STORAGE_KEY_SETTINGS, initialSettings);
   },
 
   // PUT /api/admin/event-settings
   updateEventSettings: async (newSettings: Partial<EventSettings>): Promise<EventSettings> => {
+    try {
+      const res = await fetch('/api/admin/event-settings', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newSettings),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     const current = getStored<EventSettings>(STORAGE_KEY_SETTINGS, initialSettings);
     const updated = { ...current, ...newSettings };
@@ -565,12 +635,30 @@ export const api = {
 
   // GET /api/admin/users
   getUsers: async (): Promise<User[]> => {
+    try {
+      const res = await fetch('/api/admin/users', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     return getStored<User[]>(STORAGE_KEY_USERS, initialUsers);
   },
 
   // POST /api/admin/users
   createUser: async (user: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(user),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to create user');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
     await delay();
     const users = getStored<User[]>(STORAGE_KEY_USERS, initialUsers);
     const newUser: User = {
@@ -585,6 +673,14 @@ export const api = {
 
   // DELETE /api/admin/users/:id
   deleteUser: async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) return true;
+    } catch {}
+
     await delay();
     const users = getStored<User[]>(STORAGE_KEY_USERS, initialUsers);
     const filtered = users.filter((u) => u.id !== id);
@@ -594,6 +690,14 @@ export const api = {
 
   // GET /api/admin/submissions
   getAllSubmissions: async (statusFilter?: 'all' | 'pending' | 'approved' | 'rejected'): Promise<Submission[]> => {
+    try {
+      const url = statusFilter && statusFilter !== 'all'
+        ? `/api/admin/submissions?status=${statusFilter}`
+        : '/api/admin/submissions';
+      const res = await fetch(url, { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     if (!statusFilter || statusFilter === 'all') return subs;
@@ -602,6 +706,11 @@ export const api = {
 
   // GET /api/approve/pending
   getPendingSubmissions: async (): Promise<Submission[]> => {
+    try {
+      const res = await fetch('/api/approve/pending', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     return subs.filter((s) => s.status === 'pending');
@@ -609,6 +718,19 @@ export const api = {
 
   // POST /api/approve/:id
   approveSubmission: async (id: string, approverName: string): Promise<{ success: boolean; ticketId: string }> => {
+    try {
+      const res = await fetch(`/api/approve/approve/${id}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ approverName }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Approval failed');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
     await delay();
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     const history = getStored<ApprovalHistoryItem[]>(STORAGE_KEY_HISTORY, initialHistory);
@@ -647,6 +769,19 @@ export const api = {
 
   // POST /api/reject/:id
   rejectSubmission: async (id: string, approverName: string, reason: string): Promise<{ success: boolean }> => {
+    try {
+      const res = await fetch(`/api/approve/reject/${id}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ approverName, reason }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Rejection failed');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
     await delay();
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     const history = getStored<ApprovalHistoryItem[]>(STORAGE_KEY_HISTORY, initialHistory);
@@ -683,12 +818,22 @@ export const api = {
 
   // GET /api/approve/history
   getApprovalHistory: async (): Promise<ApprovalHistoryItem[]> => {
+    try {
+      const res = await fetch('/api/approve/history', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay();
     return getStored<ApprovalHistoryItem[]>(STORAGE_KEY_HISTORY, initialHistory);
   },
 
   // GET /api/checkin/stats
   getCheckinStats: async () => {
+    try {
+      const res = await fetch('/api/checkin/stats', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+
     await delay(300, 500);
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     const approved = subs.filter((s) => s.status === 'approved');
@@ -704,12 +849,23 @@ export const api = {
     };
   },
 
-  // POST /api/checkin/qr-code or verify ticket
+  // POST /api/checkin/verify
   verifyAndCheckIn: async (query: string): Promise<{
     valid: boolean;
     reason?: string;
     submission?: Submission;
   }> => {
+    try {
+      const res = await fetch('/api/checkin/verify', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ query }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      return { valid: false, reason: err?.message || 'Verification failed.' };
+    } catch {}
+
     await delay(400, 600);
     const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
     const normalized = query.trim().toUpperCase();

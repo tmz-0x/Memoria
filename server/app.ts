@@ -1,0 +1,92 @@
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { config } from './config/env';
+import { initializeDatabase } from './db/schema';
+import { seedDatabase } from './db/seed';
+import { errorHandler } from './middleware/errorHandler';
+import { authRoutes } from './routes/authRoutes';
+import { ticketRoutes } from './routes/ticketRoutes';
+import { approvalRoutes } from './routes/approvalRoutes';
+import { checkinRoutes } from './routes/checkinRoutes';
+import { adminRoutes } from './routes/adminRoutes';
+import { db } from './db/database';
+
+export function createApp() {
+  // Ensure schema and seed data exist
+  initializeDatabase();
+  seedDatabase();
+
+  const app = express();
+
+  // Basic security headers
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+  });
+
+  // CORS configuration
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow all in dev or requests with no origin (mobile apps, curl, etc.)
+        if (!origin || config.nodeEnv === 'development' || origin === config.frontendUrl) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Permissive for local dev network access
+        }
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-idempotency-key', 'x-demo-user'],
+    })
+  );
+
+  // Body parsing
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Static uploads directory for payment slips
+  app.use('/uploads', express.static(config.uploadDir));
+
+  // 33. Health Check Endpoint
+  app.get('/api/health', (req, res) => {
+    let dbStatus = 'ok';
+    try {
+      db.prepare('SELECT 1').get();
+    } catch {
+      dbStatus = 'error';
+    }
+
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: dbStatus,
+      version: '1.0.0',
+    });
+  });
+
+  // API Routes
+  app.use('/api/auth', authRoutes);
+  app.use('/api/tickets', ticketRoutes);
+  app.use('/api/approve', approvalRoutes);
+  app.use('/api/checkin', checkinRoutes);
+  app.use('/api/admin', adminRoutes);
+
+  // 404 Route Handler
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      code: 'NOT_FOUND',
+      message: `The requested endpoint '${req.method} ${req.originalUrl}' does not exist on this server.`,
+    });
+  });
+
+  // Centralized Error Handling
+  app.use(errorHandler);
+
+  return app;
+}
