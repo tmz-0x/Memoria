@@ -20,7 +20,7 @@ export const Contact: React.FC = () => {
           </h2>
 
           <p className="font-body text-base text-[#F0E6FA]/70 mt-3 font-light">
-            Questions regarding seating allocations, group bookings, or payment status? We are here to assist.
+            Questions regarding admission passes, group bookings, or payment status? We are here to assist.
           </p>
         </div>
 

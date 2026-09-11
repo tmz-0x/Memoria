@@ -47,10 +47,7 @@ export const TicketsPage: React.FC = () => {
     message: string;
   } | null>(null);
 
-  const remaining = settings?.remainingAllocation ?? 142;
-  const capacity = settings?.totalCapacity ?? 800;
-  const price = settings?.ticketPrice ?? 1000;
-  const cutoffDate = settings?.cutoffDate ?? 'November 10, 2026';
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFileError(null);
@@ -255,26 +252,10 @@ export const TicketsPage: React.FC = () => {
               <div className="p-4 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/25 flex items-center gap-3.5">
                 <Ticket className="w-6 h-6 text-[#E066FF] shrink-0" />
                 <div>
-                  <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Online Allocation</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-[#D4AF37]">{remaining} Passes Left</span>
-                  <span className="block text-[10px] text-[#F0E6FA]/60">Cutoff: {cutoffDate}</span>
+                  <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Event Entry</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-[#D4AF37]">Open Admission</span>
+                  <span className="block text-[10px] text-[#F0E6FA]/60">Digital QR Verification</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Allocation Meter */}
-            <div>
-              <div className="flex items-center justify-between text-xs font-heading mb-1.5">
-                <span className="text-[#F0E6FA]/80 uppercase tracking-wider">Allocation Status</span>
-                <span className="text-[#D4AF37] font-bold">
-                  {capacity - remaining} / {capacity} Passes Allocated
-                </span>
-              </div>
-              <div className="w-full h-2.5 bg-[#0D0518] rounded-full overflow-hidden border border-[#D4AF37]/30">
-                <div
-                  className="h-full bg-gradient-to-r from-[#D4AF37] via-[#FF8FC7] to-[#E066FF] rounded-full transition-all duration-500"
-                  style={{ width: `${Math.max(10, ((capacity - remaining) / capacity) * 100)}%` }}
-                />
               </div>
             </div>
           </div>

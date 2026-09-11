@@ -116,11 +116,11 @@ export const HowToBuyModal: React.FC<HowToBuyModalProps> = ({ isOpen, onClose })
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D4AF37] font-bold">&bull;</span>
-                    <span><strong>Non-Refundable Policy:</strong> Approved tickets are non-refundable once allocated. In case of slip rejection, you may re-submit with corrected banking evidence.</span>
+                    <span><strong>Non-Refundable Policy:</strong> Approved tickets are non-refundable once confirmed and issued. In case of slip rejection, you may re-submit with corrected banking evidence.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D4AF37] font-bold">&bull;</span>
-                    <span><strong>Gate Timing:</strong> Doors open at 5:30 PM. Showtime commences promptly at 6:30 PM. Late arrivals will be seated between performance acts.</span>
+                    <span><strong>Gate Timing:</strong> Gates open at 4:30 PM. Showtime commences promptly at 6:30 PM. Please arrive early to ensure smooth QR check-in at the entrance.</span>
                   </li>
                 </ul>
               </div>

@@ -189,9 +189,9 @@ export const AdminPage: React.FC = () => {
                 <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900">Total Hall Allocation Progress</h4>
+                      <h4 className="text-sm font-bold text-slate-900">Event Registration Progress</h4>
                       <p className="text-xs text-slate-500">
-                        {stats?.remainingAllocation} seats remaining of {stats?.totalCapacity} total hall seats.
+                        {stats?.remainingAllocation} passes remaining of {stats?.totalCapacity} target passes.
                       </p>
                     </div>
                     <span className="text-xs font-bold text-blue-600">

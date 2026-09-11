@@ -309,17 +309,17 @@ const initialUsers: User[] = [
 const initialSettings: EventSettings = {
   eventName: "Memoria'26",
   tagline: 'The Eclipse of Memories',
-  eventDate: 'Saturday, November 14, 2026',
-  eventVenue: 'Nelum Pokuna Mahinda Rajapaksa Theatre, Colombo',
+  eventDate: 'Tuesday, October 13, 2026',
+  eventVenue: 'Gal Pittaniya premises, University of Sri Jayewardenepura',
   totalCapacity: 800,
   remainingAllocation: 142,
   ticketPrice: 1000,
-  cutoffDate: 'November 10, 2026',
+  cutoffDate: 'October 13, 2026',
   bankName: 'Bank of Ceylon',
   accountName: 'JPURA Voiceclub Memoria Account',
   accountNumber: '8942-0012-3841-992',
   branch: 'Colombo Fort Branch',
-  announcement: 'Online ticket allocations are filling rapidly. Verification turnaround is currently under 24 hours.',
+  announcement: 'Online registrations are open. Verification turnaround is currently under 24 hours.',
 };
 
 const initialHistory: ApprovalHistoryItem[] = [

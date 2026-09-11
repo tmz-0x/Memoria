@@ -10,23 +10,16 @@ import {
   Ticket,
   HelpCircle,
   ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
 } from 'lucide-react';
 
 export const TicketInfo: React.FC = () => {
   const navigate = useNavigate();
-  const { settings, fetchSettings } = useEventStore();
+  const { fetchSettings } = useEventStore();
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
-
-  const remaining = settings?.remainingAllocation ?? 142;
-  const capacity = settings?.totalCapacity ?? 800;
-  const price = settings?.ticketPrice ?? 1000;
-  const cutoffDate = settings?.cutoffDate ?? 'November 10, 2026';
 
   return (
     <section
@@ -44,10 +37,10 @@ export const TicketInfo: React.FC = () => {
           </span>
 
           <h2 className="font-heading text-3xl sm:text-5xl font-extrabold uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#F0E6FA] via-[#FF8FC7] to-[#D4AF37] mt-3">
-            Pass Allocation
+            Event Admission
           </h2>
           <p className="font-body text-base text-[#F0E6FA]/80 mt-3 font-light">
-            Admission passes are strictly limited to theatre capacity. Secure your seat under the eclipse.
+            Secure your admission pass and join us for an unforgettable evening under the open skies of Gal Pittaniya.
           </p>
         </div>
 
@@ -115,26 +108,10 @@ export const TicketInfo: React.FC = () => {
               <div className="p-4 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/25 flex items-center gap-3.5">
                 <Ticket className="w-6 h-6 text-[#E066FF] shrink-0" />
                 <div>
-                  <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Online Allocation</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-[#D4AF37]">{remaining} Passes Left</span>
-                  <span className="block text-[10px] text-[#F0E6FA]/60">Cutoff: {cutoffDate}</span>
+                  <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Event Entry</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-[#D4AF37]">Open Admission</span>
+                  <span className="block text-[10px] text-[#F0E6FA]/60">Digital QR Verification</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Allocation Meter */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between text-xs font-heading mb-2">
-                <span className="text-[#F0E6FA]/80 uppercase tracking-wider">Hall Allocation Capacity</span>
-                <span className="text-[#D4AF37] font-bold">
-                  {capacity - remaining} / {capacity} Passes Allocated
-                </span>
-              </div>
-              <div className="w-full h-3 bg-[#0D0518] rounded-full overflow-hidden border border-[#D4AF37]/30">
-                <div
-                  className="h-full bg-gradient-to-r from-[#D4AF37] via-[#FF8FC7] to-[#E066FF] rounded-full transition-all duration-500"
-                  style={{ width: `${Math.max(10, ((capacity - remaining) / capacity) * 100)}%` }}
-                />
               </div>
             </div>
 
