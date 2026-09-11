@@ -5,7 +5,8 @@ import { rateLimiter } from '../middleware/rateLimit';
 
 export const checkinRoutes = Router();
 
-checkinRoutes.use(authenticate, requireRole('admin', 'approver', 'staff'));
+// Only Admin and Check-in Staff can access gate check-in scanner (Section 32)
+checkinRoutes.use(authenticate, requireRole('admin', 'staff'));
 
 // Rate limited verify scans: max 120 per minute per client
 checkinRoutes.post('/verify', rateLimiter({ windowMs: 60 * 1000, maxRequests: 120 }), checkinController.verify);

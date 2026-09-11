@@ -2,7 +2,12 @@ import bcrypt from 'bcryptjs';
 import { db } from './database';
 
 export function seedDatabase() {
-  // 1. Seed Users if empty
+  // 1. Ensure Admin Account is Thisal Methwidu (Section 20)
+  db.prepare(`
+    UPDATE users SET name = 'Thisal Methwidu' WHERE email = 'admin@memoria.lk'
+  `).run();
+
+  // Seed Users if table is empty
   const userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
   if (userCount === 0) {
     const insertUser = db.prepare(`
@@ -11,7 +16,7 @@ export function seedDatabase() {
     `);
 
     const users = [
-      { id: 'usr-1', name: 'Alexander Cross', email: 'admin@memoria.lk', pass: 'admin123', role: 'admin' },
+      { id: 'usr-1', name: 'Thisal Methwidu', email: 'admin@memoria.lk', pass: 'admin123', role: 'admin' },
       { id: 'usr-2', name: 'Elena Vance', email: 'approver@memoria.lk', pass: 'approve123', role: 'approver' },
       { id: 'usr-3', name: 'Marcus Chen', email: 'staff@memoria.lk', pass: 'staff123', role: 'staff' },
       { id: 'usr-4', name: 'Devon Samarasinghe', email: 'devon@memoria.lk', pass: 'devon123', role: 'approver' },
@@ -63,9 +68,9 @@ export function seedDatabase() {
       INSERT INTO submissions (
         id, ticket_id, name, email, phone, quantity, ticket_type,
         university_registration_number, normalized_reg_number, unit_price, total_price,
-        payment_slip_url, status, rejection_reason, submitted_at, approved_at, approver,
+        payment_slip_url, status, rejection_reason, submitted_at, created_at, approved_at, approver,
         qr_token, qr_payload, qr_image_data, checked_in, checked_in_at, email_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const initialSubs = [
@@ -172,6 +177,7 @@ export function seedDatabase() {
           s.paymentSlipUrl,
           s.status,
           null,
+          s.submittedAt,
           s.submittedAt,
           s.approvedAt,
           s.approver,

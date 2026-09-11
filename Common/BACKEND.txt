@@ -1,0 +1,1061 @@
+BACKEND IMPLEMENTATION — MEMORIA'26 TICKETING SYSTEM
+CORE INSTRUCTION
+
+Build the backend for the existing Memoria'26 — The Eclipse of Memories ticketing website.
+
+DO NOT rebuild the frontend.
+
+The backend must be production-oriented, reliable, optimized, secure, and designed to handle concurrent submissions and QR scans without duplicate tickets, inconsistent states, race conditions, or unnecessary delays.
+
+Before implementing anything:
+
+Inspect the existing project structure.
+Inspect the current frontend ticket forms and API calls.
+Inspect the existing backend/API/mock API implementation.
+Reuse compatible existing architecture where practical.
+Replace mock behavior only where a real backend implementation is required.
+Do not break existing frontend routes or functionality.
+
+Choose the most efficient stable backend stack appropriate for the existing React/Vite application. Prefer a lightweight TypeScript backend if it integrates cleanly with the current project.
+
+The implementation must be modular and maintainable.
+
+1. SYSTEM ARCHITECTURE
+
+The backend must have clear separation between:
+
+API/routes
+Controllers/handlers
+Business logic/services
+Database/repository layer
+Validation
+Authentication/authorization
+QR generation
+Email service
+Payment/revenue logic
+Audit/activity logging
+Error handling
+Configuration/environment variables
+
+Do not put all business logic inside route handlers.
+
+Use asynchronous operations correctly.
+
+Do not block the event loop with unnecessary CPU-heavy operations.
+
+2. TICKET TYPES
+
+There are exactly two public ticket categories:
+
+UNIVERSITY STUDENT
+
+Price:
+
+Rs. 200
+
+Required:
+
+Full name
+Email
+University registration number
+Other required ticket/form information
+
+Registration number format example:
+
+FC122716
+
+The actual validation should follow the configured university registration-number pattern rather than blindly accepting arbitrary text.
+
+OUTSIDER
+
+Price:
+
+Rs. 1000
+
+Required:
+
+Full name
+Email
+Other required ticket/form information
+
+Registration number:
+
+NOT required
+
+3. PRICE MUST NEVER BE TRUSTED FROM THE FRONTEND
+
+The frontend must NOT be allowed to decide the final ticket price.
+
+For example, never trust:
+
+price = 200
+
+sent from the browser.
+
+Instead:
+
+ticketType = UNIVERSITY
+
+or
+
+ticketType = OUTSIDER
+
+is submitted.
+
+The backend determines the price:
+
+UNIVERSITY → Rs. 200
+OUTSIDER → Rs. 1000
+
+This prevents users from manipulating prices through browser developer tools.
+
+4. FORM VALIDATION
+
+Validate every input on the backend.
+
+Frontend validation is useful for UX but is NOT a security boundary.
+
+Validate:
+
+Full name
+Email
+Ticket type
+University registration number when applicable
+Uploaded payment slip/reference information if applicable
+Required fields
+String lengths
+Allowed characters
+Data formats
+File type/size where uploads are supported
+
+Reject invalid requests with structured error responses.
+
+Do not allow:
+
+Empty required values
+Invalid email addresses
+Unsupported ticket types
+Malformed registration numbers
+Unexpected fields where strict validation is appropriate
+Extremely long input values
+Invalid file types
+Oversized uploads
+
+Normalize relevant values before validation/storage.
+
+For registration numbers, normalize case and unnecessary whitespace so:
+
+FC122716
+fc122716
+ FC122716
+
+cannot bypass uniqueness validation.
+
+5. UNIVERSITY REGISTRATION NUMBER UNIQUENESS
+
+This is a critical business rule.
+
+A university registration number can receive ONLY ONE TICKET.
+
+Example:
+
+FC122716 → Ticket A
+
+A second application using:
+
+FC122716
+
+must be rejected.
+
+This rule MUST be enforced at the database level, not only with frontend validation or a preliminary API check.
+
+Use a unique constraint/index on the normalized registration number for university tickets.
+
+Do not rely only on:
+
+SELECT → check exists → INSERT
+
+because two simultaneous requests can bypass this through a race condition.
+
+The database must guarantee uniqueness.
+
+6. OUTSIDER TICKETS
+
+Outsiders do not require a university registration number.
+
+Therefore:
+
+ticketType = OUTSIDER
+registrationNumber = null
+
+must be valid.
+
+Do not apply the university registration-number uniqueness rule to outsider tickets.
+
+7. APPLICATION / TICKET LIFECYCLE
+
+Create an explicit ticket/application state machine.
+
+Suggested states:
+
+PENDING_REVIEW
+APPROVED
+REJECTED
+QR_ISSUED
+CHECKED_IN
+
+If payment/slip verification requires an intermediate state, add an appropriate state such as:
+
+PAYMENT_PENDING
+
+Do not allow arbitrary status changes.
+
+Define valid transitions.
+
+For example:
+
+PENDING_REVIEW
+      ↓
+APPROVED
+      ↓
+QR_ISSUED
+      ↓
+CHECKED_IN
+
+Rejection:
+
+PENDING_REVIEW
+      ↓
+REJECTED
+
+Invalid transitions must be rejected.
+
+8. SUBMISSION FLOW
+
+When a user submits the ticket form:
+
+Step 1
+
+Frontend sends the application to the backend.
+
+Step 2
+
+Backend validates the request.
+
+Step 3
+
+Backend determines the correct ticket price based on ticket type.
+
+Step 4
+
+Backend validates university registration number when ticket type is UNIVERSITY.
+
+Step 5
+
+Backend checks/enforces registration-number uniqueness.
+
+Step 6
+
+Store the application.
+
+Initial status:
+
+PENDING_REVIEW
+Step 7
+
+Create an audit/activity record.
+
+Step 8
+
+Make the application available to the authorized reviewer/admin.
+
+The QR code must NOT be generated yet.
+
+9. MANUAL APPROVAL IS THE ONLY APPROVAL STEP
+
+This is extremely important.
+
+The system must NOT automatically approve applications.
+
+The reviewer/admin must manually inspect:
+
+Submitted details
+Ticket type
+Registration number where applicable
+Payment slip/payment evidence
+Other required information
+
+Only an authorized reviewer can approve or reject.
+
+No frontend request should be able to directly set:
+
+status = APPROVED
+
+without authorization.
+
+10. APPROVAL FLOW
+
+When the reviewer clicks Approve:
+
+Backend must:
+
+Verify reviewer authorization.
+Verify the application is currently in a valid state.
+Re-check all critical business rules.
+Confirm the application has not already been approved.
+Confirm the registration number has not been used.
+Determine the backend-controlled ticket price.
+Generate a unique ticket identifier.
+Generate a cryptographically secure QR token.
+Store the QR/ticket information atomically.
+Change status appropriately.
+Create an audit record.
+Trigger the ticket email.
+
+Do not generate duplicate QR codes if the reviewer accidentally clicks Approve twice.
+
+Approval must be idempotent.
+
+11. QR CODE GENERATION
+
+After successful approval, generate a unique QR code.
+
+The QR should contain a secure opaque ticket identifier/token, not unnecessary personal information.
+
+Do NOT encode sensitive personal data directly into the QR.
+
+Example conceptual payload:
+
+MEMORIA26:TICKET:<secure-random-token>
+
+Use a cryptographically secure random value.
+
+The token must be:
+
+Unique
+Unpredictable
+Sufficiently long
+Stored securely
+Associated with exactly one ticket
+
+Do not use:
+
+1
+2
+3
+
+or predictable ticket IDs as the security token.
+
+12. QR CODE LIFECYCLE
+
+QR status:
+
+ACTIVE
+
+before event check-in.
+
+When scanned successfully:
+
+ACTIVE → USED
+
+The ticket becomes invalid immediately.
+
+A second scan must return:
+
+ALREADY_USED
+
+and must NOT allow entry.
+
+13. QR CHECK-IN — PREVENT DOUBLE ENTRY
+
+This is a critical concurrency requirement.
+
+Two staff members could potentially scan the same QR at almost exactly the same time.
+
+The backend must prevent both scans from succeeding.
+
+Do NOT implement:
+
+check ticket
+if active:
+    mark used
+
+as two independent operations.
+
+Use a transaction/atomic database operation/row lock or equivalent concurrency-safe mechanism.
+
+Conceptually:
+
+BEGIN TRANSACTION
+
+Find ticket using secure QR token
+Lock ticket record
+
+IF ticket is already USED:
+    reject
+
+IF ticket is not valid:
+    reject
+
+Mark ticket as USED
+Store check-in timestamp/staff information
+
+COMMIT
+
+Only one simultaneous scan may successfully consume the ticket.
+
+14. CHECK-IN RESULT
+
+A successful scan should return useful information to authorized staff:
+
+VALID TICKET
+Ticket ID
+Ticket Type
+Attendee Name
+Check-in Time
+
+Do not expose unnecessary personal information.
+
+If already used:
+
+TICKET ALREADY USED
+First check-in time
+
+If invalid:
+
+INVALID TICKET
+
+Do not reveal sensitive backend information.
+
+15. CHECK-IN AUDIT LOG
+
+Every scan attempt should be recorded where appropriate.
+
+Track:
+
+Ticket ID
+Result
+Timestamp
+Staff/user who performed the scan
+Relevant reason/status
+
+Examples:
+
+VALID
+ALREADY_USED
+INVALID
+
+This allows administrators to investigate suspicious activity.
+
+16. EMAIL DELIVERY
+
+After approval and successful QR generation, automatically send the ticket to the applicant's registered email address.
+
+The email should contain:
+
+Event name
+Attendee name
+Ticket type
+Ticket information
+QR code
+Important event instructions
+Check-in instructions
+
+Do not send the QR email before approval.
+
+17. EMAIL FAILURE HANDLING
+
+Do NOT mark the ticket as failed merely because an email provider temporarily fails.
+
+Separate:
+
+TICKET APPROVAL
+
+from:
+
+EMAIL DELIVERY
+
+The ticket must remain valid even if email delivery temporarily fails.
+
+Store email delivery state:
+
+PENDING
+SENT
+FAILED
+
+If sending fails:
+
+Record the error internally.
+Keep the approved ticket.
+Allow controlled retry.
+Prevent duplicate ticket generation.
+Do not create a second QR unnecessarily.
+
+Admin should be able to see that email delivery failed.
+
+18. EMAIL RETRY / IDEMPOTENCY
+
+Email sending must be safe to retry.
+
+If the system retries an email:
+
+Reuse the existing ticket.
+Reuse the existing valid QR.
+Do NOT create another ticket.
+Do NOT create another registration record.
+Do NOT charge the user again.
+19. ADMIN DASHBOARD
+
+Admin should be able to monitor all important activities.
+
+Dashboard should provide:
+
+Ticket statistics
+Total applications
+Pending review
+Approved
+Rejected
+QR issued
+Checked in
+University tickets
+Outsider tickets
+Revenue
+
+Display:
+
+University ticket count × Rs. 200
+Outsider ticket count × Rs. 1000
+Total expected/recorded revenue
+Relevant payment status where applicable
+
+Revenue must be calculated from trusted backend/database data.
+
+Do NOT calculate revenue from frontend-submitted prices.
+
+20. REVENUE TRACKING
+
+Every approved ticket should have its authoritative ticket price stored.
+
+Example:
+
+Ticket Type: UNIVERSITY
+Price: 200
+
+or:
+
+Ticket Type: OUTSIDER
+Price: 1000
+
+Store the price at the time of ticket issuance so historical records remain accurate even if future pricing configuration changes.
+
+Maintain:
+
+Ticket count by type
+Revenue by type
+Total revenue
+Payment/slip verification state if applicable
+
+Avoid floating-point errors for currency.
+
+For Sri Lankan Rupees, use integer amounts where possible:
+
+200
+1000
+
+rather than floating-point monetary values.
+
+21. ADMIN ACTIVITY MONITORING
+
+Create an audit/activity system.
+
+Track important events such as:
+
+APPLICATION_SUBMITTED
+APPLICATION_APPROVED
+APPLICATION_REJECTED
+QR_GENERATED
+EMAIL_SENT
+EMAIL_FAILED
+QR_SCANNED
+TICKET_CHECKED_IN
+DUPLICATE_REGISTRATION_ATTEMPT
+INVALID_SCAN_ATTEMPT
+
+Each activity should include appropriate:
+
+Timestamp
+Actor
+Entity/ticket ID
+Action
+Result
+Relevant metadata
+
+Do not expose sensitive information unnecessarily.
+
+22. ADMIN AUTHORIZATION
+
+Admin/reviewer/staff functions must be protected.
+
+Use role-based access control.
+
+Example:
+
+ADMIN
+REVIEWER
+CHECKIN_STAFF
+ADMIN
+
+Can:
+
+View system statistics
+View applications
+View revenue
+View activities
+Manage authorized administrative operations
+REVIEWER
+
+Can:
+
+View pending applications
+Inspect submitted evidence
+Approve
+Reject
+CHECKIN_STAFF
+
+Can:
+
+Scan QR
+Validate ticket
+Check attendee in
+
+Do not allow check-in staff to approve tickets.
+
+Do not allow ordinary users to access admin APIs.
+
+23. API SECURITY
+
+Protect all backend endpoints.
+
+Implement:
+
+Authentication
+Authorization
+Input validation
+Rate limiting
+Secure HTTP headers
+CORS configuration
+Request size limits
+Safe error handling
+Protection against injection attacks
+Secure secrets through environment variables
+
+Never expose:
+
+Database credentials
+Email credentials
+API keys
+JWT secrets
+Internal stack traces
+Sensitive configuration
+
+to the frontend.
+
+24. DUPLICATE REQUEST PROTECTION
+
+Users may accidentally:
+
+Double-click Submit.
+Refresh.
+Retry a failed request.
+Lose connection and submit again.
+
+The backend must prevent duplicate ticket creation.
+
+Use idempotency keys or another reliable idempotency mechanism for ticket submission/approval operations where appropriate.
+
+A repeated request must not create multiple tickets.
+
+25. DATABASE TRANSACTIONS
+
+Use transactions for operations that modify multiple related records.
+
+For example:
+
+Approve application
++
+Create ticket
++
+Generate QR record
++
+Create audit record
+
+must not leave the database in a partially completed state.
+
+If a transaction fails:
+
+Roll back safely.
+Return a controlled error.
+Do not leave orphaned records.
+26. ERROR HANDLING
+
+Create centralized backend error handling.
+
+Errors must be:
+
+Predictable
+Structured
+User-friendly
+Logged internally
+Free of sensitive implementation details
+
+Example response:
+
+{
+  "success": false,
+  "code": "REGISTRATION_NUMBER_ALREADY_USED",
+  "message": "This university registration number has already been used."
+}
+
+Do not return raw database errors to users.
+
+27. LOGGING
+
+Implement structured logging.
+
+Log:
+
+API errors
+Authentication failures
+Approval operations
+QR generation
+QR scans
+Email failures
+Database failures
+Unexpected exceptions
+
+Do not log passwords, secrets, payment credentials, or unnecessary sensitive personal data.
+
+28. PERFORMANCE REQUIREMENTS
+
+The website must remain smooth under normal event-registration traffic.
+
+Optimize:
+
+Database queries
+Indexes
+QR generation
+Email processing
+API response times
+Static asset delivery
+Check-in operations
+
+Create indexes for frequently queried fields such as:
+
+Registration number
+Ticket ID
+QR token
+Status
+Email where appropriate
+Created timestamp
+
+Do not repeatedly load entire datasets when pagination/filtering can be used.
+
+29. CHECK-IN PERFORMANCE
+
+QR verification should be extremely fast.
+
+The check-in endpoint should perform only the necessary operations.
+
+Do not load:
+
+Entire ticket database
+Entire activity history
+Unnecessary user records
+
+for a single QR scan.
+
+Use indexed lookup by QR token.
+
+Return a fast, deterministic response.
+
+30. ADMIN PAGINATION
+
+Admin lists must use pagination.
+
+Do not return thousands of records in a single API response.
+
+Support:
+
+Pagination
+Filtering
+Searching
+Sorting
+
+where appropriate.
+
+31. FRONTEND/BACKEND CONTRACT
+
+Document the API contract clearly.
+
+Define:
+
+Endpoint
+HTTP method
+Request body
+Validation rules
+Authentication requirements
+Response structure
+Error codes
+
+The frontend should consume the backend through clean API functions rather than duplicating business logic.
+
+32. ENVIRONMENT CONFIGURATION
+
+All secrets/configuration must use environment variables.
+
+Examples:
+
+DATABASE_URL
+EMAIL_HOST
+EMAIL_PORT
+EMAIL_USER
+EMAIL_PASSWORD
+QR_SECRET
+AUTH_SECRET
+
+Never hard-code secrets.
+
+Provide a safe .env.example.
+
+Do not commit real credentials.
+
+33. HEALTH CHECK
+
+Create a lightweight health endpoint such as:
+
+GET /api/health
+
+It should indicate whether the backend is operational.
+
+If appropriate, include database connectivity status separately without exposing sensitive details.
+
+34. DATABASE CONSISTENCY RULES
+
+The following must always be true:
+
+Rule 1
+
+One university registration number → maximum one valid ticket/application according to the defined business rule.
+
+Rule 2
+
+One ticket → exactly one QR credential.
+
+Rule 3
+
+One active QR → one ticket.
+
+Rule 4
+
+One successful QR check-in → ticket becomes invalid/used.
+
+Rule 5
+
+A used QR can never become active again through a normal API operation.
+
+Rule 6
+
+Approval can only be performed by an authorized reviewer/admin.
+
+Rule 7
+
+Ticket price comes from backend-controlled configuration.
+
+Rule 8
+
+Outsiders do not require university registration numbers.
+
+Rule 9
+
+Email failure must not create duplicate tickets.
+
+Rule 10
+
+Concurrent requests must not bypass uniqueness or QR single-use rules.
+
+35. TESTING
+
+Before considering the backend complete, create and run tests for critical business logic.
+
+Test at minimum:
+
+Registration
+Valid university registration number
+Invalid university registration number
+Duplicate registration number
+Same registration number with different capitalization
+Same registration number with whitespace
+Valid outsider ticket without registration number
+Outsider with unnecessary registration number
+Pricing
+University = Rs. 200
+Outsider = Rs. 1000
+Frontend cannot manipulate price
+Approval
+Authorized reviewer can approve
+Unauthorized user cannot approve
+Already approved application cannot be approved twice
+Rejected application cannot be incorrectly approved without an explicitly defined transition
+QR
+Valid QR
+Invalid QR
+Duplicate QR
+QR generated only after approval
+Used QR rejected
+Two simultaneous scans → only one succeeds
+Email
+Successful email
+Temporary email failure
+Retry
+Retry does not create another QR/ticket
+Revenue
+Correct university revenue
+Correct outsider revenue
+Correct total
+No client-side price manipulation
+36. CONCURRENCY TESTING
+
+Specifically test race conditions.
+
+Simulate:
+
+Two users submitting the same university registration number simultaneously.
+
+Expected:
+
+Request A → SUCCESS
+Request B → DUPLICATE REGISTRATION
+
+Also test:
+
+Two staff members scanning the same QR simultaneously.
+
+Expected:
+
+Scan A → VALID / CHECKED IN
+Scan B → ALREADY USED
+
+Never allow:
+
+Scan A → VALID
+Scan B → VALID
+37. DATA BACKUP / RECOVERY
+
+Design the database so ticket records, approvals, QR status, revenue, and audit logs can be backed up and restored safely.
+
+Do not store important business state only in memory.
+
+A server restart must NOT:
+
+Lose tickets
+Reset QR states
+Reset revenue
+Reopen used tickets
+Remove approvals
+38. FINAL ACCEPTANCE FLOW
+
+The complete production flow must be:
+
+USER
+ ↓
+Select Ticket Type
+ ↓
+Fill Form
+ ↓
+Backend Validation
+ ↓
+Registration Number Validation (University only)
+ ↓
+Duplicate Protection
+ ↓
+Application Stored
+ ↓
+PENDING_REVIEW
+ ↓
+REVIEWER MANUALLY INSPECTS
+ ↓
+ ┌───────────────┐
+ │               │
+REJECT          APPROVE
+ │               │
+ ↓               ↓
+REJECTED       TICKET CREATED
+                ↓
+             QR GENERATED
+                ↓
+             QR ACTIVE
+                ↓
+             EMAIL SENT
+                ↓
+          EVENT DAY SCAN
+                ↓
+        ATOMIC QR VALIDATION
+                ↓
+          CHECK-IN SUCCESS
+                ↓
+            QR = USED
+                ↓
+       SECOND SCAN = INVALID
+39. MOST IMPORTANT IMPLEMENTATION PRINCIPLE
+
+Do not optimize only for the normal successful path.
+
+The backend must be designed around:
+
+What happens if the user clicks twice?
+
+What happens if two users submit the same registration number simultaneously?
+
+What happens if two staff scan the same QR simultaneously?
+
+What happens if email fails?
+
+What happens if the server restarts?
+
+What happens if the frontend sends a manipulated price?
+
+What happens if an unauthorized user calls the approval API directly?
+
+What happens if the same approval request is sent twice?
+
+Every one of these situations must have a deterministic, safe outcome.
+
+FINAL REQUIREMENT
+
+The finished backend must be:
+
+Reliable + Fast + Secure + Concurrent-safe + Idempotent + Maintainable + Scalable + Error-tolerant
+
+Do not leave placeholder business logic in the critical ticket/approval/QR/check-in flow.
+
+Do not use mock success responses for production operations.
+
+After implementation:
+
+Run the backend.
+Run the frontend.
+Test every API.
+Test the complete ticket lifecycle.
+Test duplicate registration.
+Test concurrent QR scans.
+Test email failure/retry behavior.
+Test price manipulation attempts.
+Test unauthorized API access.
+Test database failure handling.
+Check browser console for errors.
+Check server logs for unhandled errors.
+Verify no unnecessary polling or excessive API requests are occurring.
+Verify the UI remains responsive while backend operations execute.
+Fix all discovered errors before finishing.
+
+Do not declare the backend complete simply because the happy-path demo works. Validate the failure paths and concurrency cases as well.

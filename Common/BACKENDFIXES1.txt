@@ -1,0 +1,844 @@
+BACKEND FIXES 1 — PRODUCTION HARDENING
+
+IMPORTANT: Do NOT rebuild the backend from scratch unless absolutely necessary. Inspect the current backend implementation and modify the existing system.
+
+The goal of this fix is to make the ticketing backend reliable for a large event, with clear role permissions, reliable email delivery, permanent ticket/QR association, complete statistics, and support for approximately 15,000 attendees/ticket records.
+
+Do not break the existing ticket submission, approval, QR, check-in, revenue, or authentication functionality.
+
+1. SUBMISSION ORDERING
+
+The reviewer/admin submission list must display applications in the order they were received.
+
+Default ordering
+
+Newest submission first:
+
+Latest submission
+↓
+Older submission
+↓
+Older submission
+
+Every submission must have a reliable server-generated timestamp such as:
+
+createdAt
+
+Do NOT rely on the user's browser clock.
+
+Use the backend/database timestamp.
+
+Sorting/filtering
+
+The reviewer and admin interfaces must be able to:
+
+Sort newest → oldest
+Sort oldest → newest
+Filter by date/time range
+Filter by status
+Filter by ticket type
+Search by relevant ticket information
+
+Example:
+
+All
+Pending
+Approved
+Rejected
+Checked In
+University
+Outsider
+
+Date/time filtering should work using the stored server timestamp.
+
+2. EMAIL DELIVERY — FIX COMPLETELY
+
+The current email delivery is not working reliably.
+
+Implement the necessary production email service and make sure it actually works.
+
+Do NOT leave a fake:
+
+Email sent successfully
+
+response when no email was actually delivered/accepted by the configured email service.
+
+Email architecture
+
+Use a reliable transactional email provider/service appropriate for production.
+
+Keep credentials in environment variables.
+
+Never hard-code:
+
+SMTP passwords
+API keys
+Email credentials
+Secret tokens
+
+Provide a .env.example showing required configuration.
+
+3. EMAIL PROCESS
+
+When a reviewer approves an application:
+
+APPROVAL
+   ↓
+Create/retrieve ticket
+   ↓
+Generate/retrieve QR
+   ↓
+Persist ticket + QR
+   ↓
+Queue email
+   ↓
+Email service sends ticket
+
+The email should contain the correct ticket belonging to that specific person.
+
+Include:
+
+Attendee name
+Ticket type
+Ticket/reference number
+Event name
+QR code
+Relevant event information
+Check-in instructions
+4. EMAIL MUST NOT CREATE DUPLICATE TICKETS
+
+Email delivery and ticket creation must be separate operations.
+
+If email fails:
+
+DO NOT:
+
+Create another ticket
+Create another QR
+Approve the application again
+Charge/record another ticket
+Change the attendee's identity
+
+Instead:
+
+Ticket remains valid
+Email status = FAILED
+Admin can retry email
+
+When retrying:
+
+Existing ticket
++
+Existing QR
++
+Same attendee
+
+must be reused.
+
+5. EMAIL DELIVERY STATUS
+
+Store email status.
+
+Example:
+
+PENDING
+SENT
+FAILED
+
+Store useful operational information such as:
+
+Attempt count
+Last attempt time
+Last failure reason
+Sent timestamp
+
+Do not expose sensitive provider credentials or internal errors to users.
+
+Admin should be able to identify tickets where email delivery failed.
+
+6. EMAIL RETRY
+
+Provide a controlled retry mechanism for authorized admin users.
+
+When retrying:
+
+DO NOT generate a new ticket.
+DO NOT generate a new QR.
+DO NOT create another application.
+DO NOT alter the ticket owner.
+
+Only resend the existing ticket.
+
+Use retry/backoff logic for temporary provider/network failures where appropriate.
+
+Do not continuously retry permanent failures.
+
+7. QR ↔ PERSON ASSOCIATION
+
+This is critical.
+
+Every generated QR must be permanently associated with the exact approved ticket/person who owns it.
+
+The relationship must be stored in the database.
+
+Conceptually:
+
+Attendee
+   ↓
+Application
+   ↓
+Ticket
+   ↓
+QR Credential
+
+The system must always be able to retrieve:
+
+QR → Ticket → Attendee
+
+and:
+
+Attendee → Ticket → QR
+8. QR RETRIEVAL FOR REVIEWER/ADMIN
+
+A reviewer/admin must always be able to retrieve the generated QR for an approved ticket.
+
+If the email was lost or failed, the QR must still be available from the system.
+
+From the ticket/application record, authorized staff should be able to see:
+
+Attendee name
+Ticket ID
+Ticket type
+Registration number if applicable
+QR status
+QR image / QR representation
+Email delivery status
+Approval information
+Check-in status
+
+The QR should not depend on the email existing.
+
+9. QR REGENERATION RULE
+
+Do not casually generate a new QR every time the ticket page is opened.
+
+A ticket should have one active QR credential.
+
+If an image needs to be regenerated for display/email:
+
+Reuse the same QR token.
+
+Do not create another credential.
+
+Only an explicitly authorized administrative recovery/revocation process may replace a QR credential.
+
+If a QR is replaced, invalidate the old credential and create a clear audit record.
+
+10. QR SECURITY
+
+Do not put unnecessary personal information inside the QR.
+
+Use a secure, unpredictable token/reference.
+
+The QR should resolve to a backend-verifiable ticket credential.
+
+The database remains the source of truth.
+
+Do not trust information encoded only in the QR.
+
+11. TICKET STATISTICS — NO ARTIFICIAL LIMIT
+
+There must be NO hard-coded ticket quantity limit.
+
+Do not implement something such as:
+
+if soldTickets >= 1000:
+    reject
+
+unless a future configurable event capacity is explicitly added.
+
+For the current system, tickets should not be artificially capped.
+
+12. COMPLETE STATISTICS
+
+Admin dashboard must show accurate real-time/current statistics based on database records.
+
+At minimum:
+
+Applications
+Total submitted
+Pending
+Approved
+Rejected
+Tickets
+Total tickets issued
+University tickets
+Outsider tickets
+Check-in
+Total checked in
+University checked in
+Outsider checked in
+Remaining not checked in
+Revenue
+University ticket revenue
+Outsider ticket revenue
+Total revenue
+Email
+Emails sent
+Emails pending
+Emails failed
+
+Statistics must be calculated from backend/database data.
+
+Do not rely on frontend counters.
+
+13. REVENUE CALCULATION
+
+Use the authoritative backend ticket price.
+
+Current prices:
+
+University = Rs. 200
+Outsider = Rs. 1000
+
+Examples:
+
+100 university tickets = Rs. 20,000
+
+100 outsider tickets = Rs. 100,000
+
+Total revenue:
+
+University revenue + Outsider revenue
+
+Store monetary values safely using integer currency units or an appropriate exact monetary representation.
+
+Never trust a price sent by the frontend.
+
+14. STATISTICS MUST REMAIN CONSISTENT
+
+Avoid calculating different numbers in different parts of the admin dashboard.
+
+Create a centralized backend statistics service/query.
+
+For example:
+
+GET /api/admin/statistics
+
+should provide a consistent snapshot.
+
+The dashboard should not make unnecessary repeated requests for every individual statistic.
+
+15. SUPPORT APPROXIMATELY 15,000 CROWD
+
+The system should be designed to comfortably handle an event population of approximately:
+
+15,000 people
+
+This does NOT mean there should be a ticket limit of 15,000.
+
+It means the architecture should be capable of handling the expected event scale.
+
+Design for:
+
+15,000+ ticket records
+Large submission volume
+Large application history
+Large check-in activity
+Concurrent QR scans
+Concurrent API requests
+Administrative monitoring
+16. DATABASE OPTIMIZATION
+
+Use proper indexes for frequently accessed fields.
+
+At minimum consider indexes for:
+
+createdAt
+status
+ticketType
+registrationNumber
+ticketId
+QR token/reference
+checkIn status
+email delivery status
+
+Do not load the entire ticket table when displaying an admin page.
+
+Use:
+
+Pagination
+Filtering
+Sorting
+Search
+Indexed queries
+17. ADMIN LIST PERFORMANCE
+
+For thousands of submissions, NEVER return all records in one API request.
+
+Example:
+
+GET /api/admin/applications?page=1&limit=50
+
+The exact implementation can vary according to the existing backend.
+
+Use reasonable maximum page sizes.
+
+Prevent users from requesting enormous datasets in one request.
+
+18. 15,000-PERSON CHECK-IN
+
+The check-in system must be optimized for event-day usage.
+
+QR verification should use an indexed lookup.
+
+Do not retrieve the entire attendee database for every scan.
+
+Expected flow:
+
+QR scan
+ ↓
+Extract secure token
+ ↓
+Indexed ticket lookup
+ ↓
+Validate status
+ ↓
+Atomic check-in
+ ↓
+Return result
+
+The response should be fast enough for continuous event-day scanning.
+
+19. CONCURRENT QR SCANS
+
+This must remain concurrency-safe.
+
+If the same QR is scanned simultaneously by two staff members:
+
+Scan A → SUCCESS
+Scan B → ALREADY CHECKED IN
+
+Never:
+
+Scan A → SUCCESS
+Scan B → SUCCESS
+
+Use an atomic transaction/database operation.
+
+The ticket must become invalid for future entry immediately after the successful check-in.
+
+20. ADMIN ROLE
+
+There must be one highest-privilege role:
+
+ADMIN
+
+The current administrator is:
+
+Thisal Methwidu
+
+The admin account must have the highest administrative permissions.
+
+21. ADMIN PORTAL ACCESS
+
+ONLY ADMIN ROLE may access the Admin Portal.
+
+Approvers must NOT have access to the Admin Portal.
+
+Check-in staff must NOT have access to the Admin Portal.
+
+Normal users must NOT have access to the Admin Portal.
+
+This restriction must be enforced by the backend, not just by hiding frontend navigation.
+
+If a non-admin manually enters the admin URL/API:
+
+403 FORBIDDEN
+
+or equivalent secure response.
+
+22. ADMIN PRIVILEGES
+
+The admin has:
+
+Full administrative dashboard access
+View all applications
+View all tickets
+View statistics
+View revenue
+View activity/audit logs
+Review submissions
+Approve where appropriate
+Reject where appropriate
+Modify authorized administrative settings
+Manage/review user privileges
+Audit other users' activities
+Retrieve tickets and QR codes
+Retry failed ticket emails
+Perform authorized administrative corrections
+Edit their own administrator information
+Delete submissions when necessary
+23. ADMIN DELETE FUNCTION
+
+Only the Admin may delete a submission.
+
+This must be treated as a high-risk destructive operation.
+
+Before deletion:
+
+Display a clear warning such as:
+
+Warning: This is a permanent administrative action. Deleting this submission may affect the associated application, ticket, QR record, revenue statistics, and audit history. Confirm only if you are certain this record should be removed.
+
+Require explicit confirmation.
+
+Do NOT allow accidental deletion through a single click.
+
+24. DELETE AUDITING
+
+Even when an admin deletes a submission, preserve an audit record where legally/operationally appropriate.
+
+Record:
+
+Admin identity
+Deleted record/reference
+Reason if required
+Timestamp
+Action performed
+
+Do not silently erase evidence of the administrative action.
+
+If the data model requires retaining financial/audit records, use soft deletion/archival rather than physically destroying those records.
+
+Important: Do not allow deletion to corrupt revenue statistics or audit history.
+
+25. ADMIN PRIVILEGE MANAGEMENT
+
+The admin can review and modify the privileges/roles of other authorized users.
+
+For example:
+
+ADMIN
+APPROVER
+CHECKIN_STAFF
+
+However:
+
+Never allow a normal user to elevate their own privileges.
+
+Privilege changes must be performed through authorized admin-only backend endpoints.
+
+Every privilege change must generate an audit record.
+
+26. ADMIN AUDIT ACCESS
+
+Admin must be able to audit other administrative users' activities.
+
+Display useful activity information such as:
+
+User
+Role
+Action
+Target
+Timestamp
+Result
+
+Examples:
+
+Approver X → Approved Ticket #1234
+Approver X → Rejected Ticket #1235
+Staff Y → Checked in Ticket #1234
+Admin → Changed Approver X privileges
+
+Admin audit records should not be editable by normal users.
+
+27. ADMIN PROFILE
+
+The admin may edit their own account information.
+
+Allow appropriate fields such as:
+
+Name
+Email
+Profile information
+Password/security credentials through the secure authentication flow
+
+Do not allow profile editing to bypass authentication/security requirements.
+
+The admin cannot accidentally remove their own only-admin access through a normal profile edit unless an explicit, protected privilege-management workflow exists.
+
+28. APPROVER ROLE
+
+Approvers have a deliberately limited role.
+
+Approver can:
+
+Access the reviewer/approval interface
+View submitted ticket applications assigned/available for review
+Inspect application details
+Inspect submitted payment evidence
+Approve a valid ticket request
+Reject a request where the existing workflow permits rejection
+Trigger an alert/request for Admin review
+29. APPROVER CANNOT MODIFY SUBMISSIONS
+
+Approvers must NOT be able to:
+
+Edit applicant information
+Change ticket type
+Change ticket price
+Change registration number
+Delete submissions
+Modify revenue
+Modify QR credentials
+Change admin privileges
+Access the Admin Portal
+Delete audit records
+
+Approval means:
+
+Approve or review the request — not modify its underlying data.
+
+30. APPROVER → ADMIN ALERT
+
+If an approver encounters something requiring administrative attention, provide:
+
+Trigger Admin Alert
+
+The alert should create an administrative notification/activity.
+
+For example:
+
+Approver:
+"This application requires administrator review."
+
+Admin should be able to see:
+
+Who triggered the alert
+Which application it concerns
+Time
+Reason/message
+Whether the alert has been reviewed
+31. APPROVER APPROVAL SECURITY
+
+Approval must be performed through a protected backend endpoint.
+
+Never trust:
+
+role = "approver"
+
+from the browser.
+
+Determine the user's role from authenticated server-side identity/session/token.
+
+Only an authenticated user with the correct role may approve.
+
+32. ROLE PERMISSION MATRIX
+
+Implement the following permission model:
+
+Operation	Admin	Approver	Check-in Staff	Public User
+Submit ticket	✓	✓	✓	✓
+View own application	✓	—	—	✓
+Review application	✓	✓	—	—
+Approve	✓	✓	—	—
+Reject	✓	✓*	—	—
+Edit submission	✓	✗	✗	✗
+Delete submission	✓	✗	✗	✗
+View revenue	✓	✗	✗	✗
+View admin statistics	✓	✗	✗	✗
+Manage privileges	✓	✗	✗	✗
+Audit users	✓	✗	✗	✗
+Admin Portal	✓	✗	✗	✗
+Scan/check-in QR	✓	—	✓	✗
+Trigger Admin Alert	✓	✓	—	—
+Retry ticket email	✓	✗	✗	✗
+Edit own profile	✓	✓	✓	appropriate user flow
+
+* Preserve the existing rejection workflow if rejection is already implemented for Approvers.
+
+33. BACKEND ENFORCEMENT
+
+The permission matrix must be enforced at the API/service layer.
+
+Do not rely on:
+
+Hidden buttons
+Hidden navigation
+React route guards alone
+Client-side role checks
+
+A user must not gain access simply by manually calling an API endpoint.
+
+34. AUDIT EVERYTHING IMPORTANT
+
+Create audit events for:
+
+Submission
+Approval
+Rejection
+Admin modification
+Deletion
+Privilege change
+QR generation
+QR replacement/revocation
+QR check-in
+Email retry
+Admin alert
+Authentication/security events where appropriate
+35. NO UNNECESSARY POLLING
+
+The admin dashboard should not continuously hammer the backend.
+
+Use efficient refresh strategies.
+
+If real-time updates are required, use an appropriate lightweight mechanism such as:
+
+Server-sent events
+WebSocket
+Efficient periodic refresh
+
+Only implement real-time infrastructure if it is actually useful.
+
+Do not create constant requests every few milliseconds.
+
+36. ERROR AND FAILURE RECOVERY
+
+The backend must gracefully handle:
+
+Database connection failures
+Email provider failures
+Network failures
+Duplicate submissions
+Concurrent requests
+Invalid QR codes
+Already-used QR codes
+Unauthorized requests
+Expired authentication
+Invalid form data
+Server restart
+
+No operation should silently corrupt ticket state.
+
+37. IMPORTANT DATA CONSISTENCY
+
+The following must ALWAYS remain true:
+
+One approved application
+        ↓
+One ticket
+        ↓
+One active QR credential
+        ↓
+One attendee
+
+And:
+
+One university registration number
+        ↓
+Maximum one ticket
+
+And:
+
+One successful check-in
+        ↓
+QR becomes USED
+        ↓
+Future scans rejected
+38. FINAL PERFORMANCE TARGET
+
+Design the backend for:
+
+15,000+ attendees/ticket records
+
+with:
+
+Efficient indexed database queries
+Pagination
+Concurrent-safe operations
+Efficient QR verification
+Asynchronous email delivery
+Reliable error handling
+No unnecessary API requests
+No memory-heavy full-table operations
+No blocking operations in request handlers
+
+The application should remain responsive during heavy registration and event-day check-in activity.
+
+39. FINAL ACCEPTANCE TEST
+
+Before declaring this fix complete, actually test:
+
+Submission
+Multiple submissions
+Correct chronological ordering
+Newest-first sorting
+Oldest-first sorting
+Date filtering
+Status filtering
+Email
+Approve ticket
+Verify email is actually sent
+Verify correct attendee receives correct QR
+Simulate email failure
+Retry email
+Confirm retry does not create another ticket/QR
+QR
+Retrieve QR from admin/reviewer
+Confirm QR belongs to correct attendee
+Scan valid QR
+Scan same QR twice
+Simulate simultaneous scans
+Statistics
+
+Verify:
+
+Total sold
+University sold
+Outsider sold
+Pending
+Approved
+Rejected
+Checked in
+Revenue
+Email failures
+Permissions
+
+Test each role directly against backend APIs.
+
+Especially verify:
+
+Approver → cannot access Admin Portal
+Approver → cannot edit submission
+Approver → cannot delete submission
+Approver → cannot change privileges
+
+Check-in Staff → cannot access Admin Portal
+Check-in Staff → cannot approve
+
+Public User → cannot access administrative APIs
+
+Admin → full authorized access
+Scale
+
+Test realistic database volume and concurrent requests representative of approximately 15,000 attendees.
+
+Monitor:
+
+API latency
+Database performance
+Memory usage
+CPU usage
+Error rate
+Failed requests
+
+Fix bottlenecks discovered during testing.
+
+FINAL RULE
+
+Do not consider the backend finished simply because the UI appears to work.
+
+The backend is complete only when:
+
+ticket ownership, email delivery, QR lifecycle, statistics, revenue, permissions, auditing, concurrency, and failure recovery all work correctly at event scale.

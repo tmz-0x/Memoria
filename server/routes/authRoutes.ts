@@ -8,4 +8,5 @@ export const authRoutes = Router();
 // Login rate limited: max 10 attempts per minute
 authRoutes.post('/login', rateLimiter({ windowMs: 60 * 1000, maxRequests: 10 }), authController.login);
 authRoutes.get('/me', authenticate, authController.me);
+authRoutes.put('/profile', authenticate, authController.updateProfile);
 authRoutes.post('/logout', authenticate, authController.logout);
