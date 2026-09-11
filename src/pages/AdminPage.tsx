@@ -211,12 +211,12 @@ export const AdminPage: React.FC = () => {
                 </div>
 
                 {/* Recent Submissions Snippet */}
-                <SubmissionsTable submissions={submissions.slice(0, 8)} />
+                <SubmissionsTable submissions={submissions.slice(0, 8)} onRefresh={loadData} />
               </div>
             )}
 
             {activeTab === 'submissions' && (
-              <SubmissionsTable submissions={submissions} />
+              <SubmissionsTable submissions={submissions} onRefresh={loadData} />
             )}
 
             {activeTab === 'users' && (
@@ -227,6 +227,7 @@ export const AdminPage: React.FC = () => {
               <EventSettingsForm
                 initialSettings={settings}
                 onUpdated={(s) => setSettings(s)}
+                onRefresh={loadData}
               />
             )}
           </>

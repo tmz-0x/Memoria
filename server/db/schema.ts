@@ -107,6 +107,18 @@ export function initializeDatabase() {
       reason TEXT
     );
 
+    -- Revoked QR Tokens (Tracks invalidated credentials when regenerated)
+    CREATE TABLE IF NOT EXISTS revoked_qr_tokens (
+      id TEXT PRIMARY KEY,
+      submission_id TEXT NOT NULL,
+      ticket_id TEXT NOT NULL,
+      token TEXT NOT NULL,
+      revoked_at TEXT NOT NULL,
+      revoked_by TEXT NOT NULL,
+      reason TEXT,
+      FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+    );
+
     -- General Activity & Audit Monitoring Log
     CREATE TABLE IF NOT EXISTS activity_logs (
       id TEXT PRIMARY KEY,
@@ -176,5 +188,6 @@ export function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_scan_logs_ticket ON scan_audit_logs(ticket_id);
     CREATE INDEX IF NOT EXISTS idx_scan_logs_time ON scan_audit_logs(scanned_at);
     CREATE INDEX IF NOT EXISTS idx_activity_time ON activity_logs(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_revoked_qr_token ON revoked_qr_tokens(token);
   `);
 }

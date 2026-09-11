@@ -1,15 +1,52 @@
 import React, { useState } from 'react';
-import { Submission } from '../../api/mockApi';
-import { Search, Eye, CheckCircle2, Clock, XCircle, QrCode, Filter } from 'lucide-react';
+import { Submission, api } from '../../api/mockApi';
+import {
+  Search,
+  Eye,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  QrCode,
+  Edit2,
+  Trash2,
+  RefreshCw,
+  AlertTriangle,
+  Mail,
+  Loader2,
+} from 'lucide-react';
 
 interface SubmissionsTableProps {
   submissions: Submission[];
+  onRefresh?: () => void;
 }
 
-export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions }) => {
+export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRefresh }) => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [search, setSearch] = useState('');
   const [activeSlip, setActiveSlip] = useState<string | null>(null);
+
+  // Edit modal state
+  const [editingSub, setEditingSub] = useState<Submission | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    ticketType: 'student' as 'student' | 'outsider',
+    universityRegistrationNumber: '',
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete modal state
+  const [deletingSub, setDeletingSub] = useState<Submission | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // QR Regenerate modal state
+  const [regenSub, setRegenSub] = useState<Submission | null>(null);
+  const [regenReason, setRegenReason] = useState('');
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
   const filtered = submissions.filter((s) => {
     const matchesFilter = filter === 'all' || s.status === filter;
@@ -23,8 +60,80 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions 
     return matchesFilter && matchesSearch;
   });
 
+  const handleStartEdit = (sub: Submission) => {
+    setEditingSub(sub);
+    setEditForm({
+      name: sub.name,
+      email: sub.email,
+      phone: sub.phone,
+      ticketType: sub.ticketType,
+      universityRegistrationNumber: sub.universityRegistrationNumber || '',
+    });
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSub) return;
+    setEditLoading(true);
+    setEditError(null);
+    try {
+      await api.updateSubmission(editingSub.id, editForm);
+      setEditingSub(null);
+      setNotification(`Successfully updated record for ${editForm.name}`);
+      onRefresh?.();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update record');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingSub) return;
+    setDeleteLoading(true);
+    try {
+      await api.deleteSubmission(deletingSub.id, deleteReason);
+      setDeletingSub(null);
+      setDeleteReason('');
+      setNotification(`Record for ${deletingSub.name} deleted successfully.`);
+      onRefresh?.();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete record');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleConfirmRegenerate = async () => {
+    if (!regenSub) return;
+    setRegenLoading(true);
+    try {
+      await api.regenerateQR(regenSub.id, regenReason);
+      setRegenSub(null);
+      setRegenReason('');
+      setNotification(`QR credential successfully regenerated for ${regenSub.name}. Previous QR invalidated.`);
+      onRefresh?.();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to regenerate QR');
+    } finally {
+      setRegenLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Toast Notification */}
+      {notification && (
+        <div className="bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 flex items-center justify-between">
+          <span>{notification}</span>
+          <button onClick={() => setNotification(null)} className="text-white hover:opacity-80">✕</button>
+        </div>
+      )}
+
       {/* Search & Filter Header */}
       <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -66,106 +175,351 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions 
         </div>
       </div>
 
-      {/* Submissions Table */}
+      {/* Table Content */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
             <tr>
               <th className="px-6 py-3.5">Submission ID</th>
-              <th className="px-6 py-3.5">Attendee</th>
-              <th className="px-6 py-3.5">Category</th>
-              <th className="px-6 py-3.5">Passes & Fee</th>
+              <th className="px-6 py-3.5">Attendee Info</th>
+              <th className="px-6 py-3.5">Type & Reg</th>
+              <th className="px-6 py-3.5">Qty / Total</th>
               <th className="px-6 py-3.5">Status</th>
               <th className="px-6 py-3.5">Ticket ID</th>
-              <th className="px-6 py-3.5">Gate Status</th>
-              <th className="px-6 py-3.5 text-right">Receipt</th>
+              <th className="px-6 py-3.5">Admission</th>
+              <th className="px-6 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filtered.map((sub) => (
-              <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
-                <td className="px-6 py-4 font-mono font-medium text-slate-700">{sub.id}</td>
-                <td className="px-6 py-4">
-                  <span className="font-semibold text-slate-900 block">{sub.name}</span>
-                  <span className="text-[11px] text-slate-400">{sub.email} &bull; {sub.phone}</span>
-                </td>
-                <td className="px-6 py-4">
-                  {sub.ticketType === 'student' ? (
-                    <div>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
-                        Student
-                      </span>
-                      {sub.universityRegistrationNumber && (
-                        <span className="block font-mono text-[11px] font-bold text-slate-700 mt-0.5">
-                          {sub.universityRegistrationNumber}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
-                      Outsider
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <span className="font-semibold text-slate-900 block">
-                    {sub.quantity} {sub.quantity > 1 ? 'Passes' : 'Pass'}
-                  </span>
-                  <span className="text-[11px] font-mono text-emerald-600 font-bold">
-                    Rs. {(sub.totalPrice ?? (sub.ticketType === 'student' ? 200 : sub.quantity * 1000)).toLocaleString()}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  {sub.status === 'approved' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Approved
-                    </span>
-                  )}
-                  {sub.status === 'pending' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
-                      <Clock className="w-3 h-3" />
-                      Pending
-                    </span>
-                  )}
-                  {sub.status === 'rejected' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">
-                      <XCircle className="w-3 h-3" />
-                      Rejected
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 font-mono font-medium">
-                  {sub.ticketId ? (
-                    <span className="text-blue-600 font-semibold">{sub.ticketId}</span>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  {sub.checkedIn ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      <QrCode className="w-3.5 h-3.5" />
-                      Admitted
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-slate-400">Not Checked In</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={() => setActiveSlip(sub.paymentSlipUrl)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>View Slip</span>
-                  </button>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
+                  No ticket submissions match your current filters.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((sub) => (
+                <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-6 py-4 font-mono text-[11px] text-slate-500">
+                    {sub.id}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-slate-900 block">{sub.name}</span>
+                    <span className="text-[11px] text-slate-400">{sub.email} &bull; {sub.phone}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {sub.ticketType === 'student' ? (
+                      <div>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
+                          Student
+                        </span>
+                        {sub.universityRegistrationNumber && (
+                          <span className="block font-mono text-[11px] font-bold text-slate-700 mt-0.5">
+                            {sub.universityRegistrationNumber}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+                        Outsider
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-slate-900 block">
+                      {sub.quantity} {sub.quantity > 1 ? 'Passes' : 'Pass'}
+                    </span>
+                    <span className="text-[11px] font-mono text-emerald-600 font-bold">
+                      Rs. {(sub.totalPrice ?? (sub.ticketType === 'student' ? 200 : sub.quantity * 1000)).toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {sub.status === 'approved' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Approved
+                      </span>
+                    )}
+                    {sub.status === 'pending' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+                        <Clock className="w-3 h-3" />
+                        Pending
+                      </span>
+                    )}
+                    {sub.status === 'rejected' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">
+                        <XCircle className="w-3 h-3" />
+                        Rejected
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 font-mono font-medium">
+                    {sub.ticketId ? (
+                      <span className="text-blue-600 font-semibold">{sub.ticketId}</span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    {sub.checkedIn ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                        <QrCode className="w-3.5 h-3.5" />
+                        Admitted
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-400">Not Checked In</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setActiveSlip(sub.paymentSlipUrl)}
+                        className="p-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                        title="View Bank Slip"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleStartEdit(sub)}
+                        className="p-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors"
+                        title="Edit Submission"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {sub.status === 'approved' && (
+                        <button
+                          onClick={() => setRegenSub(sub)}
+                          className="p-1.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 transition-colors"
+                          title="Regenerate QR Code"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setDeletingSub(sub)}
+                        className="p-1.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors"
+                        title="Delete Submission"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Edit Submission Modal */}
+      {editingSub && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Edit Submission Details</h4>
+                <p className="text-[11px] text-slate-500">ID: {editingSub.id} {editingSub.ticketId ? `• ${editingSub.ticketId}` : ''}</p>
+              </div>
+              <button onClick={() => setEditingSub(null)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            {editError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Attendee Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Ticket Category</label>
+                <select
+                  value={editForm.ticketType}
+                  onChange={(e) => setEditForm({ ...editForm, ticketType: e.target.value as 'student' | 'outsider' })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="student">University Student (Rs. 200)</option>
+                  <option value="outsider">General Attendee (Rs. 1,000)</option>
+                </select>
+              </div>
+
+              {editForm.ticketType === 'student' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">University Registration Number</label>
+                  <input
+                    type="text"
+                    value={editForm.universityRegistrationNumber}
+                    onChange={(e) => setEditForm({ ...editForm, universityRegistrationNumber: e.target.value })}
+                    placeholder="e.g. FC122716"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none font-mono uppercase"
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingSub(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 font-medium hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QR Regenerate Modal */}
+      {regenSub && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center gap-3 text-purple-600 mb-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">Regenerate QR Credential</h4>
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs mb-4">
+              <p className="font-bold flex items-center gap-1.5 mb-1">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Warning: Invalidation of Active QR
+              </p>
+              <p>
+                Regenerating this QR will immediately invalidate the currently active QR code for{' '}
+                <strong>{regenSub.name}</strong> ({regenSub.ticketId}). The new QR credential must be used for event-day admission.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Reason for Replacement (Optional)</label>
+              <input
+                type="text"
+                value={regenReason}
+                onChange={(e) => setRegenReason(e.target.value)}
+                placeholder="e.g. Attendee lost QR or security revocation"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRegenSub(null)}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={regenLoading}
+                onClick={handleConfirmRegenerate}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+              >
+                {regenLoading ? 'Regenerating...' : 'Confirm & Invalidate Old QR'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Safe Delete Modal */}
+      {deletingSub && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center gap-3 text-rose-600 mb-3">
+              <div className="p-2 bg-rose-100 rounded-lg">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">Confirm Record Deletion</h4>
+            </div>
+
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs mb-4">
+              <p className="font-bold flex items-center gap-1.5 mb-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                Permanent Administrative Action
+              </p>
+              <p>
+                You are about to delete the registration for <strong>{deletingSub.name}</strong> ({deletingSub.email}).
+                This will archive the record, remove it from active lists, and preserve an audit log.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Administrative Reason</label>
+              <input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="e.g. Duplicate submission or request by attendee"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-rose-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingSub(null)}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting...' : 'Confirm Deletion'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Slip Modal */}
       {activeSlip && (

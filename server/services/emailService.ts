@@ -198,4 +198,41 @@ export const emailService = {
   retryFailedEmail: async (submissionId: string) => {
     return await emailService.sendTicketEmail(submissionId);
   },
+
+  /**
+   * Diagnostic test email dispatch strictly for Admin verification.
+   */
+  sendTestEmail: async (recipientEmail: string): Promise<{ success: boolean; messageId?: string; error?: string }> => {
+    const email = recipientEmail?.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return { success: false, error: 'A valid recipient email address is required.' };
+    }
+
+    if (!config.email.smtpUser || !config.email.smtpPass) {
+      const errorMsg = 'SMTP credentials not configured in environment (SMTP_USER/SMTP_PASS missing in .env).';
+      return { success: false, error: errorMsg };
+    }
+
+    try {
+      const client = getTransporter();
+      const mailOptions: nodemailer.SendMailOptions = {
+        from: config.email.from,
+        to: email,
+        subject: "Memoria'26 — Diagnostic Test Email",
+        html: `
+          <div style="font-family: sans-serif; padding: 24px; background: #0D0518; color: #F0E6FA; border-radius: 12px; border: 1px solid rgba(212,175,55,0.4);">
+            <h2 style="color: #D4AF37; margin: 0 0 12px;">Memoria'26 Email Delivery Test</h2>
+            <p style="margin: 0 0 10px; font-size: 14px;">This diagnostic message confirms that your SMTP transactional mail transport is operational.</p>
+            <p style="color: #A090B8; font-size: 12px; margin: 0;">Timestamp: ${new Date().toISOString()}</p>
+          </div>
+        `,
+      };
+
+      const info = await client.sendMail(mailOptions);
+      return { success: true, messageId: info.messageId };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'SMTP connection failed' };
+    }
+  },
 };

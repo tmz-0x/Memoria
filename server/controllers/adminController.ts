@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { db } from '../db/database';
 import { revenueService } from '../services/revenueService';
 import { emailService } from '../services/emailService';
+import { qrService } from '../services/qrService';
 import { AppError } from '../middleware/errorHandler';
 import { auditService } from '../services/auditService';
 import { config } from '../config/env';
@@ -72,7 +74,7 @@ export const adminController = {
       let whereConditions: string[] = ['1=1'];
       const params: any[] = [];
 
-      // By default, exclude soft-deleted records unless explicitly requested
+      // Exclude soft-deleted records unless explicitly requested
       if (includeDeleted !== 'true') {
         whereConditions.push('deleted_at IS NULL');
       }
@@ -87,7 +89,7 @@ export const adminController = {
         }
       }
 
-      // Ticket Type filter (supports 'student'/'university' and 'outsider'/'general')
+      // Ticket Type filter
       if (ticketType && ticketType !== 'all') {
         const typeStr = String(ticketType).toLowerCase();
         if (typeStr === 'university' || typeStr === 'student') {
@@ -115,7 +117,7 @@ export const adminController = {
         params.push(endVal);
       }
 
-      // Search across name, email, phone, ticketId, normalized reg, id
+      // Search
       if (search) {
         const term = `%${String(search).trim()}%`;
         whereConditions.push(`(
@@ -130,11 +132,11 @@ export const adminController = {
       const countRow = db.prepare(`SELECT COUNT(*) as count FROM submissions WHERE ${whereClause}`).get(...params) as any;
       const total = Number(countRow?.count) || 0;
 
-      // Sorting
+      // Sorting: default newest-first
       const sortDirection = String(sort).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
       let sql = `SELECT * FROM submissions WHERE ${whereClause} ORDER BY submitted_at ${sortDirection}`;
 
-      // Pagination calculation
+      // Pagination
       const pageNum = Math.max(1, parseInt(String(page || 1), 10));
       const limitNum = Math.min(100, Math.max(1, parseInt(String(limit || 50), 10)));
       const offset = (pageNum - 1) * limitNum;
@@ -181,61 +183,220 @@ export const adminController = {
     }
   },
 
+  /**
+   * Admin Full Submission Editing (Sections 1-4)
+   * Allows editing both pending and approved submissions.
+   * Revalidates all fields, enforces student reg uniqueness and authoritative pricing.
+   * Preserves ticket ID, existing QR, approval history, and does not create duplicates.
+   */
   updateSubmission: (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { id } = req.params;
-      const sub = db.prepare('SELECT * FROM submissions WHERE id = ?').get(id) as any;
+      const sub = db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
 
-      const { name, email, phone, universityRegistrationNumber, ticketType } = req.body;
+      const { name, email, phone, universityRegistrationNumber, ticketType, quantity } = req.body;
 
-      const newName = name !== undefined ? String(name).trim() : sub.name;
-      const newEmail = email !== undefined ? String(email).trim().toLowerCase() : sub.email;
-      const newPhone = phone !== undefined ? String(phone).trim() : sub.phone;
-      const newType = ticketType !== undefined ? String(ticketType).toLowerCase() : sub.ticket_type;
+      // Validate name if provided
+      let newName = sub.name;
+      if (name !== undefined) {
+        newName = String(name).trim();
+        if (newName.length < 2 || newName.length > 100) {
+          throw new AppError('Full name must be between 2 and 100 characters.', 400, 'INVALID_NAME');
+        }
+      }
+
+      // Validate email if provided
+      let newEmail = sub.email;
+      if (email !== undefined) {
+        newEmail = String(email).trim().toLowerCase();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail)) {
+          throw new AppError('Please enter a valid email address.', 400, 'INVALID_EMAIL');
+        }
+      }
+
+      // Validate phone if provided
+      let newPhone = sub.phone;
+      if (phone !== undefined) {
+        newPhone = String(phone).trim();
+        if (newPhone.length < 7 || newPhone.length > 25) {
+          throw new AppError('Phone number must be between 7 and 25 characters.', 400, 'INVALID_PHONE');
+        }
+      }
+
+      // Determine ticket type
+      let newType = sub.ticket_type;
+      if (ticketType !== undefined) {
+        const typeStr = String(ticketType).toLowerCase();
+        if (typeStr === 'university' || typeStr === 'student') {
+          newType = 'student';
+        } else if (typeStr === 'outsider' || typeStr === 'general') {
+          newType = 'outsider';
+        } else {
+          throw new AppError('Invalid ticket type. Must be student or outsider.', 400, 'INVALID_TICKET_TYPE');
+        }
+      }
 
       let newReg = sub.university_registration_number;
       let newNormReg = sub.normalized_reg_number;
+      let newQuantity = sub.quantity;
+      let newUnitPrice = sub.unit_price;
+      let newTotalPrice = sub.total_price;
 
-      if (universityRegistrationNumber !== undefined) {
-        newReg = String(universityRegistrationNumber).trim();
-        if (newReg) {
-          newNormReg = newReg.replace(/\s+/g, '').toUpperCase();
-          // Check collision
-          const collision = db.prepare(`
-            SELECT id FROM submissions
-            WHERE normalized_reg_number = ? AND id != ? AND deleted_at IS NULL
-          `).get(newNormReg, id) as any;
-          if (collision) {
-            throw new AppError(`Registration number ${newNormReg} is already used by another record.`, 409, 'REG_EXISTS');
-          }
-        } else {
-          newNormReg = null;
+      if (newType === 'student') {
+        const rawReg = universityRegistrationNumber !== undefined
+          ? String(universityRegistrationNumber).trim()
+          : (sub.university_registration_number || '');
+
+        if (!rawReg) {
+          throw new AppError('University student registration number is required for Student admission passes.', 400, 'MISSING_REGISTRATION_NUMBER');
         }
+
+        newReg = rawReg;
+        newNormReg = rawReg.replace(/\s+/g, '').toUpperCase();
+
+        if (!config.studentRegRegex.test(newNormReg)) {
+          throw new AppError('Invalid university registration number format (e.g. FC122716, AS104921).', 400, 'INVALID_REGISTRATION_FORMAT');
+        }
+
+        // Strict uniqueness check against any other active submission
+        const collision = db.prepare(`
+          SELECT id, ticket_id FROM submissions
+          WHERE normalized_reg_number = ? AND id != ? AND deleted_at IS NULL
+        `).get(newNormReg, sub.id) as any;
+
+        if (collision) {
+          throw new AppError(`University registration number ${newNormReg} is already used by record ${collision.ticket_id || collision.id}.`, 409, 'REGISTRATION_NUMBER_ALREADY_USED');
+        }
+
+        newQuantity = 1;
+        newUnitPrice = config.pricing.student; // 200
+        newTotalPrice = config.pricing.student;
+      } else {
+        // Outsider
+        newReg = null;
+        newNormReg = null;
+
+        if (quantity !== undefined) {
+          const q = Number(quantity);
+          if (isNaN(q) || q < 1 || q > 5 || !Number.isInteger(q)) {
+            throw new AppError('Outsider pass reservation must be between 1 and 5 tickets.', 400, 'INVALID_QUANTITY');
+          }
+          newQuantity = q;
+        }
+
+        newUnitPrice = config.pricing.outsider; // 1000
+        newTotalPrice = newQuantity * config.pricing.outsider;
       }
 
       db.prepare(`
         UPDATE submissions
         SET name = ?, email = ?, phone = ?, ticket_type = ?,
-            university_registration_number = ?, normalized_reg_number = ?
+            university_registration_number = ?, normalized_reg_number = ?,
+            quantity = ?, unit_price = ?, total_price = ?
         WHERE id = ?
-      `).run(newName, newEmail, newPhone, newType, newReg, newNormReg, id);
+      `).run(newName, newEmail, newPhone, newType, newReg, newNormReg, newQuantity, newUnitPrice, newTotalPrice, sub.id);
 
-      auditService.logActivity(req.user?.name || 'admin', 'SUBMISSION_UPDATED', 'SUCCESS', id, {
+      auditService.logActivity(req.user?.name || 'admin', 'SUBMISSION_UPDATED', 'SUCCESS', sub.id, {
         name: newName,
         email: newEmail,
         ticketType: newType,
+        quantity: newQuantity,
+        totalPrice: newTotalPrice,
+        regNumber: newNormReg,
       });
 
-      const updated = db.prepare('SELECT * FROM submissions WHERE id = ?').get(id) as any;
+      const updated = db.prepare('SELECT * FROM submissions WHERE id = ?').get(sub.id) as any;
       res.status(200).json(formatSubmission(updated));
     } catch (err) {
       next(err);
     }
   },
 
+  /**
+   * Admin QR Regeneration (Sections 5-8)
+   * Explicit administrative action. Invalidates the old QR and issues a new secure QR
+   * associated with the same ticket without creating duplicate tickets or altering pricing.
+   */
+  regenerateQR: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const confirm = req.body?.confirm === true || req.query?.confirm === 'true';
+
+      if (!confirm) {
+        throw new AppError(
+          'Warning: Regenerating this QR will invalidate the currently active QR credential. The new QR must be used for future check-in. Explicit confirmation required: pass { confirm: true }.',
+          400,
+          'CONFIRMATION_REQUIRED'
+        );
+      }
+
+      const sub = db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      if (!sub) {
+        throw new AppError('Application record not found.', 404, 'NOT_FOUND');
+      }
+
+      if (sub.status !== 'approved' || !sub.ticket_id) {
+        throw new AppError('Cannot regenerate QR for an application that has not been approved with an issued ticket.', 400, 'TICKET_NOT_APPROVED');
+      }
+
+      const oldToken = sub.qr_token || '';
+      const newToken = qrService.generateSecureToken();
+      const newPayload = qrService.formatPayload(newToken);
+      const newQrImageData = await qrService.generateQRCodeDataUrl(newPayload);
+      const now = new Date().toISOString();
+      const adminName = req.user?.name || 'admin';
+      const reason = req.body?.reason ? String(req.body.reason).trim() : 'Administrative QR replacement';
+
+      const regenTx = db.transaction(() => {
+        // Record revoked token so any future scan of the old token is explicitly rejected
+        if (oldToken) {
+          const revokedId = `rev-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+          db.prepare(`
+            INSERT INTO revoked_qr_tokens (id, submission_id, ticket_id, token, revoked_at, revoked_by, reason)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(revokedId, sub.id, sub.ticket_id, oldToken, now, adminName, reason);
+        }
+
+        // Update submission with new QR credentials
+        db.prepare(`
+          UPDATE submissions
+          SET qr_token = ?,
+              qr_payload = ?,
+              qr_image_data = ?,
+              email_status = 'PENDING'
+          WHERE id = ?
+        `).run(newToken, newPayload, newQrImageData, sub.id);
+      });
+
+      regenTx();
+
+      auditService.logActivity(adminName, 'QR_REGENERATED', 'SUCCESS', sub.id, {
+        ticketId: sub.ticket_id,
+        attendeeName: sub.name,
+        previousTokenPrefix: oldToken ? oldToken.slice(0, 8) : 'none',
+        reason,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'QR credential successfully regenerated. Previous QR invalidated.',
+        id: sub.id,
+        ticketId: sub.ticket_id,
+        qrToken: newToken,
+        qrImageData: newQrImageData,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Safe Individual Deletion with Confirmation & Auditing (Sections 10-13)
+   */
   deleteSubmission: (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { id } = req.params;
@@ -243,13 +404,13 @@ export const adminController = {
 
       if (!confirm) {
         throw new AppError(
-          'Warning: This is a permanent administrative action. Deleting this submission may affect the associated application, ticket, QR record, revenue statistics, and audit history. Confirm only if you are certain this record should be removed. Explicit confirmation required: pass { confirm: true } in the request body.',
+          'Warning: You are about to delete this submission. This is a destructive administrative action and may affect associated ticket, QR, revenue, and application records. Confirm only if you are certain this record should be deleted. Explicit confirmation required: pass { confirm: true }.',
           400,
           'CONFIRMATION_REQUIRED'
         );
       }
 
-      const sub = db.prepare('SELECT id, name, ticket_id, deleted_at FROM submissions WHERE id = ?').get(id) as any;
+      const sub = db.prepare('SELECT id, name, ticket_id, deleted_at FROM submissions WHERE (id = ? OR ticket_id = ?)').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
@@ -262,13 +423,28 @@ export const adminController = {
       const adminName = req.user?.name || 'admin';
       const reason = req.body?.reason ? String(req.body.reason).trim() : 'Administrative deletion';
 
-      db.prepare(`
-        UPDATE submissions
-        SET deleted_at = ?, deleted_by = ?, delete_reason = ?
-        WHERE id = ?
-      `).run(now, adminName, reason, id);
+      const delTx = db.transaction(() => {
+        // Soft delete submission
+        db.prepare(`
+          UPDATE submissions
+          SET deleted_at = ?, deleted_by = ?, delete_reason = ?
+          WHERE id = ?
+        `).run(now, adminName, reason, sub.id);
 
-      auditService.logActivity(adminName, 'SUBMISSION_DELETED', 'SUCCESS', id, {
+        // Resolve any open admin alerts for this submission
+        db.prepare(`
+          UPDATE admin_alerts
+          SET status = 'resolved',
+              resolved_by = ?,
+              resolved_at = ?,
+              resolution_note = 'Record deleted by administrator'
+          WHERE submission_id = ? AND status = 'pending'
+        `).run(adminName, now, sub.id);
+      });
+
+      delTx();
+
+      auditService.logActivity(adminName, 'SUBMISSION_DELETED', 'SUCCESS', sub.id, {
         ticketId: sub.ticket_id,
         attendeeName: sub.name,
         reason,
@@ -278,7 +454,262 @@ export const adminController = {
       res.status(200).json({
         success: true,
         message: 'Submission successfully soft-deleted and archived.',
-        id,
+        id: sub.id,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Complete Database Reset with Admin Password Verification (Sections 14-21)
+   * Atomically resets operational data while strictly preserving the primary Admin account.
+   */
+  resetDatabase: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { password, confirm } = req.body;
+
+      if (confirm !== true) {
+        throw new AppError(
+          '⚠️ DANGER — RESET ENTIRE DATABASE: This operation will permanently remove all application and ticket data in the database. Explicit confirmation required: pass { confirm: true }.',
+          400,
+          'CONFIRMATION_REQUIRED'
+        );
+      }
+
+      if (!password) {
+        throw new AppError('Administrator password is required to execute a complete database reset.', 400, 'PASSWORD_REQUIRED');
+      }
+
+      // Fetch the logged-in admin user to verify credentials server-side
+      const adminUser = db.prepare('SELECT id, name, email, password_hash, role FROM users WHERE id = ?').get(req.user?.id) as any;
+      if (!adminUser || adminUser.role !== 'admin') {
+        throw new AppError('Forbidden: Only an authenticated administrator may perform a database reset.', 403, 'FORBIDDEN');
+      }
+
+      if (!bcrypt.compareSync(String(password).trim(), adminUser.password_hash)) {
+        throw new AppError('Incorrect administrator password. Database reset operation was rejected.', 401, 'INVALID_ADMIN_PASSWORD');
+      }
+
+      const now = new Date().toISOString();
+
+      // Atomic Reset: Clears operational tables while preserving Admin account
+      const resetTx = db.transaction(() => {
+        db.prepare('DELETE FROM submissions').run();
+        db.prepare('DELETE FROM admin_alerts').run();
+        db.prepare('DELETE FROM approval_history').run();
+        db.prepare('DELETE FROM scan_audit_logs').run();
+        db.prepare('DELETE FROM revoked_qr_tokens').run();
+
+        // Reset remaining allocation in event settings back to total capacity
+        db.prepare('UPDATE event_settings SET remaining_allocation = total_capacity, updated_at = ? WHERE id = 1').run(now);
+
+        // Record the system reset event in activity_logs
+        const logId = `act-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+        db.prepare(`
+          INSERT INTO activity_logs (id, timestamp, actor, action, entity_id, result, metadata)
+          VALUES (?, ?, ?, 'RESET_DATABASE', 'database', 'SUCCESS', ?)
+        `).run(logId, now, adminUser.name, JSON.stringify({
+          resetBy: adminUser.name,
+          email: adminUser.email,
+          preservedAdmin: 'Thisal Methwidu (admin@memoria.lk)',
+        }));
+      });
+
+      resetTx();
+
+      const freshStats = revenueService.getAdminStats();
+
+      res.status(200).json({
+        success: true,
+        message: 'Database has been successfully reset. Operational tables cleared. Primary administrator account preserved.',
+        stats: freshStats,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Admin-Only Creation of New Admin Accounts (Sections 31-33)
+   */
+  createAdmin: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { name, email, password } = req.body;
+      if (!name || !email) {
+        throw new AppError('Name and email are required fields for creating an administrator.', 400, 'MISSING_FIELDS');
+      }
+
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        throw new AppError('Please provide a valid email address for the new administrator.', 400, 'INVALID_EMAIL');
+      }
+
+      const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(normalizedEmail);
+      if (existing) {
+        throw new AppError('An account with this email address already exists.', 409, 'USER_EXISTS');
+      }
+
+      const rawPass = password ? String(password).trim() : 'admin2026';
+      if (rawPass.length < 6) {
+        throw new AppError('Password must be at least 6 characters.', 400, 'WEAK_PASSWORD');
+      }
+
+      const hash = bcrypt.hashSync(rawPass, 10);
+      const id = `usr-adm-${Date.now().toString().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
+      const now = new Date().toISOString();
+
+      db.prepare(`
+        INSERT INTO users (id, name, email, password_hash, role, created_at)
+        VALUES (?, ?, ?, ?, 'admin', ?)
+      `).run(id, String(name).trim(), normalizedEmail, hash, now);
+
+      auditService.logActivity(req.user?.name || 'admin', 'ADMIN_ACCOUNT_CREATED', 'SUCCESS', id, {
+        createdBy: req.user?.name,
+        newAdmin: String(name).trim(),
+        email: normalizedEmail,
+      });
+
+      res.status(201).json({
+        success: true,
+        user: {
+          id,
+          name: String(name).trim(),
+          email: normalizedEmail,
+          role: 'admin',
+          createdAt: now,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Admin Password Management (Sections 28-29)
+   */
+  updatePassword: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        throw new AppError('Current password and new password are required.', 400, 'MISSING_PASSWORD_FIELDS');
+      }
+
+      if (confirmPassword && newPassword !== confirmPassword) {
+        throw new AppError('New password and confirmation password do not match.', 400, 'PASSWORD_MISMATCH');
+      }
+
+      if (String(newPassword).trim().length < 6) {
+        throw new AppError('New password must be at least 6 characters long.', 400, 'WEAK_PASSWORD');
+      }
+
+      const adminUser = db.prepare('SELECT id, name, password_hash FROM users WHERE id = ?').get(req.user?.id) as any;
+      if (!adminUser) {
+        throw new AppError('Administrator account not found.', 404, 'USER_NOT_FOUND');
+      }
+
+      if (!bcrypt.compareSync(String(currentPassword).trim(), adminUser.password_hash)) {
+        throw new AppError('Current password provided does not match our records.', 400, 'INVALID_CURRENT_PASSWORD');
+      }
+
+      const newHash = bcrypt.hashSync(String(newPassword).trim(), 10);
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, adminUser.id);
+
+      auditService.logActivity(adminUser.name, 'PASSWORD_CHANGED', 'SUCCESS', adminUser.id);
+
+      res.status(200).json({
+        success: true,
+        message: 'Administrator password updated successfully.',
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Admin Profile Information Management (Section 30)
+   */
+  updateProfile: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { name, email } = req.body;
+      const adminUser = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(req.user?.id) as any;
+      if (!adminUser) {
+        throw new AppError('User not found.', 404, 'NOT_FOUND');
+      }
+
+      const newName = name !== undefined ? String(name).trim() : adminUser.name;
+      let newEmail = adminUser.email;
+
+      if (email !== undefined) {
+        newEmail = String(email).trim().toLowerCase();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail)) {
+          throw new AppError('Please enter a valid email address.', 400, 'INVALID_EMAIL');
+        }
+
+        const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?').get(newEmail, adminUser.id);
+        if (existing) {
+          throw new AppError('Email address is already in use by another account.', 409, 'EMAIL_EXISTS');
+        }
+      }
+
+      db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(newName, newEmail, adminUser.id);
+
+      auditService.logActivity(newName, 'PROFILE_UPDATED', 'SUCCESS', adminUser.id, {
+        oldName: adminUser.name,
+        newName,
+        oldEmail: adminUser.email,
+        newEmail,
+      });
+
+      const updatedPayload = {
+        id: adminUser.id,
+        name: newName,
+        email: newEmail,
+        role: adminUser.role,
+      };
+
+      const freshToken = jwt.sign(updatedPayload, config.jwtSecret, { expiresIn: '7d' });
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully.',
+        user: updatedPayload,
+        token: freshToken,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Diagnostic Test Email Dispatch (Section 25)
+   */
+  sendTestEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { recipientEmail } = req.body;
+      const target = recipientEmail || req.user?.email || 'admin@memoria.lk';
+      const result = await emailService.sendTestEmail(target);
+
+      auditService.logActivity(req.user?.name || 'admin', 'EMAIL_TEST_SENT', result.success ? 'SUCCESS' : 'FAILURE', null, {
+        recipient: target,
+        error: result.error,
+      });
+
+      if (!result.success) {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          message: 'Test email failed to send. Please check your SMTP configuration.',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Test email successfully dispatched and accepted by SMTP server.',
+        messageId: result.messageId,
       });
     } catch (err) {
       next(err);
@@ -289,7 +720,7 @@ export const adminController = {
     try {
       const { id } = req.params;
       const result = await emailService.retryFailedEmail(id);
-      auditService.logActivity(req.user?.name || 'admin', 'EMAIL_RETRY_REQUESTED', 'SUCCESS', id, result);
+      auditService.logActivity(req.user?.name || 'admin', 'EMAIL_RETRY_REQUESTED', result.success ? 'SUCCESS' : 'FAILURE', id, result);
       res.status(200).json(result);
     } catch (err) {
       next(err);

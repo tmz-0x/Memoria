@@ -1,0 +1,795 @@
+BACKEND FIXES 2 — ADMIN CONTROLS, DATABASE RESET, EMAIL SERVER & ADMIN MANAGEMENT
+IMPORTANT
+
+Do NOT rebuild the existing backend unnecessarily.
+
+Inspect the current implementation first and modify the existing system.
+
+This fix is focused on:
+
+Full admin editing privileges
+Individual submission deletion
+Complete database reset
+Test-data/example-data management
+Reliable server-side email delivery
+Admin profile/password management
+Admin-only creation of new admin accounts
+Strong security around destructive operations
+
+All existing ticketing, approval, QR, check-in, revenue, statistics, authentication, and audit functionality must continue working.
+
+1. ADMIN HAS FULL SUBMISSION EDITING PRIVILEGES
+
+The ADMIN role has permission to edit ticket submissions.
+
+This permission must be enforced on the backend.
+
+Do NOT rely only on hiding/showing frontend buttons.
+
+Admin must be able to edit appropriate submission fields such as:
+
+Attendee name
+Email
+Ticket type
+University registration number where applicable
+Other editable attendee information
+
+The backend must validate every edited value again.
+
+2. ADMIN CAN EDIT APPROVED TICKET DETAILS
+
+Admin must also be able to edit details of an already approved submission.
+
+Example:
+
+APPROVED
+   ↓
+ADMIN EDIT
+   ↓
+VALIDATED UPDATED RECORD
+
+The admin must NOT be forced to delete and recreate a ticket just to correct a typo.
+
+Examples:
+
+Incorrect attendee name
+Incorrect email
+Incorrect registration number
+Other legitimate data correction
+3. EDITING APPROVED TICKETS MUST NOT CREATE DUPLICATES
+
+If an approved ticket is edited:
+
+DO NOT automatically create another ticket.
+
+Preserve:
+
+Existing ticket ID
+Existing QR identity where possible
+Existing approval history
+Existing revenue record
+
+Only update the necessary information.
+
+4. REGISTRATION NUMBER EDITING
+
+If Admin changes a university registration number:
+
+The backend must revalidate uniqueness.
+
+Example:
+
+Existing:
+FC122716 → Ticket A
+
+Admin attempts:
+FC122716 → Ticket B
+
+This must be rejected.
+
+The database uniqueness constraint must remain active.
+
+Do not allow admin editing to bypass the one-ticket-per-registration-number rule.
+
+5. QR REGENERATION
+
+Admin has permission to regenerate a QR code when necessary.
+
+Add an explicit:
+
+Regenerate QR
+
+operation.
+
+This must be an intentional administrative action.
+
+Before regeneration, display a warning:
+
+Warning: Regenerating this QR will invalidate the currently active QR credential. The new QR must be used for future check-in.
+
+Require explicit confirmation.
+
+6. QR REGENERATION PROCESS
+
+When Admin regenerates a QR:
+
+OLD QR
+   ↓
+INVALIDATED
+   ↓
+NEW SECURE QR TOKEN
+   ↓
+ASSOCIATED WITH SAME TICKET
+   ↓
+NEW QR ACTIVE
+
+The ticket owner must remain unchanged.
+
+Do NOT create another ticket.
+
+Do NOT change the ticket price.
+
+Do NOT create another revenue entry.
+
+Do NOT create another application.
+
+7. QR REGENERATION AUDIT
+
+Every QR regeneration must be recorded.
+
+Audit:
+
+Admin identity
+Ticket ID
+Previous QR status/reference where safe
+New QR generation event
+Timestamp
+Reason if required
+
+Do not expose raw secret QR tokens in audit logs.
+
+8. RETRIEVING THE CURRENT QR
+
+Admin must always be able to retrieve the currently active QR for an approved ticket.
+
+If the previous QR was regenerated:
+
+The old QR must no longer validate.
+
+The new QR must be retrievable from the ticket record.
+
+9. EXAMPLE / TEST DATA
+
+The current system contains example data.
+
+I will also add my own test cases during development.
+
+The system therefore needs clear tools for managing test/example data.
+
+Do NOT mix test data and real production records without clear identification.
+
+If the existing architecture supports a test/demo environment, preserve that separation.
+
+10. CLEAR BUTTON
+
+Add an administrative Clear operation where appropriate for removing individual test/example records.
+
+The interface must clearly distinguish:
+
+Clear individual submission
+
+from:
+
+Reset entire database
+
+Do not make these look like the same operation.
+
+11. INDIVIDUAL DELETE
+
+Admin must be able to delete an individual submission.
+
+Only Admin may perform this operation.
+
+Approvers must NOT be able to delete submissions.
+
+Before deletion show a strong warning:
+
+Warning: You are about to delete this submission. This is a destructive administrative action and may affect associated ticket, QR, revenue, and application records. Confirm only if you are certain this record should be deleted.
+
+Require explicit confirmation.
+
+Prefer requiring an additional confirmation step rather than deleting immediately from a single click.
+
+12. SAFE INDIVIDUAL DELETE
+
+Deleting a submission must not silently corrupt related records.
+
+Determine the correct relationship between:
+
+Application
+Ticket
+QR
+Payment
+Revenue
+Email
+Audit
+Check-in
+
+and handle dependent records safely.
+
+Do NOT leave orphaned QR/ticket records.
+
+Do NOT accidentally delete unrelated attendees.
+
+13. AUDIT DELETIONS
+
+Even if the application itself is deleted, preserve an administrative audit event where appropriate.
+
+Record:
+
+Admin
+Action
+Deleted record/reference
+Timestamp
+Reason if available
+
+The system should retain evidence that an administrative deletion occurred.
+
+For financial/audit records that must remain historically accurate, use archival/soft-delete logic where appropriate rather than destroying the historical record.
+
+14. FULL DATABASE RESET
+
+Create a separate Reset Database operation for development/testing.
+
+This is NOT the same as deleting an individual submission.
+
+The reset operation must reset the actual database state used by the application.
+
+It must NOT simply:
+
+window.location.reload()
+
+or clear browser localStorage.
+
+It must operate on the backend database.
+
+15. RESET WARNING
+
+The Reset Database button must be visually separated from normal controls.
+
+Display a very strong warning:
+
+⚠️ DANGER — RESET ENTIRE DATABASE
+This operation will permanently remove/reset application and ticket data in the configured database. All submissions, tickets, QR records, check-in records, and relevant test data may be affected. This action cannot be casually undone. Continue only if you are certain.
+
+Require explicit confirmation.
+
+16. RESET MUST REQUIRE ADMIN PASSWORD
+
+The database reset MUST require the current Admin's password.
+
+Flow:
+
+Admin clicks Reset Database
+        ↓
+Warning dialog
+        ↓
+Admin confirms
+        ↓
+Password required
+        ↓
+Backend verifies password
+        ↓
+Backend performs reset
+        ↓
+Audit reset operation
+        ↓
+Return success
+
+The password must be verified server-side.
+
+Never send or store the password in plaintext.
+
+Do not implement password verification only in React.
+
+17. RESET SECURITY
+
+The reset endpoint must be:
+
+ADMIN ONLY
+
+Approvers must receive:
+
+403 FORBIDDEN
+
+Check-in staff must receive:
+
+403 FORBIDDEN
+
+Public users must receive:
+
+403 FORBIDDEN
+
+Even if they manually call the reset API.
+
+18. RESET DATABASE ATOMICITY
+
+The reset operation should be performed safely.
+
+If the database schema contains related tables:
+
+applications
+tickets
+qr_codes
+payments
+email_logs
+checkins
+activities
+
+handle relationships correctly.
+
+Do not leave half-reset data if the operation fails.
+
+Use a transaction or safe database reset strategy appropriate to the database.
+
+19. RESET ADMIN ACCOUNTS — IMPORTANT
+
+Do NOT accidentally remove the ability to access the system after a reset.
+
+The reset behavior regarding administrator accounts must be explicitly defined.
+
+Recommended behavior:
+
+Reset event/application data while preserving the primary Admin account and authentication configuration.
+
+The primary administrator:
+
+Thisal Methwidu
+
+must remain able to log in after a normal test-data reset.
+
+Do not delete the primary Admin account as part of the ordinary database reset unless an explicit separate "factory reset" operation is intentionally implemented.
+
+20. RESET STATISTICS
+
+After a successful data reset, statistics must be recalculated from the resulting database.
+
+For example:
+
+Tickets sold: 0
+Approved: 0
+Rejected: 0
+Checked in: 0
+Revenue: Rs. 0
+
+assuming all event data was reset.
+
+Do not leave stale cached statistics.
+
+21. RESET AUDIT
+
+The reset itself must be audited.
+
+Record:
+
+RESET_DATABASE
+Admin: Thisal Methwidu
+Timestamp
+Result
+
+If audit records themselves are intentionally cleared by the reset, create a safe system-level reset event after the reset completes, or preserve a separate administrative audit mechanism.
+
+Do not create a situation where destructive operations have no trace.
+
+22. EMAIL SERVER — FIX CURRENT FAILURE
+
+The current email system is not sending emails properly.
+
+Fix the actual backend email server/service.
+
+Do NOT simply change the frontend message to:
+
+Email sent successfully
+
+The system must actually submit the email to a configured email delivery service.
+
+23. EMAIL CONFIGURATION
+
+Use a reliable transactional email provider or properly configured SMTP service.
+
+All credentials must be environment variables.
+
+Example:
+
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_USER=
+EMAIL_PASSWORD=
+EMAIL_FROM=
+
+or use the provider's API credentials if an API-based service is selected.
+
+Never hard-code credentials.
+
+Never commit real credentials into the repository.
+
+Provide:
+
+.env.example
+
+with placeholder configuration names.
+
+24. EMAIL SERVER DIAGNOSTICS
+
+Add proper server-side logging around email delivery.
+
+When an email is attempted, record:
+
+EMAIL_QUEUED
+EMAIL_SENDING
+EMAIL_SENT
+EMAIL_FAILED
+
+Include:
+
+Ticket/application ID
+Recipient
+Timestamp
+Provider response/reference where appropriate
+Failure category
+
+Do not log passwords, API keys, QR secrets, or unnecessary sensitive information.
+
+25. EMAIL MUST BE TESTABLE
+
+Create an admin-only email test mechanism if appropriate.
+
+For example:
+
+Send Test Email
+
+The test should verify that:
+
+Backend
+ ↓
+Email service
+ ↓
+Provider/SMTP
+ ↓
+Recipient inbox
+
+actually works.
+
+Do not mark the test successful simply because the API request returned HTTP 200.
+
+The provider must accept the email for delivery.
+
+26. PRODUCTION EMAIL FLOW
+
+After approval:
+
+Reviewer approves
+        ↓
+Backend creates/retrieves ticket
+        ↓
+QR created/retrieved
+        ↓
+Ticket saved
+        ↓
+Email queued
+        ↓
+Email service sends
+        ↓
+Delivery status recorded
+
+The approval itself must not be dependent on the browser remaining open.
+
+Use asynchronous/background processing where appropriate.
+
+27. EMAIL RETRY
+
+Admin must be able to retry failed ticket email delivery.
+
+Retry must reuse:
+
+Same attendee
+Same ticket
+Same ticket ID
+Same active QR
+
+Do NOT create another ticket.
+
+Do NOT regenerate QR simply because email failed.
+
+28. ADMIN PASSWORD MANAGEMENT
+
+Admin must be able to change their own password.
+
+The password change operation must require appropriate authentication.
+
+Recommended flow:
+
+Current password
+New password
+Confirm new password
+        ↓
+Backend validation
+        ↓
+Secure password hash update
+
+Never store plaintext passwords.
+
+Use a modern password hashing algorithm such as Argon2id or another secure production-standard password hashing mechanism appropriate to the selected authentication system.
+
+29. ADMIN PASSWORD SECURITY
+
+Enforce reasonable password requirements.
+
+After changing the password:
+
+Invalidate/revoke appropriate old sessions if supported.
+Require secure reauthentication where appropriate.
+Do not expose the password through logs or API responses.
+
+Never return:
+
+password
+passwordHash
+
+to the frontend.
+
+30. ADMIN PERSONAL INFORMATION
+
+Admin can edit their own account information.
+
+Examples:
+
+Name
+Email
+Other appropriate profile information
+
+Changes must be validated server-side.
+
+The current admin display name is:
+
+Thisal Methwidu
+
+Do not allow profile editing to bypass authorization.
+
+31. ONLY ADMIN CAN CREATE NEW ADMIN ACCOUNTS
+
+This is a critical privilege rule.
+
+Only an existing authenticated Admin may create another Admin account.
+
+Approvers cannot create Admin accounts.
+
+Check-in staff cannot create Admin accounts.
+
+Normal users cannot create Admin accounts.
+
+32. CREATE ADMIN FLOW
+
+Admin-only interface:
+
+Admin Portal
+   ↓
+User Management
+   ↓
+Create Admin
+   ↓
+Enter new admin details
+   ↓
+Backend validation
+   ↓
+Create account
+   ↓
+Assign ADMIN role
+   ↓
+Audit event
+
+The role assignment must happen server-side.
+
+Do NOT allow the browser to simply submit:
+
+{
+  "role": "ADMIN"
+}
+
+and trust it.
+
+33. NEW ADMIN ACCOUNT SECURITY
+
+When creating a new Admin:
+
+Validate:
+
+Name
+Email
+Password/security setup
+Required account information
+
+Prevent duplicate accounts according to the authentication system's unique identifier.
+
+Never expose password hashes.
+
+Audit:
+
+ADMIN_ACCOUNT_CREATED
+Created by: Thisal Methwidu
+New account: [appropriate identifier]
+Timestamp
+34. ADMIN PRIVILEGE PROTECTION
+
+A normal Admin must not be able to accidentally downgrade/remove the primary administrator's only access without an explicit protected procedure.
+
+Protect against:
+
+Removing the last Admin
+Locking out all administrators
+Accidental self-deletion
+Accidental removal of primary admin privileges
+
+There must always be a safe administrative recovery path.
+
+35. ROLE SEPARATION
+
+Maintain:
+
+ADMIN
+
+Full administrative control.
+
+APPROVER
+
+Can review and approve/reject according to existing workflow.
+
+Cannot:
+
+Edit submissions
+Delete submissions
+Regenerate QR
+Reset database
+Create admins
+Manage privileges
+Access Admin Portal
+CHECK-IN STAFF
+
+Can perform event-day QR validation/check-in.
+
+Cannot:
+
+Access Admin Portal
+Approve submissions
+Edit tickets
+Delete tickets
+Reset database
+Create admins
+36. API ENDPOINT SECURITY
+
+Create separate protected endpoints for dangerous operations.
+
+Conceptually:
+
+ADMIN ONLY
+PATCH /api/admin/applications/:id
+DELETE /api/admin/applications/:id
+POST /api/admin/tickets/:id/regenerate-qr
+POST /api/admin/database/reset
+POST /api/admin/admins
+PATCH /api/admin/profile
+PATCH /api/admin/password
+POST /api/admin/email/test
+POST /api/admin/emails/:id/retry
+
+Exact routes can follow the existing architecture.
+
+Do not expose dangerous operations through public endpoints.
+
+37. NO FRONTEND-ONLY SECURITY
+
+This is mandatory.
+
+A user must not gain permission by:
+
+Editing JavaScript
+Modifying a request
+Changing a role value
+Calling an API manually
+Removing a frontend route guard
+
+Every privileged operation must verify:
+
+Authenticated user
++
+Server-side role
++
+Permission
+38. FINAL ACCEPTANCE TESTS
+
+Before declaring Fix 2 complete, test all of the following.
+
+Admin editing
+Edit pending submission
+Edit approved submission
+Edit attendee name
+Edit email
+Edit registration number
+Attempt duplicate registration number
+Verify validation
+QR
+Retrieve existing QR
+Regenerate QR
+Verify old QR becomes invalid
+Verify new QR belongs to the same ticket/person
+Verify no duplicate ticket/revenue record is created
+Delete
+Delete one submission
+Verify related data is handled correctly
+Verify warning appears
+Verify non-admin cannot delete
+Database reset
+Click reset
+Verify warning
+Verify password is required
+Wrong password → reset rejected
+Correct password → reset executes
+Verify database data actually resets
+Verify statistics reset
+Verify primary admin can still log in
+Verify audit behavior
+Email
+Submit ticket
+Approve ticket
+Verify actual email delivery
+Verify correct recipient
+Verify correct QR
+Simulate email failure
+Retry
+Verify no duplicate ticket
+Verify no duplicate QR
+Admin account
+Admin edits own profile
+Admin changes own password
+Verify old password no longer works
+Create new Admin
+Verify new Admin can authenticate
+Verify Approver cannot create Admin
+Verify Check-in Staff cannot create Admin
+Security
+
+Directly test protected APIs using unauthorized roles.
+
+Do not rely on visual UI restrictions.
+
+39. FINAL QUALITY REQUIREMENT
+
+The implementation must have:
+
+No fake success states.
+
+No frontend-only permissions.
+
+No duplicate QR generation.
+
+No duplicate tickets from retries.
+
+No accidental database reset.
+
+No password stored in plaintext.
+
+No hard-coded email credentials.
+
+No orphaned ticket/QR records.
+
+No stale statistics after data changes.
+
+No privilege escalation.
+
+No unnecessary database queries.
+
+No unhandled server errors.
+
+The system should remain smooth and reliable under the previously specified event scale of approximately 15,000 attendees.
+
+After implementation, run the complete backend and frontend, inspect server logs and browser console, test the real email flow, test the destructive operations, and fix all errors before declaring Backend Fixes 2 complete.

@@ -917,4 +917,198 @@ export const api = {
       submission: { ...sub, checkedIn: true, checkedInAt: new Date().toISOString() },
     };
   },
+
+  // PUT /api/admin/submissions/:id
+  updateSubmission: async (id: string, data: Partial<Submission>): Promise<Submission> => {
+    try {
+      const res = await fetch(`/api/admin/submissions/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to update submission');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
+    await delay();
+    const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+    let updatedSub: Submission | null = null;
+    const updated = subs.map((s) => {
+      if (s.id === id) {
+        updatedSub = { ...s, ...data };
+        return updatedSub;
+      }
+      return s;
+    });
+    setStored(STORAGE_KEY_SUBMISSIONS, updated);
+    return updatedSub || (data as Submission);
+  },
+
+  // DELETE /api/admin/submissions/:id
+  deleteSubmission: async (id: string, reason?: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/admin/submissions/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ confirm: true, reason }),
+      });
+      if (res.ok) return true;
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to delete submission');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
+    await delay();
+    const subs = getStored<Submission[]>(STORAGE_KEY_SUBMISSIONS, initialSubmissions);
+    const filtered = subs.filter((s) => s.id !== id);
+    setStored(STORAGE_KEY_SUBMISSIONS, filtered);
+    return true;
+  },
+
+  // POST /api/admin/tickets/:id/regenerate-qr
+  regenerateQR: async (id: string, reason?: string): Promise<{ success: boolean; qrToken: string; qrImageData: string }> => {
+    try {
+      const res = await fetch(`/api/admin/tickets/${id}/regenerate-qr`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ confirm: true, reason }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to regenerate QR');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
+    await delay();
+    return {
+      success: true,
+      qrToken: `new_token_${Date.now()}`,
+      qrImageData: '/assets/sample-qr.png',
+    };
+  },
+
+  // POST /api/admin/database/reset
+  resetDatabase: async (password: string): Promise<{ success: boolean; message: string; stats?: any }> => {
+    try {
+      const res = await fetch('/api/admin/database/reset', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ confirm: true, password }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Database reset failed');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
+    await delay();
+    setStored(STORAGE_KEY_SUBMISSIONS, []);
+    setStored(STORAGE_KEY_HISTORY, []);
+    return { success: true, message: 'Database reset successfully' };
+  },
+
+  // POST /api/admin/admins
+  createAdminAccount: async (adminData: { name: string; email: string; password?: string }): Promise<User> => {
+    try {
+      const res = await fetch('/api/admin/admins', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(adminData),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.user;
+      }
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to create admin account');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+    }
+
+    await delay();
+    return {
+      id: `usr-adm-${Date.now()}`,
+      name: adminData.name,
+      email: adminData.email,
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+    };
+  },
+
+  // PATCH /api/admin/password
+  changePassword: async (currentPassword: string, newPassword: string, confirmPassword?: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await fetch('/api/admin/password', {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to update password');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+      throw err;
+    }
+  },
+
+  // POST /api/admin/email/test
+  sendTestEmail: async (recipientEmail: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const res = await fetch('/api/admin/email/test', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ recipientEmail }),
+      });
+      const data = await res.json();
+      return data;
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to send test email' };
+    }
+  },
+
+  // POST /api/approve/alert
+  triggerAdminAlert: async (submissionId: string, reason: string): Promise<{ success: boolean; alertId?: string }> => {
+    try {
+      const res = await fetch('/api/approve/alert', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ submissionId, reason }),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to trigger alert');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+      return { success: true, alertId: `alrt-${Date.now()}` };
+    }
+  },
+
+  // GET /api/admin/alerts
+  getAdminAlerts: async (): Promise<any[]> => {
+    try {
+      const res = await fetch('/api/admin/alerts', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+    return [];
+  },
+
+  // POST /api/admin/alerts/:id/resolve
+  resolveAdminAlert: async (alertId: string, note?: string): Promise<{ success: boolean }> => {
+    try {
+      const res = await fetch(`/api/admin/alerts/${alertId}/resolve`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ note }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return { success: true };
+  },
 };

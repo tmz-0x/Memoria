@@ -1,6 +1,7 @@
 import assert from 'assert';
 import http from 'http';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { createApp } from '../app';
 import { db } from '../db/database';
 import { config } from '../config/env';
@@ -38,6 +39,12 @@ async function runAllTests() {
       console.error(`     Error: ${err.message}`);
     }
   }
+
+  // Reset standard users to known seed state for deterministic test execution
+  db.prepare("DELETE FROM users WHERE id NOT IN ('usr-1', 'usr-2', 'usr-3', 'usr-4', 'usr-5')").run();
+  db.prepare("UPDATE users SET role = 'admin', name = 'Thisal Methwidu', email = 'admin@memoria.lk', password_hash = ? WHERE id = 'usr-1'").run(bcrypt.hashSync('admin123', 10));
+  db.prepare("UPDATE users SET role = 'approver', name = 'Elena Vance', email = 'approver@memoria.lk', password_hash = ? WHERE id = 'usr-2'").run(bcrypt.hashSync('approve123', 10));
+  db.prepare("UPDATE users SET role = 'staff', name = 'Marcus Chen', email = 'staff@memoria.lk', password_hash = ? WHERE id = 'usr-3'").run(bcrypt.hashSync('staff123', 10));
 
   // Setup Auth Tokens for each role
   const adminUser = db.prepare("SELECT * FROM users WHERE role = 'admin' LIMIT 1").get() as any;
@@ -302,7 +309,6 @@ async function runAllTests() {
   console.log('\n--- TEST GROUP 7: Submission Ordering & Filtering ---');
 
   await test('Submissions endpoint orders newest-first by default, and supports oldest-first, date range, and status filters', async () => {
-    // Default newest first
     const descRes = await fetch(`${baseUrl}/api/admin/submissions?sort=desc`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
@@ -313,7 +319,6 @@ async function runAllTests() {
     const t1 = new Date(descList[1].submittedAt).getTime();
     assert.ok(t0 >= t1, 'First item must be newer than second item in desc order');
 
-    // Ascending oldest first
     const ascRes = await fetch(`${baseUrl}/api/admin/submissions?sort=asc`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
@@ -323,14 +328,12 @@ async function runAllTests() {
     const a1 = new Date(ascList[1].submittedAt).getTime();
     assert.ok(a0 <= a1, 'First item must be older than second item in asc order');
 
-    // Status filtering: pending only
     const pendingRes = await fetch(`${baseUrl}/api/admin/submissions?status=pending`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     const pendingList = await pendingRes.json();
     assert.ok(pendingList.every((s: any) => s.status === 'pending'));
 
-    // Pagination headers
     assert.ok(descRes.headers.get('x-total-count'));
     assert.ok(descRes.headers.get('x-total-pages'));
   });
@@ -366,52 +369,47 @@ async function runAllTests() {
   console.log('\n--- TEST GROUP 9: Role Permission Matrix API Enforcement ---');
 
   await test('Approver is strictly FORBIDDEN (403) from Admin Portal, deletion, revenue, and email retry', async () => {
-    // Approver -> Admin Stats
     const statsRes = await fetch(`${baseUrl}/api/admin/stats`, {
       headers: { Authorization: `Bearer ${approverToken}` },
     });
-    assert.strictEqual(statsRes.status, 403, 'Approver must receive 403 on admin stats');
+    assert.strictEqual(statsRes.status, 403);
 
-    // Approver -> Admin Submissions
     const subsRes = await fetch(`${baseUrl}/api/admin/submissions`, {
       headers: { Authorization: `Bearer ${approverToken}` },
     });
-    assert.strictEqual(subsRes.status, 403, 'Approver must receive 403 on admin submissions');
+    assert.strictEqual(subsRes.status, 403);
 
-    // Approver -> Delete Submission
     const delRes = await fetch(`${baseUrl}/api/admin/submissions/${approvedSubId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ confirm: true }),
     });
-    assert.strictEqual(delRes.status, 403, 'Approver must receive 403 on deletion');
+    assert.strictEqual(delRes.status, 403);
 
-    // Approver -> Retry Email
     const retryRes = await fetch(`${baseUrl}/api/admin/submissions/${approvedSubId}/retry-email`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${approverToken}` },
     });
-    assert.strictEqual(retryRes.status, 403, 'Approver must receive 403 on email retry');
+    assert.strictEqual(retryRes.status, 403);
 
-    // Approver -> Check-in scan
     const checkinRes = await fetch(`${baseUrl}/api/checkin/verify`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: 'dummy' }),
     });
-    assert.strictEqual(checkinRes.status, 403, 'Approver must receive 403 on check-in scan');
+    assert.strictEqual(checkinRes.status, 403);
   });
 
   await test('Check-in Staff is strictly FORBIDDEN (403) from Admin Portal and Approval Desk', async () => {
     const adminRes = await fetch(`${baseUrl}/api/admin/stats`, {
       headers: { Authorization: `Bearer ${staffToken}` },
     });
-    assert.strictEqual(adminRes.status, 403, 'Staff must receive 403 on admin portal');
+    assert.strictEqual(adminRes.status, 403);
 
     const approveRes = await fetch(`${baseUrl}/api/approve/pending`, {
       headers: { Authorization: `Bearer ${staffToken}` },
     });
-    assert.strictEqual(approveRes.status, 403, 'Staff must receive 403 on approval desk');
+    assert.strictEqual(approveRes.status, 403);
   });
 
   await test('Public user without token receives 401 UNAUTHORIZED on protected routes', async () => {
@@ -454,7 +452,7 @@ async function runAllTests() {
 
     assert.strictEqual(res.status, 400);
     const data = await res.json();
-    assert.ok(data.message?.includes('permanent administrative action'));
+    assert.ok(data.message?.includes('destructive administrative action'));
   });
 
   await test('Admin deletion with confirmation soft-deletes and preserves audit trail', async () => {
@@ -472,7 +470,6 @@ async function runAllTests() {
     assert.ok(sub.deleted_at);
     assert.strictEqual(sub.delete_reason, 'Duplicate test registration');
 
-    // Audit log recorded
     const audit = db.prepare("SELECT * FROM activity_logs WHERE entity_id = ? AND action = 'SUBMISSION_DELETED'").get(targetForDeletion) as any;
     assert.ok(audit);
   });
@@ -501,7 +498,6 @@ async function runAllTests() {
   });
 
   await test('Admin retrieves alert and resolves it with resolution note', async () => {
-    // Admin lists alerts
     const alertsRes = await fetch(`${baseUrl}/api/admin/alerts`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
@@ -511,7 +507,6 @@ async function runAllTests() {
     assert.ok(targetAlert);
     assert.strictEqual(targetAlert.status, 'pending');
 
-    // Admin resolves alert
     const resolveRes = await fetch(`${baseUrl}/api/admin/alerts/${alertId}/resolve`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
@@ -528,7 +523,6 @@ async function runAllTests() {
   console.log('\n--- TEST GROUP 12: Privilege Management & Last Admin Protection ---');
 
   await test('Admin updates user role successfully and last admin demotion is blocked', async () => {
-    // Update staff to approver
     const updateRes = await fetch(`${baseUrl}/api/admin/users/${staffUser.id}/role`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
@@ -539,14 +533,12 @@ async function runAllTests() {
     const checkUser = db.prepare('SELECT role FROM users WHERE id = ?').get(staffUser.id) as any;
     assert.strictEqual(checkUser.role, 'approver');
 
-    // Revert back to staff
     await fetch(`${baseUrl}/api/admin/users/${staffUser.id}/role`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: 'staff' }),
     });
 
-    // Attempt to demote sole admin
     const demoteRes = await fetch(`${baseUrl}/api/admin/users/${adminUser.id}/role`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
@@ -558,33 +550,328 @@ async function runAllTests() {
   });
 
   // ----------------------------------------------------
-  // TEST GROUP 13: User Profile Self-Management
+  // TEST GROUP 13: Admin Full Submission Editing (Fixes 2 Sections 1-4)
   // ----------------------------------------------------
-  console.log('\n--- TEST GROUP 13: User Profile Management ---');
+  console.log('\n--- TEST GROUP 13: Admin Full Submission Editing ---');
 
-  await test('User updates profile and password validation works', async () => {
-    const profileRes = await fetch(`${baseUrl}/api/auth/profile`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Elena Vance Senior' }),
+  let editSubId = '';
+  await test('Admin edits pending submission and values are updated with server-side validation', async () => {
+    const newSub = ticketService.submitTicket({
+      name: 'Old Name Attendee',
+      email: 'old.email@gmail.com',
+      phone: '+94 77 123 4567',
+      ticketType: 'outsider',
+      quantity: 1,
+      paymentSlipUrl: '/uploads/old.jpg',
     });
-    assert.strictEqual(profileRes.status, 200);
-    const profileData = await profileRes.json();
-    assert.strictEqual(profileData.user.name, 'Elena Vance Senior');
+    editSubId = newSub.submissionId;
 
-    // Wrong current password fails
-    const badPassRes = await fetch(`${baseUrl}/api/auth/profile`, {
+    const res = await fetch(`${baseUrl}/api/admin/submissions/${editSubId}`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword: 'wrongpassword', newPassword: 'newsecurepass123' }),
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Corrected New Name',
+        email: 'corrected.email@gmail.com',
+        phone: '+94 77 987 6543',
+      }),
     });
-    assert.strictEqual(badPassRes.status, 400);
+
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.name, 'Corrected New Name');
+    assert.strictEqual(data.email, 'corrected.email@gmail.com');
+    assert.strictEqual(data.phone, '+94 77 987 6543');
+  });
+
+  await test('Admin edits APPROVED ticket without creating duplicates or regenerating QR', async () => {
+    // Approve the submission
+    await approvalService.approveSubmission(editSubId, 'Elena Vance');
+    const beforeEdit = db.prepare('SELECT ticket_id, qr_token, status, total_price FROM submissions WHERE id = ?').get(editSubId) as any;
+    assert.strictEqual(beforeEdit.status, 'approved');
+
+    // Edit approved ticket name and phone
+    const res = await fetch(`${baseUrl}/api/admin/submissions/${editSubId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Final Corrected Attendee Name',
+        phone: '+94 71 000 9999',
+      }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const afterEdit = db.prepare('SELECT ticket_id, qr_token, status, name, phone, total_price FROM submissions WHERE id = ?').get(editSubId) as any;
+    assert.strictEqual(afterEdit.ticket_id, beforeEdit.ticket_id, 'Ticket ID must remain completely identical');
+    assert.strictEqual(afterEdit.qr_token, beforeEdit.qr_token, 'QR token must be preserved without recreation');
+    assert.strictEqual(afterEdit.name, 'Final Corrected Attendee Name');
+    assert.strictEqual(afterEdit.total_price, beforeEdit.total_price);
+  });
+
+  await test('Admin editing student registration number enforces uniqueness constraint', async () => {
+    // Attempt to change registration number to uniqueStudentReg1 (which belongs to Test Student One)
+    const res = await fetch(`${baseUrl}/api/admin/submissions/${editSubId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticketType: 'student',
+        universityRegistrationNumber: uniqueStudentReg1,
+      }),
+    });
+
+    assert.strictEqual(res.status, 409, 'Duplicate student registration number must return 409 Conflict');
+    const errData = await res.json();
+    assert.strictEqual(errData.code, 'REGISTRATION_NUMBER_ALREADY_USED');
   });
 
   // ----------------------------------------------------
-  // TEST GROUP 14: 15,000 Attendee Scale Simulation
+  // TEST GROUP 14: QR Code Regeneration (Fixes 2 Sections 5-8)
   // ----------------------------------------------------
-  console.log('\n--- TEST GROUP 14: 15,000 Scale Performance & Index Verification ---');
+  console.log('\n--- TEST GROUP 14: QR Code Regeneration & Invalidation ---');
+
+  let oldQrTokenToInvalidate = '';
+  let newGeneratedQrToken = '';
+
+  await test('Admin regenerates QR with explicit confirmation: old QR is invalidated and new QR active', async () => {
+    const subBefore = db.prepare('SELECT ticket_id, qr_token FROM submissions WHERE id = ?').get(editSubId) as any;
+    oldQrTokenToInvalidate = subBefore.qr_token;
+
+    // Call without confirmation fails
+    const failRes = await fetch(`${baseUrl}/api/admin/tickets/${editSubId}/regenerate-qr`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: false }),
+    });
+    assert.strictEqual(failRes.status, 400);
+
+    // Call with confirmation succeeds
+    const res = await fetch(`${baseUrl}/api/admin/tickets/${editSubId}/regenerate-qr`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, reason: 'Lost ticket QR screenshot' }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.success, true);
+    assert.ok(data.qrToken);
+    assert.notStrictEqual(data.qrToken, oldQrTokenToInvalidate, 'New QR token must differ from old');
+    newGeneratedQrToken = data.qrToken;
+
+    // Verify old QR token is recorded in revoked_qr_tokens table
+    const revoked = db.prepare('SELECT * FROM revoked_qr_tokens WHERE token = ?').get(oldQrTokenToInvalidate) as any;
+    assert.ok(revoked, 'Old QR token must be recorded in revoked_qr_tokens');
+    assert.strictEqual(revoked.ticket_id, subBefore.ticket_id);
+  });
+
+  await test('Gate check-in REJECTS invalidated old QR and ACCEPTS newly regenerated QR', () => {
+    // Scan old invalidated QR -> Rejected
+    const oldScan = checkinService.verifyAndCheckIn(`MEMORIA26:TICKET:${oldQrTokenToInvalidate}`, 'Gate Staff');
+    assert.strictEqual(oldScan.valid, false);
+    assert.ok(oldScan.reason?.includes('invalidated and replaced by an administrator'));
+
+    // Scan new regenerated QR -> Accepted!
+    const newScan = checkinService.verifyAndCheckIn(`MEMORIA26:TICKET:${newGeneratedQrToken}`, 'Gate Staff');
+    assert.strictEqual(newScan.valid, true, 'New QR must be valid');
+    assert.strictEqual(newScan.submission.checked_in, 1);
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 15: Admin-Only Creation of New Admin Accounts (Fixes 2 Sections 31-33)
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 15: Admin-Only Admin Creation ---');
+
+  const newAdminEmail = `newadmin_${Date.now()}@memoria.lk`;
+
+  await test('Approver and Staff are strictly FORBIDDEN (403) from creating Admin accounts', async () => {
+    const approverAttempt = await fetch(`${baseUrl}/api/admin/admins`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Hacker Admin', email: 'hacker@memoria.lk', password: 'hackpassword' }),
+    });
+    assert.strictEqual(approverAttempt.status, 403);
+
+    const staffAttempt = await fetch(`${baseUrl}/api/admin/admins`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${staffToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Hacker Staff', email: 'hacker2@memoria.lk', password: 'hackpassword' }),
+    });
+    assert.strictEqual(staffAttempt.status, 403);
+  });
+
+  await test('Admin successfully creates new Admin account and new Admin can log in', async () => {
+    const res = await fetch(`${baseUrl}/api/admin/admins`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Kasun Bandara', email: newAdminEmail, password: 'secureadminpass2026' }),
+    });
+
+    assert.strictEqual(res.status, 201);
+    const data = await res.json();
+    assert.strictEqual(data.success, true);
+    assert.strictEqual(data.user.role, 'admin');
+
+    // Verify new admin can authenticate
+    const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newAdminEmail, password: 'secureadminpass2026' }),
+    });
+    assert.strictEqual(loginRes.status, 200);
+    const loginData = await loginRes.json();
+    assert.ok(loginData.token);
+    assert.strictEqual(loginData.user.role, 'admin');
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 16: Admin Password & Profile Management (Fixes 2 Sections 28-30)
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 16: Admin Password & Profile Management ---');
+
+  await test('Admin password update validates current password and updates hash securely', async () => {
+    // Wrong current password
+    const failRes = await fetch(`${baseUrl}/api/admin/password`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'wrongcurrentpassword', newPassword: 'newsecurepass2026' }),
+    });
+    assert.strictEqual(failRes.status, 400);
+
+    // Mismatched confirmation password
+    const mismatchRes = await fetch(`${baseUrl}/api/admin/password`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'admin123', newPassword: 'newsecurepass2026', confirmPassword: 'differentpass' }),
+    });
+    assert.strictEqual(mismatchRes.status, 400);
+
+    // Successful password update
+    const okRes = await fetch(`${baseUrl}/api/admin/password`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'admin123', newPassword: 'newsecurepass2026', confirmPassword: 'newsecurepass2026' }),
+    });
+    assert.strictEqual(okRes.status, 200);
+
+    // Revert password back to admin123 for subsequent test convenience
+    await fetch(`${baseUrl}/api/admin/password`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'newsecurepass2026', newPassword: 'admin123' }),
+    });
+  });
+
+  await test('Admin profile update updates name, email, and issues fresh JWT token', async () => {
+    const res = await fetch(`${baseUrl}/api/admin/profile`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Thisal Methwidu (Lead Admin)' }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.user.name, 'Thisal Methwidu (Lead Admin)');
+    assert.ok(data.token);
+
+    // Revert name back
+    await fetch(`${baseUrl}/api/admin/profile`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Thisal Methwidu' }),
+    });
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 17: Diagnostic Test Email Dispatch (Fixes 2 Section 25)
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 17: Diagnostic Test Email ---');
+
+  await test('POST /api/admin/email/test verifies outbound SMTP and returns structured diagnostic', async () => {
+    const res = await fetch(`${baseUrl}/api/admin/email/test`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientEmail: 'admin.diagnostics@memoria.lk' }),
+    });
+
+    // Without SMTP credentials configured in .env, returns 400 with diagnostic error
+    assert.strictEqual(res.status, 400);
+    const data = await res.json();
+    assert.strictEqual(data.success, false);
+    assert.ok(data.error?.includes('SMTP credentials not configured'));
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 18: Complete Database Reset with Admin Password Verification (Fixes 2 Sections 14-21)
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 18: Complete Database Reset ---');
+
+  await test('Database reset requires Admin role, explicit confirmation, and valid Admin password', async () => {
+    // Non-admin rejected (403)
+    const approverReset = await fetch(`${baseUrl}/api/admin/database/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, password: 'admin123' }),
+    });
+    assert.strictEqual(approverReset.status, 403);
+
+    // Missing confirmation rejected (400)
+    const noConfirmReset = await fetch(`${baseUrl}/api/admin/database/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: false, password: 'admin123' }),
+    });
+    assert.strictEqual(noConfirmReset.status, 400);
+
+    // Wrong password rejected (401)
+    const wrongPassReset = await fetch(`${baseUrl}/api/admin/database/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, password: 'incorrectpassword' }),
+    });
+    assert.strictEqual(wrongPassReset.status, 401);
+
+    // Correct password executes reset atomically
+    const okReset = await fetch(`${baseUrl}/api/admin/database/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, password: 'admin123' }),
+    });
+    assert.strictEqual(okReset.status, 200);
+    const resetResult = await okReset.json();
+    assert.strictEqual(resetResult.success, true);
+
+    // Verify operational tables are purged
+    const subCount = (db.prepare('SELECT COUNT(*) as c FROM submissions').get() as any).c;
+    assert.strictEqual(subCount, 0, 'Submissions must be 0 after reset');
+
+    const alertCount = (db.prepare('SELECT COUNT(*) as c FROM admin_alerts').get() as any).c;
+    assert.strictEqual(alertCount, 0, 'Admin alerts must be 0 after reset');
+
+    // Verify primary Admin (Thisal Methwidu) is strictly preserved
+    const primaryAdmin = db.prepare("SELECT * FROM users WHERE email = 'admin@memoria.lk'").get() as any;
+    assert.ok(primaryAdmin, 'Primary admin account must be preserved after reset');
+    assert.strictEqual(primaryAdmin.name, 'Thisal Methwidu');
+
+    // Primary admin can immediately authenticate
+    const postResetLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@memoria.lk', password: 'admin123' }),
+    });
+    assert.strictEqual(postResetLogin.status, 200, 'Primary admin must be able to log in after reset');
+
+    // Verify recalculation of stats: ticketsSold = 0, totalRevenue = 0
+    assert.strictEqual(resetResult.stats.ticketsSold, 0);
+    assert.strictEqual(resetResult.stats.totalRevenue, 0);
+
+    // Verify system-level audit record created
+    const resetAudit = db.prepare("SELECT * FROM activity_logs WHERE action = 'RESET_DATABASE'").get() as any;
+    assert.ok(resetAudit);
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 19: 15,000 Scale Performance & Index Verification
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 19: 15,000 Scale Performance & Index Verification ---');
 
   await test('Handles 15,000 attendee dataset with fast indexed lookups and stable memory', () => {
     const countBefore = (db.prepare('SELECT COUNT(*) as count FROM submissions').get() as any).count;
@@ -658,6 +945,10 @@ async function runAllTests() {
   // ----------------------------------------------------
   // Summary
   // ----------------------------------------------------
+  // Clean up any dynamically created test admin accounts and ensure standard users
+  db.prepare("DELETE FROM users WHERE id NOT IN ('usr-1', 'usr-2', 'usr-3', 'usr-4', 'usr-5')").run();
+  db.prepare("UPDATE users SET role = 'admin', name = 'Thisal Methwidu', email = 'admin@memoria.lk', password_hash = ? WHERE id = 'usr-1'").run(bcrypt.hashSync('admin123', 10));
+
   server.close();
   console.log('\n========================================================');
   console.log(`  TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

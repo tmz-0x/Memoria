@@ -40,6 +40,18 @@ export const checkinService = {
     `).get(tokenQuery, raw, normalizedUpper, normalizedUpper, normalizedUpper, normalizedUpper) as any;
 
     if (!sub) {
+      const revoked = db.prepare(`
+        SELECT * FROM revoked_qr_tokens WHERE token = ? OR token = ?
+      `).get(tokenQuery, raw) as any;
+
+      if (revoked) {
+        auditService.logScan(raw, 'INVALID', staffName, revoked.ticket_id, revoked.submission_id, 'Scanned invalidated/regenerated QR credential');
+        return {
+          valid: false,
+          reason: 'INVALID TICKET: This QR credential was invalidated and replaced by an administrator. Please use the newly issued QR code.',
+        };
+      }
+
       auditService.logScan(raw, 'INVALID', staffName, null, null, 'Ticket not found');
       return { valid: false, reason: 'Invalid Ticket: No matching record found.' };
     }

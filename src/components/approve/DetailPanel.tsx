@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Submission } from '../../api/mockApi';
+import { Submission, api } from '../../api/mockApi';
 import {
   X,
   CheckCircle2,
@@ -12,6 +12,7 @@ import {
   User,
   Clock,
   Loader2,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface DetailPanelProps {
@@ -31,6 +32,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 }) => {
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectReason, setRejectReason] = useState('Amount mismatched with bank statement.');
+  const [alertMode, setAlertMode] = useState(false);
+  const [alertReason, setAlertReason] = useState('Suspicious payment slip screenshot; requires administrator review.');
+  const [alertSent, setAlertSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleApprove = async () => {
@@ -44,6 +48,18 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     setLoading(true);
     await onReject(submission.id, rejectReason.trim());
     setLoading(false);
+  };
+
+  const handleTriggerAlert = async () => {
+    if (!alertReason.trim()) return;
+    setLoading(true);
+    await api.triggerAdminAlert(submission.id, alertReason.trim());
+    setLoading(false);
+    setAlertSent(true);
+    setTimeout(() => {
+      setAlertMode(false);
+      setAlertSent(false);
+    }, 3000);
   };
 
   return (
@@ -177,11 +193,65 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             </div>
           </div>
         )}
+
+        {/* Admin Alert Mode Input if active */}
+        {alertMode && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-3">
+            <div className="flex items-center gap-2 text-amber-800 text-xs font-bold">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span>Flag Application for Administrator Review</span>
+            </div>
+            {alertSent ? (
+              <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Alert flagged and sent to Admin Console!
+              </p>
+            ) : (
+              <>
+                <textarea
+                  rows={2}
+                  value={alertReason}
+                  onChange={(e) => setAlertReason(e.target.value)}
+                  className="w-full p-2.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  placeholder="State why this application requires admin review..."
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAlertMode(false)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleTriggerAlert}
+                    className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold disabled:opacity-50"
+                  >
+                    {loading ? 'Submitting Alert...' : 'Submit Admin Alert'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Slide-over Action Footer */}
-      {!rejectMode && (
-        <div className="p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3">
+      {!rejectMode && !alertMode && (
+        <div className="p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => setAlertMode(true)}
+            className="px-3.5 py-2.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            title="Flag for Administrator Review"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            <span>Admin Alert</span>
+          </button>
+
           <button
             type="button"
             disabled={loading}
