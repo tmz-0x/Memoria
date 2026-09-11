@@ -317,7 +317,53 @@ export const adminController = {
   },
 
   /**
-   * Admin QR Regeneration (Sections 5-8)
+   * Admin-Only View of Individual Ticket QR Code (Fixes 3 Sections 11-14)
+   * Strictly retrieves existing persisted QR code and attendee details.
+   * Does NOT generate a new QR, does NOT create duplicate tickets, and never resets check-in state.
+   */
+  getTicketQR: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { id } = req.params;
+      const sub = db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      if (!sub) {
+        throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
+      }
+
+      if (sub.status !== 'approved' || !sub.ticket_id) {
+        throw new AppError('This registration has not been approved or does not have a ticket issued yet.', 400, 'NO_TICKET_ISSUED');
+      }
+
+      const qrStatus = sub.checked_in ? 'USED' : 'ACTIVE';
+
+      res.status(200).json({
+        success: true,
+        ticketId: sub.ticket_id,
+        submissionId: sub.id,
+        name: sub.name,
+        email: sub.email,
+        phone: sub.phone,
+        ticketType: sub.ticket_type,
+        universityRegistrationNumber: sub.university_registration_number,
+        quantity: sub.quantity,
+        unitPrice: sub.unit_price,
+        totalPrice: sub.total_price,
+        status: sub.status,
+        checkedIn: Boolean(sub.checked_in),
+        checkedInAt: sub.checked_in_at,
+        checkedInBy: sub.checked_in_by,
+        qrStatus,
+        qrToken: sub.qr_token,
+        qrPayload: sub.qr_payload,
+        qrImageData: sub.qr_image_data,
+        issuedAt: sub.approved_at || sub.created_at,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Admin-Only QR Code Regeneration (Sections 5-8)
    * Explicit administrative action. Invalidates the old QR and issues a new secure QR
    * associated with the same ticket without creating duplicate tickets or altering pricing.
    */

@@ -13,6 +13,11 @@ import {
   Inbox,
   Sparkles,
   AlertCircle,
+  Ticket,
+  CreditCard,
+  Users,
+  CheckCircle2,
+  TrendingUp,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -20,6 +25,7 @@ export const ApprovePage: React.FC = () => {
   const { user, logout } = useAuthStore();
   const [pendingList, setPendingList] = useState<Submission[]>([]);
   const [history, setHistory] = useState<ApprovalHistoryItem[]>([]);
+  const [stats, setStats] = useState<any | null>(null);
   const [selectedSub, setSelectedSub] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<string | null>(null);
@@ -27,12 +33,14 @@ export const ApprovePage: React.FC = () => {
   const loadPending = async () => {
     setLoading(true);
     try {
-      const [pending, hist] = await Promise.all([
+      const [pending, hist, st] = await Promise.all([
         api.getPendingSubmissions(),
         api.getApprovalHistory(),
+        api.getApprovalStats(),
       ]);
       setPendingList(pending);
       setHistory(hist);
+      setStats(st);
     } catch (e) {
       console.error(e);
     } finally {
@@ -54,8 +62,12 @@ export const ApprovePage: React.FC = () => {
     const res = await api.approveSubmission(id, approver);
     if (res.success) {
       setNotification(`Successfully approved ${approvedSub?.name || 'registration'}! Ticket ID ${res.ticketId} issued.`);
-      const updatedHistory = await api.getApprovalHistory();
+      const [updatedHistory, updatedStats] = await Promise.all([
+        api.getApprovalHistory(),
+        api.getApprovalStats(),
+      ]);
       setHistory(updatedHistory);
+      setStats(updatedStats);
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -70,8 +82,12 @@ export const ApprovePage: React.FC = () => {
     const res = await api.rejectSubmission(id, approver, reason);
     if (res.success) {
       setNotification(`Application for ${rejectedSub?.name || 'registration'} has been rejected.`);
-      const updatedHistory = await api.getApprovalHistory();
+      const [updatedHistory, updatedStats] = await Promise.all([
+        api.getApprovalHistory(),
+        api.getApprovalStats(),
+      ]);
       setHistory(updatedHistory);
+      setStats(updatedStats);
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -144,6 +160,61 @@ export const ApprovePage: React.FC = () => {
           <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium flex items-center justify-between shadow-xs">
             <span>{notification}</span>
             <button onClick={() => setNotification(null)} className="text-blue-500 font-bold">✕</button>
+          </div>
+        )}
+
+        {/* Centralized Authoritative Metrics Synchronized with Admin (Fixes 3 Sections 7 & 9) */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Awaiting Verification</span>
+                <Clock className="w-4 h-4 text-amber-500" />
+              </div>
+              <p className="text-2xl font-bold text-slate-900 mt-2 font-mono">
+                {stats.pendingCount ?? stats.pending ?? pendingList.length}
+              </p>
+              <span className="text-[11px] text-slate-400">Applications in queue</span>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valid Tickets Sold</span>
+                <Ticket className="w-4 h-4 text-purple-600" />
+              </div>
+              <p className="text-2xl font-bold text-purple-700 mt-2 font-mono">
+                {stats.ticketsSold ?? stats.approvedCount ?? 0}
+              </p>
+              <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
+                <span>Student: {stats.universityTickets ?? stats.studentApprovedCount ?? 0}</span>
+                <span>•</span>
+                <span>Outsider: {stats.outsiderTickets ?? stats.outsiderApprovedCount ?? 0}</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Verified Revenue</span>
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-600 mt-2 font-mono">
+                Rs. {(stats.totalRevenue ?? 0).toLocaleString()}
+              </p>
+              <span className="text-[11px] text-slate-400">Authoritative persistent revenue</span>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gate Check-Ins</span>
+                <CheckCircle2 className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-blue-700 mt-2 font-mono">
+                {stats.checkedInCount ?? stats.checkedIn ?? 0}
+              </p>
+              <span className="text-[11px] text-slate-400">
+                {stats.ticketsSold > 0 ? `${Math.round(((stats.checkedInCount ?? stats.checkedIn ?? 0) / stats.ticketsSold) * 100)}% attendance` : 'No admissions yet'}
+              </span>
+            </div>
           </div>
         )}
 

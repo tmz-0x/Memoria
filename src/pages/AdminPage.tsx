@@ -185,6 +185,88 @@ export const AdminPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Fixes 3 Section 6: Sales & Revenue Dividend Distribution */}
+                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Ticket Sales & Revenue Dividend Distribution</h4>
+                      <p className="text-xs text-slate-500">
+                        Authoritative breakdown by admission tier and student registration category
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs text-slate-400">Total Authoritative Revenue:</span>
+                      <span className="font-mono font-bold text-emerald-600 text-base ml-2">
+                        Rs. {(stats?.totalRevenue ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* University Students */}
+                    <div className="p-4 rounded-xl bg-purple-50/60 border border-purple-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                          University Students (Rs. 200/pass)
+                        </span>
+                        <span className="font-mono font-bold text-xs bg-purple-200/80 text-purple-800 px-2 py-0.5 rounded">
+                          {stats?.dividend?.universityPercentage ?? stats?.universityTicketPercentage ?? 0}%
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <div>
+                          <span className="text-2xl font-extrabold font-mono text-purple-950">
+                            {stats?.dividend?.universityTickets ?? stats?.universityTickets ?? stats?.studentApprovedCount ?? 0}
+                          </span>
+                          <span className="text-xs text-purple-700 ml-1.5">tickets sold</span>
+                        </div>
+                        <span className="font-mono font-bold text-sm text-purple-800">
+                          Rs. {(stats?.dividend?.universityRevenue ?? stats?.universityRevenue ?? stats?.studentRevenue ?? 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-purple-200/70 rounded-full mt-3 overflow-hidden">
+                        <div
+                          className="h-full bg-purple-600 rounded-full transition-all"
+                          style={{
+                            width: `${stats?.dividend?.universityPercentage ?? stats?.universityTicketPercentage ?? 0}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Outsider General Attendees */}
+                    <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-blue-900 uppercase tracking-wider">
+                          General Attendees (Rs. 1,000/pass)
+                        </span>
+                        <span className="font-mono font-bold text-xs bg-blue-200/80 text-blue-800 px-2 py-0.5 rounded">
+                          {stats?.dividend?.outsiderPercentage ?? stats?.outsiderTicketPercentage ?? 0}%
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <div>
+                          <span className="text-2xl font-extrabold font-mono text-blue-950">
+                            {stats?.dividend?.outsiderTickets ?? stats?.outsiderTickets ?? stats?.outsiderApprovedCount ?? 0}
+                          </span>
+                          <span className="text-xs text-blue-700 ml-1.5">tickets sold</span>
+                        </div>
+                        <span className="font-mono font-bold text-sm text-blue-800">
+                          Rs. {(stats?.dividend?.outsiderRevenue ?? stats?.outsiderRevenue ?? 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-blue-200/70 rounded-full mt-3 overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600 rounded-full transition-all"
+                          style={{
+                            width: `${stats?.dividend?.outsiderPercentage ?? stats?.outsiderTicketPercentage ?? 0}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Capacity Summary Progress Card */}
                 <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-2">

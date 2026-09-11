@@ -29,6 +29,10 @@ adminRoutes.patch('/applications/:id', adminController.updateSubmission);
 adminRoutes.delete('/submissions/:id', adminController.deleteSubmission);
 adminRoutes.delete('/applications/:id', adminController.deleteSubmission);
 
+// Admin-Only View Ticket QR Code (Fixes 3 Sections 11-14)
+adminRoutes.get('/tickets/:id/qr', adminController.getTicketQR);
+adminRoutes.get('/submissions/:id/qr', adminController.getTicketQR);
+
 // Admin QR Code Regeneration (Sections 5-8, 36)
 adminRoutes.post('/tickets/:id/regenerate-qr', adminController.regenerateQR);
 adminRoutes.post('/submissions/:id/regenerate-qr', adminController.regenerateQR);

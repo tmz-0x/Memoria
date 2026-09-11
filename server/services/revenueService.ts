@@ -1,7 +1,39 @@
 import { db } from '../db/database';
 import { config } from '../config/env';
+import { emailService } from './emailService';
 
 export interface AdminStatistics {
+  // Fixes 3 Authoritative Flat Statistics (Section 3)
+  totalApplications: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  ticketsSold: number;
+  universityTickets: number;
+  outsiderTickets: number;
+  checkedIn: number;
+  notCheckedIn: number;
+  totalRevenue: number;
+  universityRevenue: number;
+  outsiderRevenue: number;
+  emailPending: number;
+  emailSent: number;
+  emailFailed: number;
+  emailConfigured: boolean;
+
+  // Fixes 3 Dividend & Distribution (Section 6)
+  universityTicketPercentage: number;
+  outsiderTicketPercentage: number;
+  dividend: {
+    universityTickets: number;
+    universityRevenue: number;
+    universityPercentage: number;
+    outsiderTickets: number;
+    outsiderRevenue: number;
+    outsiderPercentage: number;
+  };
+
+  // Structured breakdowns
   applications: {
     totalSubmitted: number;
     pending: number;
@@ -30,8 +62,6 @@ export interface AdminStatistics {
     emailsFailed: number;
   };
   // Flat legacy compatibility fields
-  totalRevenue: number;
-  ticketsSold: number;
   pendingCount: number;
   pendingTickets: number;
   approvedCount: number;
@@ -41,7 +71,6 @@ export interface AdminStatistics {
   studentApprovedCount: number;
   outsiderApprovedCount: number;
   studentRevenue: number;
-  outsiderRevenue: number;
   totalCapacity: number;
   remainingAllocation: number;
 }
@@ -108,7 +137,46 @@ export const revenueService = {
     // Get event settings
     const settings = db.prepare('SELECT total_capacity, remaining_allocation FROM event_settings WHERE id = 1').get() as any;
 
+    // Fixes 3 Section 6 Dividend & Percentage Distribution
+    const universityTicketPercentage = totalTicketsIssued > 0
+      ? Number(((studentApprovedCount / totalTicketsIssued) * 100).toFixed(1))
+      : 0;
+    const outsiderTicketPercentage = totalTicketsIssued > 0
+      ? Number(((outsiderApprovedCount / totalTicketsIssued) * 100).toFixed(1))
+      : 0;
+
     return {
+      // Fixes 3 Top-Level Authoritative Fields (Section 3)
+      totalApplications: totalSubmitted,
+      pending: pendingCount,
+      approved: approvedCount,
+      rejected: rejectedCount,
+      ticketsSold: totalTicketsIssued,
+      universityTickets: studentApprovedCount,
+      outsiderTickets: outsiderApprovedCount,
+      checkedIn: totalCheckedIn,
+      notCheckedIn: remainingNotCheckedIn,
+      totalRevenue,
+      universityRevenue: studentRevenue,
+      outsiderRevenue,
+      emailPending: emailsPending,
+      emailSent: emailsSent,
+      emailFailed: emailsFailed,
+      emailConfigured: emailService.isConfigured(),
+
+      // Fixes 3 Dividend & Distribution (Section 6)
+      universityTicketPercentage,
+      outsiderTicketPercentage,
+      dividend: {
+        universityTickets: studentApprovedCount,
+        universityRevenue: studentRevenue,
+        universityPercentage: universityTicketPercentage,
+        outsiderTickets: outsiderApprovedCount,
+        outsiderRevenue,
+        outsiderPercentage: outsiderTicketPercentage,
+      },
+
+      // Structured Breakdowns
       applications: {
         totalSubmitted,
         pending: pendingCount,
@@ -136,9 +204,8 @@ export const revenueService = {
         emailsPending,
         emailsFailed,
       },
+
       // Flat legacy compatibility
-      totalRevenue,
-      ticketsSold: totalTicketsIssued,
       pendingCount,
       pendingTickets: Number(statsRow?.pendingTickets) || 0,
       approvedCount,
@@ -148,7 +215,6 @@ export const revenueService = {
       studentApprovedCount,
       outsiderApprovedCount,
       studentRevenue,
-      outsiderRevenue,
       totalCapacity: settings?.total_capacity ?? 800,
       remainingAllocation: settings?.remaining_allocation ?? 142,
     };

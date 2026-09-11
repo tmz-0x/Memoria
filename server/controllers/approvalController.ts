@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { db } from '../db/database';
 import { approvalService } from '../services/approvalService';
 import { auditService } from '../services/auditService';
+import { revenueService } from '../services/revenueService';
 import { AppError } from '../middleware/errorHandler';
 
 function formatSubmission(s: any) {
@@ -38,6 +39,15 @@ function formatSubmission(s: any) {
 }
 
 export const approvalController = {
+  getStats: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const stats = revenueService.getAdminStats();
+      res.status(200).json(stats);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   getPending: (req: Request, res: Response, next: NextFunction): void => {
     try {
       const list = approvalService.getPendingSubmissions();

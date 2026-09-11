@@ -24,12 +24,11 @@ export const config = {
   studentRegRegex: /^[A-Za-z]{2,3}\d{5,7}$/,
 
   email: {
-    simulate: process.env.EMAIL_SIMULATE !== 'false',
-    smtpHost: process.env.SMTP_HOST || 'localhost',
+    smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
     smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
     smtpSecure: process.env.SMTP_SECURE === 'true',
     smtpUser: process.env.SMTP_USER || '',
     smtpPass: process.env.SMTP_PASS || '',
-    from: process.env.EMAIL_FROM || '"Memoria\'26 Ticketing Desk" <tickets@memoria.lk>',
+    from: process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Memoria\'26 Ticketing Desk" <tickets@memoria.lk>',
   },
 };

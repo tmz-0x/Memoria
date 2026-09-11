@@ -25,6 +25,32 @@ function getTransporter() {
 
 export const emailService = {
   /**
+   * Checks whether outbound SMTP credentials are configured in the environment.
+   */
+  isConfigured: (): boolean => {
+    return Boolean(config.email.smtpUser && config.email.smtpPass);
+  },
+
+  /**
+   * Returns current outbound mail service status overview.
+   */
+  getDiagnostics: () => {
+    const configured = Boolean(config.email.smtpUser && config.email.smtpPass);
+    return {
+      configured,
+      smtpHost: config.email.smtpHost,
+      smtpPort: config.email.smtpPort,
+      smtpSecure: config.email.smtpSecure,
+      fromAddress: config.email.from,
+      userConfigured: Boolean(config.email.smtpUser),
+      status: configured ? 'OPERATIONAL' : 'UNAVAILABLE',
+      message: configured
+        ? 'SMTP transactional transport is configured.'
+        : 'SMTP credentials not configured in environment (SMTP_USER/SMTP_PASS missing in .env). Email delivery is unavailable.',
+    };
+  },
+
+  /**
    * Dispatches ticket email for an approved application.
    * Completely decoupled from ticket approval: failures never invalidate the approved ticket.
    * Does NOT fake success: if credentials are missing or SMTP fails, records FAILED with the exact reason.

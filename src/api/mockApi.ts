@@ -18,6 +18,11 @@ export interface Submission {
   approver?: string;
   checkedIn: boolean;
   checkedInAt?: string;
+  checkedInBy?: string;
+  emailStatus?: string;
+  qrToken?: string;
+  qrPayload?: string;
+  qrImageData?: string;
 }
 
 export interface User {
@@ -1110,5 +1115,31 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
     return { success: true };
+  },
+
+  // GET /api/admin/tickets/:id/qr (Fixes 3 Sections 11-14)
+  getTicketQR: async (ticketOrSubId: string): Promise<any> => {
+    const res = await fetch(`/api/admin/tickets/${ticketOrSubId}/qr`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to retrieve ticket QR credentials');
+  },
+
+  // GET /api/approve/stats (Fixes 3 Sections 7 & 9)
+  getApprovalStats: async (): Promise<any> => {
+    try {
+      const res = await fetch('/api/approve/stats', { headers: getAuthHeaders() });
+      if (res.ok) return await res.json();
+    } catch {}
+    return await api.getAdminStats();
+  },
+
+  // GET /api/admin/statistics (Fixes 3 Section 3)
+  getStatistics: async (): Promise<any> => {
+    return await api.getAdminStats();
   },
 };

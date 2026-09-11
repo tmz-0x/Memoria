@@ -943,6 +943,230 @@ async function runAllTests() {
   });
 
   // ----------------------------------------------------
+  // TEST GROUP 20: Fixes 3 — Centralized Statistics, Dividend Distribution & Admin QR Inspection
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 20: Centralized Statistics, Dividend Distribution & Admin QR Access ---');
+
+  await test('Centralized statistics API provides consistent numbers across admin and approval endpoints', async () => {
+    const resAdminStats = await fetch(`${baseUrl}/api/admin/stats`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const resAdminStatistics = await fetch(`${baseUrl}/api/admin/statistics`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const resApproveStats = await fetch(`${baseUrl}/api/approve/stats`, {
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+
+    assert.strictEqual(resAdminStats.status, 200);
+    assert.strictEqual(resAdminStatistics.status, 200);
+    assert.strictEqual(resApproveStats.status, 200);
+
+    const s1 = await resAdminStats.json();
+    const s2 = await resAdminStatistics.json();
+    const s3 = await resApproveStats.json();
+
+    assert.strictEqual(s1.ticketsSold, s2.ticketsSold);
+    assert.strictEqual(s1.ticketsSold, s3.ticketsSold);
+    assert.strictEqual(s1.totalRevenue, s2.totalRevenue);
+    assert.strictEqual(s1.totalRevenue, s3.totalRevenue);
+    assert.strictEqual(s1.totalApplications, s2.totalApplications);
+
+    // Verify top-level Fixes 3 fields exist
+    assert.strictEqual(typeof s1.totalApplications, 'number');
+    assert.strictEqual(typeof s1.pending, 'number');
+    assert.strictEqual(typeof s1.approved, 'number');
+    assert.strictEqual(typeof s1.rejected, 'number');
+    assert.strictEqual(typeof s1.ticketsSold, 'number');
+    assert.strictEqual(typeof s1.universityTickets, 'number');
+    assert.strictEqual(typeof s1.outsiderTickets, 'number');
+    assert.strictEqual(typeof s1.checkedIn, 'number');
+    assert.strictEqual(typeof s1.notCheckedIn, 'number');
+    assert.strictEqual(typeof s1.totalRevenue, 'number');
+    assert.strictEqual(typeof s1.universityRevenue, 'number');
+    assert.strictEqual(typeof s1.outsiderRevenue, 'number');
+    assert.strictEqual(typeof s1.emailPending, 'number');
+    assert.strictEqual(typeof s1.emailSent, 'number');
+    assert.strictEqual(typeof s1.emailFailed, 'number');
+    assert.strictEqual(typeof s1.emailConfigured, 'boolean');
+
+    // Verify Fixes 3 Dividend calculation
+    assert.ok(s1.dividend);
+    assert.strictEqual(s1.dividend.universityTickets, s1.universityTickets);
+    assert.strictEqual(s1.dividend.outsiderTickets, s1.outsiderTickets);
+    assert.strictEqual(s1.dividend.universityRevenue, s1.universityRevenue);
+    assert.strictEqual(s1.dividend.outsiderRevenue, s1.outsiderRevenue);
+  });
+
+  await test('Accurate revenue dividend calculation (2 university = Rs 400, 3 outsider = Rs 3000 -> Rs 3400)', async () => {
+    // Clear operational submissions temporarily for isolated revenue verification
+    db.prepare('DELETE FROM submissions').run();
+
+    const u1 = ticketService.submitTicket({
+      name: 'Dividend Student 1',
+      email: 'div.u1@gmail.com',
+      phone: '+94 77 111 0001',
+      ticketType: 'student',
+      universityRegistrationNumber: 'DIV100001',
+      paymentSlipUrl: '/uploads/div1.jpg',
+      quantity: 1,
+    });
+    await approvalService.approveSubmission(u1.submissionId, 'Test Approver');
+
+    const u2 = ticketService.submitTicket({
+      name: 'Dividend Student 2',
+      email: 'div.u2@gmail.com',
+      phone: '+94 77 111 0002',
+      ticketType: 'student',
+      universityRegistrationNumber: 'DIV100002',
+      paymentSlipUrl: '/uploads/div2.jpg',
+      quantity: 1,
+    });
+    await approvalService.approveSubmission(u2.submissionId, 'Test Approver');
+
+    const o1 = ticketService.submitTicket({
+      name: 'Dividend Outsider 1',
+      email: 'div.o1@gmail.com',
+      phone: '+94 77 222 0001',
+      ticketType: 'outsider',
+      quantity: 3,
+      paymentSlipUrl: '/uploads/div3.jpg',
+    });
+    await approvalService.approveSubmission(o1.submissionId, 'Test Approver');
+
+    const stats = revenueService.getAdminStats();
+    assert.strictEqual(stats.universityTickets, 2);
+    assert.strictEqual(stats.outsiderTickets, 3);
+    assert.strictEqual(stats.ticketsSold, 5);
+    assert.strictEqual(stats.universityRevenue, 400);
+    assert.strictEqual(stats.outsiderRevenue, 3000);
+    assert.strictEqual(stats.totalRevenue, 3400);
+    assert.strictEqual(stats.dividend.universityPercentage, 40.0);
+    assert.strictEqual(stats.dividend.outsiderPercentage, 60.0);
+  });
+
+  let validTicketForInspection = '';
+  await test('Prevents double-counting: multiple audit and scan records do not multiply ticket or check-in count', async () => {
+    // Create one single approved ticket
+    const singleSub = ticketService.submitTicket({
+      name: 'Double Count Attendee',
+      email: 'double.count@gmail.com',
+      phone: '+94 77 333 4444',
+      ticketType: 'outsider',
+      quantity: 1,
+      paymentSlipUrl: '/uploads/single.jpg',
+    });
+    const approved = await approvalService.approveSubmission(singleSub.submissionId, 'Test Approver');
+
+    // Check it in
+    const checkinRes = checkinService.verifyAndCheckIn(approved.ticketId, 'Gate Staff 1');
+    assert.strictEqual(checkinRes.valid, true);
+
+    // Insert multiple simulated duplicate audit logs and scan logs for this ticket
+    const dupSalt = Math.random().toString(36).substring(2, 9);
+    db.prepare(`
+      INSERT INTO scan_audit_logs (id, ticket_id, submission_id, result, scanned_at, scanned_by, query, reason)
+      VALUES (?, ?, ?, 'VALID', ?, 'Gate Staff 1', ?, NULL)
+    `).run(`scan-dup-${dupSalt}-1`, approved.ticketId, singleSub.submissionId, new Date().toISOString(), approved.ticketId);
+
+    db.prepare(`
+      INSERT INTO scan_audit_logs (id, ticket_id, submission_id, result, scanned_at, scanned_by, query, reason)
+      VALUES (?, ?, ?, 'ALREADY_USED', ?, 'Gate Staff 1', ?, 'Already checked in')
+    `).run(`scan-dup-${dupSalt}-2`, approved.ticketId, singleSub.submissionId, new Date().toISOString(), approved.ticketId);
+
+    db.prepare(`
+      INSERT INTO activity_logs (id, timestamp, actor, action, entity_id, result, metadata)
+      VALUES (?, ?, 'Gate Staff 1', 'CHECKIN_SCAN', ?, 'SUCCESS', '{}')
+    `).run(`act-dup-${dupSalt}-1`, new Date().toISOString(), singleSub.submissionId);
+
+    db.prepare(`
+      INSERT INTO activity_logs (id, timestamp, actor, action, entity_id, result, metadata)
+      VALUES (?, ?, 'Gate Staff 1', 'CHECKIN_SCAN', ?, 'ALREADY_USED', '{}')
+    `).run(`act-dup-${dupSalt}-2`, new Date().toISOString(), singleSub.submissionId);
+
+    // Query stats: must strictly count as 1 ticket, 1 checked-in, Rs. 1000 revenue
+    const statsRow = db.prepare(`
+      SELECT
+        COUNT(*) as ticketCount,
+        COALESCE(SUM(CASE WHEN checked_in = 1 THEN 1 ELSE 0 END), 0) as checkedInCount,
+        COALESCE(SUM(total_price), 0) as revenue
+      FROM submissions
+      WHERE id = ? AND deleted_at IS NULL
+    `).get(singleSub.submissionId) as any;
+
+    assert.strictEqual(statsRow.ticketCount, 1, 'Row count must be strictly 1');
+    assert.strictEqual(statsRow.checkedInCount, 1, 'Checked-in count must be strictly 1');
+    assert.strictEqual(statsRow.revenue, 1000, 'Revenue must strictly equal unit ticket price');
+  });
+
+  await test('Admin can view any valid ticket QR code without regenerating or mutating check-in state', async () => {
+    // Create an approved ticket
+    const qrSub = ticketService.submitTicket({
+      name: 'QR Inspection Attendee',
+      email: 'qr.inspect@gmail.com',
+      phone: '+94 77 999 8888',
+      ticketType: 'student',
+      universityRegistrationNumber: 'QR99999',
+      paymentSlipUrl: '/uploads/qr.jpg',
+      quantity: 1,
+    });
+    const approved = await approvalService.approveSubmission(qrSub.submissionId, 'Test Approver');
+    validTicketForInspection = approved.ticketId;
+
+    // Admin views QR
+    const qrRes = await fetch(`${baseUrl}/api/admin/tickets/${approved.ticketId}/qr`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(qrRes.status, 200);
+    const qrData = await qrRes.json();
+
+    assert.strictEqual(qrData.success, true);
+    assert.strictEqual(qrData.ticketId, approved.ticketId);
+    assert.strictEqual(qrData.name, 'QR Inspection Attendee');
+    assert.strictEqual(qrData.qrStatus, 'ACTIVE');
+    assert.strictEqual(qrData.checkedIn, false);
+    assert.ok(qrData.qrImageData?.startsWith('data:image/png;base64,'));
+    assert.ok(qrData.qrToken);
+
+    // Verify viewing did NOT mutate record
+    const checkSub = db.prepare('SELECT qr_token, checked_in FROM submissions WHERE id = ?').get(qrSub.submissionId) as any;
+    assert.strictEqual(checkSub.qr_token, qrData.qrToken, 'QR token must match database record and remain unchanged');
+    assert.strictEqual(checkSub.checked_in, 0, 'Check-in status must NOT change on view');
+
+    // Now check in the ticket
+    checkinService.verifyAndCheckIn(approved.ticketId, 'Gate Staff 1');
+
+    // View QR again: qrStatus must now report USED
+    const qrUsedRes = await fetch(`${baseUrl}/api/admin/tickets/${approved.ticketId}/qr`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(qrUsedRes.status, 200);
+    const qrUsedData = await qrUsedRes.json();
+    assert.strictEqual(qrUsedData.qrStatus, 'USED');
+    assert.strictEqual(qrUsedData.checkedIn, true);
+  });
+
+  await test('Security: Approvers, staff, and public users are DENIED from arbitrary Admin QR retrieval', async () => {
+    const sampleTicket = validTicketForInspection;
+
+    // Approver receives 403 Forbidden
+    const approverRes = await fetch(`${baseUrl}/api/admin/tickets/${sampleTicket}/qr`, {
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+    assert.strictEqual(approverRes.status, 403);
+
+    // Staff receives 403 Forbidden
+    const staffRes = await fetch(`${baseUrl}/api/admin/tickets/${sampleTicket}/qr`, {
+      headers: { Authorization: `Bearer ${staffToken}` },
+    });
+    assert.strictEqual(staffRes.status, 403);
+
+    // Public unauthorized receives 401
+    const publicRes = await fetch(`${baseUrl}/api/admin/tickets/${sampleTicket}/qr`);
+    assert.strictEqual(publicRes.status, 401);
+  });
+
+  // ----------------------------------------------------
   // Summary
   // ----------------------------------------------------
   // Clean up any dynamically created test admin accounts and ensure standard users

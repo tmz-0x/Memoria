@@ -46,7 +46,29 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
   const [regenSub, setRegenSub] = useState<Submission | null>(null);
   const [regenReason, setRegenReason] = useState('');
   const [regenLoading, setRegenLoading] = useState(false);
+
+  // View QR modal state (Fixes 3 Sections 11-14)
+  const [viewingQRSub, setViewingQRSub] = useState<Submission | null>(null);
+  const [qrDetails, setQrDetails] = useState<any | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+
   const [notification, setNotification] = useState<string | null>(null);
+
+  const handleOpenQR = async (sub: Submission) => {
+    setViewingQRSub(sub);
+    setQrLoading(true);
+    setQrError(null);
+    setQrDetails(null);
+    try {
+      const data = await api.getTicketQR(sub.ticketId || sub.id);
+      setQrDetails(data);
+    } catch (err: any) {
+      setQrError(err.message || 'Failed to load QR code credentials');
+    } finally {
+      setQrLoading(false);
+    }
+  };
 
   const filtered = submissions.filter((s) => {
     const matchesFilter = filter === 'all' || s.status === filter;
@@ -279,6 +301,16 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
+
+                      {sub.status === 'approved' && (
+                        <button
+                          onClick={() => handleOpenQR(sub)}
+                          className="p-1.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors"
+                          title="View Ticket QR Code"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       <button
                         onClick={() => handleStartEdit(sub)}
@@ -549,6 +581,123 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
                 Close Preview
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* View QR Code Modal (Fixes 3 Sections 11-14) */}
+      {viewingQRSub && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Admission Ticket Pass & QR</h4>
+                <p className="text-[11px] text-slate-500">
+                  Ticket ID: <span className="font-mono font-bold text-blue-600">{viewingQRSub.ticketId || '—'}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => { setViewingQRSub(null); setQrDetails(null); }}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {qrLoading ? (
+              <div className="py-12 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                <span>Retrieving verified ticket credentials...</span>
+              </div>
+            ) : qrError ? (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs text-center">
+                {qrError}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* QR Code Presentation Box */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  {(qrDetails?.qrImageData || viewingQRSub.qrImageData) ? (
+                    <img
+                      src={qrDetails?.qrImageData || viewingQRSub.qrImageData}
+                      alt="Ticket Admission QR"
+                      className="w-52 h-52 mx-auto rounded-lg shadow-sm border border-slate-200 bg-white p-2"
+                    />
+                  ) : (
+                    <div className="w-52 h-52 mx-auto rounded-lg border border-dashed border-slate-300 flex items-center justify-center text-xs text-slate-400">
+                      QR Image Unavailable
+                    </div>
+                  )}
+
+                  <div className="mt-3">
+                    <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
+                      {qrDetails?.ticketId || viewingQRSub.ticketId}
+                    </span>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">
+                      Encrypted Gate Admission Token
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Badges */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                  <span className="text-slate-500 font-medium">Gate QR Status:</span>
+                  {(qrDetails?.checkedIn || viewingQRSub.checkedIn) ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                      USED &bull; Already Checked In
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                      ACTIVE &bull; Unused
+                    </span>
+                  )}
+                </div>
+
+                {/* Attendee Details Summary */}
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/70 p-3 rounded-lg border border-slate-100">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase">Attendee</span>
+                    <span className="font-semibold text-slate-800 truncate block">{qrDetails?.name || viewingQRSub.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase">Tier</span>
+                    <span className="font-semibold text-slate-800 capitalize">
+                      {viewingQRSub.ticketType === 'student' ? 'University Student' : 'General Attendee'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase">Passes</span>
+                    <span className="font-semibold text-slate-800">{viewingQRSub.quantity} Pass(es)</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase">Total Amount</span>
+                    <span className="font-mono font-bold text-emerald-600">
+                      Rs. {(qrDetails?.totalPrice ?? viewingQRSub.totalPrice ?? (viewingQRSub.ticketType === 'student' ? 200 : viewingQRSub.quantity * 1000)).toLocaleString()}
+                    </span>
+                  </div>
+                  {viewingQRSub.universityRegistrationNumber && (
+                    <div className="col-span-2">
+                      <span className="text-[10px] text-slate-400 block uppercase">Student Reg Number</span>
+                      <span className="font-mono font-semibold text-purple-700">{viewingQRSub.universityRegistrationNumber}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-[10px] text-slate-400 text-center">
+                  Notice: Viewing this credential does not modify check-in status or create a new QR code.
+                </p>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setViewingQRSub(null); setQrDetails(null); }}
+                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold"
+                  >
+                    Close QR Viewer
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
