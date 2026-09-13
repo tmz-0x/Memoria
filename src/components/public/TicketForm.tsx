@@ -123,16 +123,14 @@ export const TicketForm: React.FC = () => {
 
   return (
     <div className="pt-2">
-      {/* Side-by-side Bank Credentials and Stable Form (Section 17, 21) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Bank Account Credentials */}
-        <div className="lg:col-span-5 order-2 lg:order-1">
-          <PaymentDetails />
-        </div>
+      {/* Official Bank Credentials (Payment Details Section) */}
+      <div className="mb-8 w-full">
+        <PaymentDetails />
+      </div>
 
-        {/* Right Column: CRITICAL - Stable Ticket Form with NO dramatic entrance animation (Section 21) */}
-        <div className="lg:col-span-7 order-1 lg:order-2">
-          <div className="rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/40 p-6 sm:p-8 shadow-2xl relative">
+      {/* Ticket Registration & Upload Form */}
+      <div className="max-w-4xl mx-auto w-full">
+        <div className="rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/40 p-6 sm:p-8 shadow-2xl relative">
             {submittedResult ? (
               /* State 2 & 3: Submitted & Pending Verification Screen (Section 19) */
               <motion.div
@@ -511,7 +509,6 @@ export const TicketForm: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 };

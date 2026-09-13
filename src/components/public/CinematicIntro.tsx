@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, useMotionValue } from 'framer-motion';
+import { motion, useMotionValue, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Ticket } from 'lucide-react';
+import { ChevronDown, Ticket, Sparkles } from 'lucide-react';
 import { FallingBlossoms } from './FallingBlossoms';
 
 interface CinematicIntroProps {
@@ -11,6 +11,7 @@ interface CinematicIntroProps {
 export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete }) => {
   const navigate = useNavigate();
 
+  const [initialIntroVisible, setInitialIntroVisible] = useState(true);
   const [stageAwakened, setStageAwakened] = useState(false);
   const [moonAppeared, setMoonAppeared] = useState(false);
   const [titleRevealed, setTitleRevealed] = useState(false);
@@ -25,6 +26,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
     // Respect reduced motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) {
+      setInitialIntroVisible(false);
       setStageAwakened(true);
       setMoonAppeared(true);
       setTitleRevealed(true);
@@ -33,18 +35,31 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
       return;
     }
 
-    // Exactly 2-second theatrical anticipation followed by sequenced revelations
+    // Sequenced cinematic revelations extending Phase 1 (initialIntro.jpg) -> Phase 2 (Hero Stage)
+    // 1. Initial intro image displays for ~2.8s, then smoothly dissolves into hero stage
+    const t0 = setTimeout(() => {
+      setInitialIntroVisible(false);
+    }, 2800);
+
+    // 2. Stage lights awaken as the opening scene dissolves
     const t1 = setTimeout(() => {
       setStageAwakened(true);
-    }, 2000);
-    const t2 = setTimeout(() => setMoonAppeared(true), 2800);
-    const t3 = setTimeout(() => setTitleRevealed(true), 3800);
+    }, 3400);
+
+    // 3. Luminous cosmic crescent moon & eclipse appear
+    const t2 = setTimeout(() => setMoonAppeared(true), 4300);
+
+    // 4. Memoria'26 wordmark and eclipse titles reveal
+    const t3 = setTimeout(() => setTitleRevealed(true), 5300);
+
+    // 5. Final hero metadata and interactive booking CTA settle
     const t4 = setTimeout(() => {
       setHeroSettled(true);
       if (onIntroComplete) onIntroComplete();
-    }, 5000);
+    }, 6500);
 
     return () => {
+      clearTimeout(t0);
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
@@ -53,6 +68,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
   }, [onIntroComplete]);
 
   const handleSkip = () => {
+    setInitialIntroVisible(false);
     setStageAwakened(true);
     setMoonAppeared(true);
     setTitleRevealed(true);
@@ -81,11 +97,12 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         <button
           type="button"
           onClick={handleSkip}
-          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-40 text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-4 py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/80 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
+          className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 z-50 text-[10px] sm:text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-3.5 py-2 sm:px-4 sm:py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/85 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
         >
           Skip Intro
         </button>
       )}
+
       {/* Layer 1: Theatrical Stage Backdrop (hero-stage-scene.jpg) */}
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <img
@@ -260,6 +277,96 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         </span>
         <ChevronDown className="w-4 h-4 text-[#D4AF37] animate-bounce" />
       </motion.div>
+
+      {/* Phase 1: Initial Cinematic Opening Scene (Fix 11, Section 1-3) */}
+      <AnimatePresence>
+        {initialIntroVisible && (
+          <motion.div
+            key="initial-intro-scene"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
+            onClick={handleSkip}
+            className="absolute inset-0 w-full h-full z-40 overflow-hidden bg-[#0D0518] cursor-pointer group select-none"
+            title="Tap anywhere to enter"
+          >
+            <motion.div
+              initial={{ scale: 1.0 }}
+              animate={{ scale: 1.045 }}
+              transition={{ duration: 4.5, ease: 'easeOut' }}
+              className="w-full h-full relative"
+            >
+              <picture>
+                <source type="image/webp" srcSet="/assets/initialIntro.webp" />
+                <img
+                  src="/assets/initialIntro.jpg"
+                  alt="Memoria'26 Theatrical Opening"
+                  fetchPriority="high"
+                  decoding="sync"
+                  className="w-full h-full object-cover object-center"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('InitialIntro')) {
+                      target.src = '/assets/InitialIntro.jpg';
+                    }
+                  }}
+                />
+              </picture>
+
+              {/* Subtle atmospheric vignette and cinematic gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/70 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0D0518]/50 via-transparent to-transparent pointer-events-none" />
+
+              {/* Ambient Breathing Radial Glow */}
+              <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-2xl h-[40vh] bg-gradient-radial from-[#D4AF37]/20 via-[#E066FF]/10 to-transparent blur-3xl pointer-events-none animate-pulse"
+                style={{ animationDuration: '3.5s' }}
+              />
+
+              {/* Theatrical Opening Crest & Text Overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-6 pointer-events-none select-none z-10">
+                {/* Golden Ceremonial Pill Badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.0, delay: 0.2, ease: 'easeOut' }}
+                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-[#0D0518]/80 border border-[#D4AF37]/45 shadow-[0_0_25px_rgba(212,175,55,0.4)] backdrop-blur-md mb-2.5 sm:mb-4"
+                >
+                  <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D4AF37] animate-pulse shrink-0" />
+                  <span className="font-heading text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#D4AF37]">
+                    The Eclipse Of Memories &bull; Memoria &apos;26
+                  </span>
+                  <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D4AF37] animate-pulse shrink-0" />
+                </motion.div>
+
+                {/* Main Theatrical Opening Subtitle */}
+                <motion.h2
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 1.2, delay: 0.4, ease: 'easeOut' }}
+                  className="font-wordmark text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FFB3D9] to-[#D4AF37] drop-shadow-[0_0_35px_rgba(224,102,255,0.8)] py-1"
+                >
+                  Where Memories Bloom
+                </motion.h2>
+
+              
+              </div>
+
+              {/* Mobile & Desktop "Tap anywhere to enter" hint */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 1.1 }}
+                className="absolute bottom-4 sm:bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-[#0D0518]/70 border border-white/15 backdrop-blur-md text-[9px] sm:text-[10px] font-heading tracking-[0.18em] uppercase text-[#F0E6FA]/70 pointer-events-none select-none group-hover:border-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-all"
+              >
+                <span>Tap anywhere to enter</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-ping" />
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

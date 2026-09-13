@@ -70,8 +70,8 @@ export const LINEUP_ARTISTS: ArtistItem[] = [
   {
     id: 'krishan',
     firstName: 'KRISHAN',
-    lastName: 'MAHESHAN',
-    name: 'KRISHAN MAHESHAN',
+    lastName: 'KARUNARATHNE',
+    name: 'KRISHAN KARUNARATHNE',
     role: 'Featured Artist',
     genre: 'Fusion Pioneer & Urban Beats',
     image: '/artists/Krishan.jpeg',
@@ -82,8 +82,8 @@ export const LINEUP_ARTISTS: ArtistItem[] = [
   {
     id: 'yashodha',
     firstName: 'YASHODHA',
-    lastName: 'PRIYADARSHANI',
-    name: 'YASHODHA PRIYADARSHANI',
+    lastName: 'MEDAGEDARA',
+    name: 'YASHODHA MEDAGEDARA',
     role: 'Featured Artist',
     genre: 'Acoustic Melody & Soul Vocalist',
     image: '/artists/Yashodha.jpeg',

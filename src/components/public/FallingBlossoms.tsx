@@ -27,12 +27,14 @@ interface FallingBlossomsProps {
   stageAwakened?: boolean;
   leftBeamAngleDeg?: number;
   rightBeamAngleDeg?: number;
+  className?: string;
 }
 
 export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
   stageAwakened = true,
   leftBeamAngleDeg,
   rightBeamAngleDeg,
+  className = 'absolute inset-0 pointer-events-none z-45 w-full h-full',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const leftAngleRef = useRef<number | undefined>(leftBeamAngleDeg);
@@ -60,10 +62,10 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
     let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
     let height = (canvas.height = canvas.parentElement?.clientHeight || window.innerHeight);
 
-    const isMobile = width < 768;
-    const isTablet = width >= 768 && width < 1024;
-    // Mobile Performance Optimization: Balanced petal count for smooth 60fps on phones
-    const petalCount = prefersReducedMotion ? (isMobile ? 12 : 20) : isMobile ? 22 : isTablet ? 45 : 88;
+    const isMobile = width < 640;
+    const isTablet = width >= 640 && width < 1024;
+    // Mobile Performance Optimization: Balanced petal count for smooth 60fps on all devices
+    const petalCount = prefersReducedMotion ? (isMobile ? 8 : 14) : isMobile ? 18 : isTablet ? 38 : 76;
 
     const handleResize = () => {
       if (!canvas) return;
@@ -72,8 +74,18 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
     };
     window.addEventListener('resize', handleResize);
 
-    // Fix 8, Section 4 & 5: Stronger emission at Left & Right tree canopies, significantly reduced in the center
-    const getSpawnPoint = (): { x: number; y: number; driftBias: number } => {
+    // Initial Intro Mode: Spreads petals calmly across full width; Stage Mode: Emits from Left/Right tree canopies
+    const getSpawnPoint = (awakened: boolean): { x: number; y: number; driftBias: number } => {
+      // During initial intro (!awakened): Spawn calmly across the full viewport width from above
+      if (!awakened) {
+        return {
+          x: width * Math.random(),
+          y: Math.random() * -30,
+          driftBias: (Math.random() - 0.5) * 0.16,
+        };
+      }
+
+      // During hero stage (awakened): Emission focused on Left & Right concert tree canopies
       const zoneChoice = Math.random();
       let x = 0;
       let y = 0;
@@ -83,16 +95,14 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
         // Left Tree Canopy (48% of petals): x in [1% - 26%], y in [1% - 38%]
         x = width * (0.01 + Math.random() * 0.25);
         y = height * (0.01 + Math.random() * 0.37);
-        // Slight drift keeping center clear
         driftBias = Math.random() * 0.30 - 0.20;
       } else if (zoneChoice < 0.96) {
         // Right Tree Canopy (48% of petals): x in [68% - 99%], y in [1% - 42%]
         x = width * (0.68 + Math.random() * 0.31);
         y = height * (0.01 + Math.random() * 0.41);
-        // Slight drift keeping center clear
         driftBias = Math.random() * 0.30 - 0.10;
       } else {
-        // Center Overhead Branch Tips (Only 4% of petals - Section 4 & 5): x in [38% - 62%], y in [1% - 12%]
+        // Center Overhead Branch Tips (Only 4% of petals): x in [38% - 62%], y in [1% - 12%]
         x = width * (0.38 + Math.random() * 0.24);
         y = height * (0.01 + Math.random() * 0.11);
         driftBias = (Math.random() - 0.5) * 0.25;
@@ -111,7 +121,8 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
     ];
 
     const createPetal = (prewarm = false): BlossomPetal => {
-      const pt = getSpawnPoint();
+      const isAwakened = stageAwakenedRef.current;
+      const pt = getSpawnPoint(isAwakened);
       const initialY = prewarm ? Math.random() * height : pt.y;
 
       const layerTier = Math.random();
@@ -120,24 +131,25 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
       let baseAlpha = 0.65;
       let baseVy = 0.65;
 
-      // Fix 8, Section 3 & 7: Slightly smaller, delicate, elegant petals matching tree scale
+      const scaleMultiplier = isMobile ? 0.85 : 1.0;
+
       if (layerTier < 0.35) {
-        // Background: smaller, dimmer, slower (Section 7)
+        // Background: smaller, dimmer, slower
         layer = 'bg';
-        size = Math.random() * 2.2 + 4.2; // 4.2px - 6.4px (delicate background blossom)
-        baseAlpha = Math.random() * 0.18 + 0.32; // 0.32 - 0.50
-        baseVy = Math.random() * 0.20 + 0.35; // 0.35 - 0.55 px/frame (gracefully slow)
+        size = (Math.random() * 2.2 + 4.2) * scaleMultiplier;
+        baseAlpha = Math.random() * 0.18 + 0.32;
+        baseVy = Math.random() * 0.20 + 0.35; // 0.35 - 0.55 px/frame
       } else if (layerTier < 0.82) {
-        // Midground: standard delicate blossom (Section 7)
+        // Midground: standard delicate blossom
         layer = 'mid';
-        size = Math.random() * 2.8 + 6.8; // 6.8px - 9.6px (natural blossom scale)
-        baseAlpha = Math.random() * 0.18 + 0.55; // 0.55 - 0.73
+        size = (Math.random() * 2.8 + 6.8) * scaleMultiplier;
+        baseAlpha = Math.random() * 0.18 + 0.55;
         baseVy = Math.random() * 0.30 + 0.50; // 0.50 - 0.80 px/frame
       } else {
-        // Foreground: slightly larger, luminous highlight (Section 7)
+        // Foreground: slightly larger, luminous highlight
         layer = 'fg';
-        size = Math.random() * 3.2 + 10.0; // 10.0px - 13.2px (delicate foreground petal)
-        baseAlpha = Math.random() * 0.16 + 0.72; // 0.72 - 0.88
+        size = (Math.random() * 3.2 + 10.0) * scaleMultiplier;
+        baseAlpha = Math.random() * 0.16 + 0.72;
         baseVy = Math.random() * 0.35 + 0.70; // 0.70 - 1.05 px/frame
       }
 
@@ -167,7 +179,7 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
       };
     };
 
-    // Pre-warm initial petals so the scene opens with petals already gracefully mid-air (Section 21)
+    // Pre-warm initial petals so the scene opens with petals already gracefully mid-air
     const petals: BlossomPetal[] = [];
     for (let i = 0; i < petalCount; i++) {
       petals.push(createPetal(true));
@@ -180,10 +192,14 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
       time += 0.016;
 
       const isAwakened = stageAwakenedRef.current;
+      // When in initial intro (!isAwakened), petals fall slowly and calmly at ~48% speed
+      const speedFactor = isAwakened ? 1.0 : 0.48;
+      const swayFactor = isAwakened ? 1.0 : 0.65;
+
       const leftAngleRad = typeof leftAngleRef.current === 'number' ? (leftAngleRef.current * Math.PI) / 180 : null;
       const rightAngleRad = typeof rightAngleRef.current === 'number' ? (rightAngleRef.current * Math.PI) / 180 : null;
 
-      // Spotlight origins for calculating beam illumination on passing petals (Section 23)
+      // Spotlight origins for calculating beam illumination on passing petals
       const leftLightOrigin = { x: width * 0.03, y: height * 0.02 };
       const rightLightOrigin = { x: width * 0.97, y: height * 0.02 };
 
@@ -191,24 +207,26 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
         const p = petals[i];
 
         if (!prefersReducedMotion) {
-          // 1. Slow, natural downward drift with gentle sway (Section 13, 16, 17)
-          p.swayPhase += p.swaySpeed;
-          p.tumblePhase += p.tumbleSpeed;
-          p.rotation += p.rotSpeed;
+          // Slow, natural downward drift with gentle sway (calm during initial intro)
+          p.swayPhase += p.swaySpeed * swayFactor;
+          p.tumblePhase += p.tumbleSpeed * swayFactor;
+          p.rotation += p.rotSpeed * swayFactor;
 
           // Subtle horizontal breeze drift + sway
-          const swayOffset = Math.sin(p.swayPhase) * p.swayAmp;
-          p.x += p.vx + swayOffset;
+          const swayOffset = Math.sin(p.swayPhase) * (p.swayAmp * swayFactor);
+          p.x += (isAwakened ? p.vx : p.vx * 0.65) + swayOffset;
 
-          // Decelerate as it nears stage floor (Section 22)
+          const currentVy = p.vy * speedFactor;
+
+          // Decelerate as it nears stage floor
           if (p.y > p.decayY - 50) {
-            p.y += p.vy * 0.65;
+            p.y += currentVy * 0.65;
             p.alpha -= 0.012; // Gentle fade on stage floor
           } else {
-            p.y += p.vy;
+            p.y += currentVy;
           }
 
-          // 2. Respawn seamlessly from tree canopies when reaching stage floor or leaving viewport
+          // Respawn seamlessly when reaching floor or leaving viewport
           if (p.y >= p.decayY || p.alpha <= 0.05 || p.x < -30 || p.x > width + 30) {
             const fresh = createPetal(false);
             Object.assign(p, fresh);
@@ -316,7 +334,7 @@ export const FallingBlossoms: React.FC<FallingBlossomsProps> = ({
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="absolute inset-0 pointer-events-none z-22 w-full h-full"
+      className={className}
     />
   );
 };

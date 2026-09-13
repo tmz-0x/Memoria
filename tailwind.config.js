@@ -26,6 +26,12 @@ export default {
         'glow-magenta': '0 0 35px rgba(224, 102, 255, 0.5)',
         'glow-theatrical': '0 0 50px rgba(192, 78, 207, 0.35)',
       },
+      zIndex: {
+        '15': '15',
+        '25': '25',
+        '35': '35',
+        '45': '45',
+      },
     },
   },
   plugins: [],
