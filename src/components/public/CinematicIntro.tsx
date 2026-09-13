@@ -97,46 +97,11 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         <button
           type="button"
           onClick={handleSkip}
-          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-40 text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-4 py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/80 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-4 py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/80 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
         >
           Skip Intro
         </button>
       )}
-
-      {/* Phase 1: Initial Cinematic Opening Scene (Fix 11, Section 1-3) */}
-      <AnimatePresence>
-        {initialIntroVisible && (
-          <motion.div
-            key="initial-intro-scene"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.4, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-0 w-full h-full pointer-events-none z-35 overflow-hidden bg-[#0D0518]"
-          >
-            <motion.div
-              initial={{ scale: 1.0 }}
-              animate={{ scale: 1.045 }}
-              transition={{ duration: 4.2, ease: 'easeOut' }}
-              className="w-full h-full"
-            >
-              <picture>
-                <source type="image/webp" srcSet="/assets/initialIntro.webp" />
-                <img
-                  src="/assets/initialIntro.jpg"
-                  alt="Memoria'26 Theatrical Opening"
-                  fetchPriority="high"
-                  className="w-full h-full object-cover object-center"
-                />
-              </picture>
-            </motion.div>
-
-            {/* Subtle atmospheric vignette and cinematic gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/60 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0D0518]/40 via-transparent to-transparent pointer-events-none" />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Layer 1: Theatrical Stage Backdrop (hero-stage-scene.jpg) */}
       <div className="absolute inset-0 w-full h-full pointer-events-none">
@@ -312,6 +277,48 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         </span>
         <ChevronDown className="w-4 h-4 text-[#D4AF37] animate-bounce" />
       </motion.div>
+
+      {/* Phase 1: Initial Cinematic Opening Scene (Fix 11, Section 1-3) */}
+      <AnimatePresence>
+        {initialIntroVisible && (
+          <motion.div
+            key="initial-intro-scene"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-0 w-full h-full pointer-events-none z-40 overflow-hidden bg-[#0D0518]"
+          >
+            <motion.div
+              initial={{ scale: 1.0 }}
+              animate={{ scale: 1.045 }}
+              transition={{ duration: 4.5, ease: 'easeOut' }}
+              className="w-full h-full relative"
+            >
+              <picture>
+                <source type="image/webp" srcSet="/assets/initialIntro.webp" />
+                <img
+                  src="/assets/initialIntro.jpg"
+                  alt="Memoria'26 Theatrical Opening"
+                  fetchPriority="high"
+                  decoding="sync"
+                  className="w-full h-full object-cover object-center"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('InitialIntro')) {
+                      target.src = '/assets/InitialIntro.jpg';
+                    }
+                  }}
+                />
+              </picture>
+
+              {/* Subtle atmospheric vignette and cinematic gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/60 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0D0518]/40 via-transparent to-transparent pointer-events-none" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
