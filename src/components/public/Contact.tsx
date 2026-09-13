@@ -1,6 +1,34 @@
 import React from 'react';
 import { SectionDivider } from './SectionDivider';
-import { Sparkles, MessageSquare, Mail, Phone, Clock, Send } from 'lucide-react';
+import { Sparkles, MessageSquare, Mail, Clock, ShieldCheck, ArrowUpRight } from 'lucide-react';
+
+// ============================================================================
+// 📱 CONFIGURE YOUR 3 WHATSAPP SUPPORT NUMBERS HERE:
+// Simply replace the displayNumber and cleanNumber below.
+// ============================================================================
+export const WHATSAPP_SUPPORT_LINES = [
+  {
+    id: 1,
+    label: 'Support Hotline 01',
+    displayNumber: '+94 76 877 3240', // Primary WhatsApp Number
+    cleanNumber: '94768773240',
+    desc: 'Primary Ticket Desk & Bank Verification',
+  },
+  {
+    id: 2,
+    label: 'Support Hotline 02',
+    displayNumber: '+94 XX XXX XXXX', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 2
+    cleanNumber: '94XXXXXXXXX',       // <-- Digits for wa.me link (e.g. 94771234567)
+    desc: 'Student Registration & Entry Inquiries',
+  },
+  {
+    id: 3,
+    label: 'Support Hotline 03',
+    displayNumber: '+94 XX XXX XXXX', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 3
+    cleanNumber: '94XXXXXXXXX',       // <-- Digits for wa.me link (e.g. 94719876543)
+    desc: 'General Inquiries & Emergency Assistance',
+  },
+];
 
 export const Contact: React.FC = () => {
   return (
@@ -25,50 +53,77 @@ export const Contact: React.FC = () => {
         </div>
 
         {/* Support Options Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* WhatsApp Support Card */}
-          <a
-            href="https://wa.me/94768773240"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-8 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/30 hover:border-emerald-400/80 hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-xl flex flex-col justify-between"
-          >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          {/* WhatsApp Support Multi-Number Card */}
+          <div className="p-6 sm:p-8 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/30 shadow-xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3.5 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                <div className="p-3.5 rounded-xl bg-emerald-500/20 text-emerald-400">
                   <MessageSquare className="w-6 h-6" />
                 </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-heading font-semibold uppercase tracking-wider border border-emerald-500/30">
-                  Instant Support
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-heading font-semibold uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Instant WhatsApp Desk
                 </span>
               </div>
 
-              <h3 className="font-heading text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
-                WhatsApp Desk
+              <h3 className="font-heading text-xl font-bold text-white">
+                Official WhatsApp Helplines
               </h3>
               <p className="font-body text-xs sm:text-sm text-[#F0E6FA]/70 mt-2 leading-relaxed">
-                Chat directly with our ticketing officers for real-time status checks, slip confirmations, and urgent help.
+                Connect directly with our dedicated ticketing officers for real-time slip confirmations, student ID verifications, and urgent gate inquiries.
               </p>
+
+              {/* 3 WhatsApp Lines List */}
+              <div className="mt-6 space-y-3">
+                {WHATSAPP_SUPPORT_LINES.map((line) => (
+                  <a
+                    key={line.id}
+                    href={`https://wa.me/${line.cleanNumber}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block p-3.5 rounded-xl bg-[#0D0518]/60 hover:bg-emerald-950/30 border border-white/10 hover:border-emerald-500/50 transition-all duration-200"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-emerald-400">
+                            {line.label}
+                          </span>
+                          <span className="text-[10px] text-[#F0E6FA]/40">&bull;</span>
+                          <span className="text-[10px] font-body text-[#F0E6FA]/60 truncate">
+                            {line.desc}
+                          </span>
+                        </div>
+                        <div className="font-mono text-sm sm:text-base font-bold text-white tracking-wider group-hover:text-emerald-300 transition-colors mt-0.5">
+                          {line.displayNumber}
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/15 group-hover:bg-emerald-500 text-emerald-400 group-hover:text-black font-heading text-xs font-bold uppercase tracking-wider transition-all duration-200">
+                        <span>Chat</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
-              <span className="font-mono text-sm font-semibold text-white tracking-wider">
-                +94 76 877 3240
+            <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between text-[11px] text-[#F0E6FA]/60 font-body">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                Verified Memoria&apos;26 Officers
               </span>
-              <span className="text-xs font-heading font-bold text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Chat Now &rarr;
-              </span>
+              <span className="text-[#D4AF37]">Available 24/7</span>
             </div>
-          </a>
+          </div>
 
           {/* Email Support Card */}
-          <a
-            href="mailto:thisalmethwidu16@gmail.com"
-            className="p-8 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/30 hover:border-[#E066FF] hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-xl flex flex-col justify-between"
-          >
+          <div className="p-6 sm:p-8 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/30 shadow-xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3.5 rounded-xl bg-[#E066FF]/20 text-[#E066FF] group-hover:scale-110 transition-transform">
+                <div className="p-3.5 rounded-xl bg-[#E066FF]/20 text-[#E066FF]">
                   <Mail className="w-6 h-6" />
                 </div>
                 <span className="px-3 py-1 rounded-full bg-[#E066FF]/10 text-[#E066FF] text-[10px] font-heading font-semibold uppercase tracking-wider border border-[#E066FF]/30">
@@ -76,25 +131,57 @@ export const Contact: React.FC = () => {
                 </span>
               </div>
 
-              <h3 className="font-heading text-xl font-bold text-white group-hover:text-[#FFB3D9] transition-colors">
+              <h3 className="font-heading text-xl font-bold text-white">
                 Email Dispatch
               </h3>
               <p className="font-body text-xs sm:text-sm text-[#F0E6FA]/70 mt-2 leading-relaxed">
-                For corporate sponsorships, institutional media passes, and formal receipt invoices.
+                For corporate sponsorships, institutional bulk passes, media accreditations, and official payment receipts.
               </p>
+
+              {/* Email Action Box */}
+              <div className="mt-6 space-y-3">
+                <a
+                  href="mailto:thisalmethwidu16@gmail.com"
+                  className="group block p-4 rounded-xl bg-[#0D0518]/60 hover:bg-[#E066FF]/10 border border-white/10 hover:border-[#E066FF]/50 transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-[#FFB3D9]">
+                        Official Helpdesk Email
+                      </span>
+                      <div className="font-mono text-sm sm:text-base font-bold text-white tracking-wide group-hover:text-[#FFB3D9] transition-colors mt-0.5 break-all">
+                        thisalmethwidu16@gmail.com
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#E066FF]/20 group-hover:bg-[#E066FF] text-[#FFB3D9] group-hover:text-black font-heading text-xs font-bold uppercase tracking-wider transition-all duration-200">
+                      <span>Send</span>
+                      <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </a>
+
+                {/* Additional Info Pill Box */}
+                <div className="p-3.5 rounded-xl bg-[#0D0518]/40 border border-white/5 space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-[#F0E6FA]/75">
+                    <Clock className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                    <span>Average email response: <strong className="text-white">Within 2–4 hours</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[#F0E6FA]/75">
+                    <Sparkles className="w-3.5 h-3.5 text-[#E066FF] shrink-0" />
+                    <span>Please include your <strong>Order / Submission ID</strong> in the subject line.</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
-              <span className="font-mono text-sm font-semibold text-white tracking-wider">
-                thisalmethwidu16@gmail.com
-              </span>
-              <span className="text-xs font-heading font-bold text-[#E066FF] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Send Email &rarr;
-              </span>
+            <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between text-[11px] text-[#F0E6FA]/60 font-body">
+              <span>Official Event Secretariat</span>
+              <span className="text-[#E066FF]">Direct Response</span>
             </div>
-          </a>
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
