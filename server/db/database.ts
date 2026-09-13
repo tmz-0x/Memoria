@@ -1,20 +1,176 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { Pool, PoolClient, QueryResult } from 'pg';
 import { config } from '../config/env';
 
-// Ensure data directory exists
-const dbDir = path.dirname(config.databasePath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+// Initialize PostgreSQL Connection Pool
+export const pool = new Pool(
+  config.pg.connectionString
+    ? {
+        connectionString: config.pg.connectionString,
+        ssl: config.pg.ssl,
+        max: 25, // High concurrency pool for 15,000+ crowd & multiple scanners
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      }
+    : {
+        host: config.pg.host,
+        port: config.pg.port,
+        user: config.pg.user,
+        password: config.pg.password,
+        database: config.pg.database,
+        ssl: config.pg.ssl,
+        max: 25,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      }
+);
+
+// Graceful pool error logging
+pool.on('error', (err) => {
+  console.error('[PostgreSQL Pool Unexpected Error]:', err.message);
+});
+
+/**
+ * Automatically transforms SQLite/ANSI ? parameter placeholders into PostgreSQL $1, $2, $3...
+ * Ensures 100% compatibility with existing query signatures.
+ */
+export function convertPlaceholders(sql: string): string {
+  let paramIndex = 1;
+  return sql.replace(/\?/g, () => `$${paramIndex++}`);
 }
 
-export const db = new Database(config.databasePath);
+export interface RunResult {
+  changes: number;
+  rowCount: number;
+  rows: any[];
+}
 
-// Enable WAL mode for high performance & concurrent read/writes
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-db.pragma('busy_timeout = 5000');
-db.pragma('synchronous = NORMAL');
+export interface PreparedStatement {
+  get: <T = any>(...params: any[]) => Promise<T | undefined>;
+  all: <T = any>(...params: any[]) => Promise<T[]>;
+  run: (...params: any[]) => Promise<RunResult>;
+}
+
+export interface TxRunner {
+  client: PoolClient;
+  query: <T = any>(sql: string, params?: any[]) => Promise<T[]>;
+  get: <T = any>(sql: string, params?: any[]) => Promise<T | undefined>;
+  run: (sql: string, params?: any[]) => Promise<RunResult>;
+}
+
+function normalizeParams(params: any[]): any[] {
+  if (params.length === 1 && Array.isArray(params[0])) {
+    return params[0];
+  }
+  return params;
+}
+
+/**
+ * Authoritative PostgreSQL Database Interface
+ */
+export const db = {
+  pool,
+
+  /**
+   * Execute query returning all matching rows
+   */
+  async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+    const text = convertPlaceholders(sql);
+    const res = await pool.query(text, normalizeParams(params));
+    return res.rows as T[];
+  },
+
+  /**
+   * Execute query returning the first matching row or undefined
+   */
+  async get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
+    const text = convertPlaceholders(sql);
+    const res = await pool.query(text, normalizeParams(params));
+    return res.rows[0] as T | undefined;
+  },
+
+  /**
+   * Execute INSERT / UPDATE / DELETE returning affected row count
+   */
+  async run(sql: string, params: any[] = []): Promise<RunResult> {
+    const text = convertPlaceholders(sql);
+    const res = await pool.query(text, normalizeParams(params));
+    return {
+      changes: res.rowCount || 0,
+      rowCount: res.rowCount || 0,
+      rows: res.rows,
+    };
+  },
+
+  /**
+   * Execute multiple raw DDL / migration statements
+   */
+  async exec(sql: string): Promise<void> {
+    await pool.query(sql);
+  },
+
+  /**
+   * PreparedStatement emulator providing .get(), .all(), and .run() with async resolution
+   */
+  prepare(sql: string): PreparedStatement {
+    return {
+      get: async <T = any>(...params: any[]): Promise<T | undefined> => {
+        return db.get<T>(sql, normalizeParams(params));
+      },
+      all: async <T = any>(...params: any[]): Promise<T[]> => {
+        return db.query<T>(sql, normalizeParams(params));
+      },
+      run: async (...params: any[]): Promise<RunResult> => {
+        return db.run(sql, normalizeParams(params));
+      },
+    };
+  },
+
+  /**
+   * Execute transaction with automatic BEGIN, COMMIT, and ROLLBACK
+   */
+  async transaction<T>(callback: (tx: TxRunner) => Promise<T>): Promise<T> {
+    const client = await pool.connect();
+    const tx: TxRunner = {
+      client,
+      query: async <R = any>(sql: string, params: any[] = []): Promise<R[]> => {
+        const text = convertPlaceholders(sql);
+        const res = await client.query(text, normalizeParams(params));
+        return res.rows as R[];
+      },
+      get: async <R = any>(sql: string, params: any[] = []): Promise<R | undefined> => {
+        const text = convertPlaceholders(sql);
+        const res = await client.query(text, normalizeParams(params));
+        return res.rows[0] as R | undefined;
+      },
+      run: async (sql: string, params: any[] = []): Promise<RunResult> => {
+        const text = convertPlaceholders(sql);
+        const res = await client.query(text, normalizeParams(params));
+        return {
+          changes: res.rowCount || 0,
+          rowCount: res.rowCount || 0,
+          rows: res.rows,
+        };
+      },
+    };
+    try {
+      await client.query('BEGIN');
+      const result = await callback(tx);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
+  /**
+   * Close connection pool
+   */
+  async close(): Promise<void> {
+    await pool.end();
+  },
+};
 
 export default db;

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { db } from '../db/database';
+import { db, TxRunner } from '../db/database';
 import { config } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 import { auditService } from './auditService';
@@ -16,7 +16,7 @@ export interface SubmitTicketDTO {
 }
 
 export const ticketService = {
-  submitTicket: (dto: SubmitTicketDTO) => {
+  submitTicket: async (dto: SubmitTicketDTO) => {
     // 1. Basic field presence and length validations
     const name = dto.name?.trim();
     if (!name || name.length < 2 || name.length > 100) {
@@ -44,7 +44,7 @@ export const ticketService = {
 
     // 2. Check idempotency key if provided
     if (dto.idempotencyKey) {
-      const existingByIdempotency = db.prepare(`
+      const existingByIdempotency = await db.prepare(`
         SELECT id, status FROM submissions WHERE idempotency_key = ?
       `).get(dto.idempotencyKey) as any;
 
@@ -85,13 +85,13 @@ export const ticketService = {
       }
 
       // Strict uniqueness check against any active non-rejected application
-      const existingStudent = db.prepare(`
+      const existingStudent = await db.prepare(`
         SELECT id FROM submissions
         WHERE normalized_reg_number = ? AND status != 'rejected' AND deleted_at IS NULL
       `).get(normalizedReg) as any;
 
       if (existingStudent) {
-        auditService.logActivity('public', 'DUPLICATE_REGISTRATION_ATTEMPT', 'REJECTED', null, {
+        await auditService.logActivity('public', 'DUPLICATE_REGISTRATION_ATTEMPT', 'REJECTED', null, {
           regNumber: normalizedReg,
           email,
         });
@@ -120,15 +120,15 @@ export const ticketService = {
     const submissionId = `sub-${Date.now().toString().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
     const now = new Date().toISOString();
 
-    // 4. Atomic transaction to insert submission and decrement remaining allocation
-    const submitTx = db.transaction(() => {
-      db.prepare(`
+    // 4. Atomic PostgreSQL transaction to insert submission and decrement remaining allocation
+    await db.transaction(async (tx: TxRunner) => {
+      await tx.run(`
         INSERT INTO submissions (
           id, ticket_id, name, email, phone, quantity, ticket_type,
           university_registration_number, normalized_reg_number, unit_price, total_price,
           payment_slip_url, status, submitted_at, email_status, idempotency_key
         ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'PENDING', ?)
-      `).run(
+      `, [
         submissionId,
         name,
         email,
@@ -141,28 +141,26 @@ export const ticketService = {
         totalPrice,
         dto.paymentSlipUrl,
         now,
-        dto.idempotencyKey || null
-      );
+        dto.idempotencyKey || null,
+      ]);
 
-      // Decrement remaining allocation safely
-      db.prepare(`
+      // Decrement remaining allocation safely using GREATEST
+      await tx.run(`
         UPDATE event_settings
-        SET remaining_allocation = MAX(0, remaining_allocation - ?),
+        SET remaining_allocation = GREATEST(0, remaining_allocation - ?),
             updated_at = ?
         WHERE id = 1
-      `).run(quantity, now);
+      `, [quantity, now]);
     });
 
-    submitTx();
-
-    auditService.logActivity('public', 'APPLICATION_SUBMITTED', 'SUCCESS', submissionId, {
+    await auditService.logActivity('public', 'APPLICATION_SUBMITTED', 'SUCCESS', submissionId, {
       ticketType: dto.ticketType,
       quantity,
       totalPrice,
       regNumber: normalizedReg,
     });
 
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'INFO',
       eventType: 'TICKET_CREATED',
       action: 'SUBMIT_TICKET',

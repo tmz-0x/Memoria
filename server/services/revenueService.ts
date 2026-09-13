@@ -84,9 +84,9 @@ export interface AdminStatistics {
 }
 
 export const revenueService = {
-  getAdminStats: (): AdminStatistics => {
+  getAdminStats: async (): Promise<AdminStatistics> => {
     // Single consolidated authoritative query strictly on non-deleted submissions
-    const statsRow = db.prepare(`
+    const statsRow = (await db.prepare(`
       SELECT
         -- Applications breakdown
         COUNT(*) as totalSubmitted,
@@ -118,32 +118,32 @@ export const revenueService = {
         END), 0) as totalRevenue
       FROM submissions
       WHERE deleted_at IS NULL
-    `).get() as any;
+    `).get()) as any;
 
-    const totalSubmitted = Number(statsRow?.totalSubmitted) || 0;
-    const pendingCount = Number(statsRow?.pendingCount) || 0;
-    const approvedCount = Number(statsRow?.approvedCount) || 0;
-    const rejectedCount = Number(statsRow?.rejectedCount) || 0;
+    const totalSubmitted = Number(statsRow?.totalsubmitted ?? statsRow?.totalSubmitted) || 0;
+    const pendingCount = Number(statsRow?.pendingcount ?? statsRow?.pendingCount) || 0;
+    const approvedCount = Number(statsRow?.approvedcount ?? statsRow?.approvedCount) || 0;
+    const rejectedCount = Number(statsRow?.rejectedcount ?? statsRow?.rejectedCount) || 0;
 
-    const totalTicketsIssued = Number(statsRow?.totalTicketsIssued) || 0;
-    const studentApprovedCount = Number(statsRow?.studentApprovedCount) || 0;
-    const outsiderApprovedCount = Number(statsRow?.outsiderApprovedCount) || 0;
+    const totalTicketsIssued = Number(statsRow?.totalticketsissued ?? statsRow?.totalTicketsIssued) || 0;
+    const studentApprovedCount = Number(statsRow?.studentapprovedcount ?? statsRow?.studentApprovedCount) || 0;
+    const outsiderApprovedCount = Number(statsRow?.outsiderapprovedcount ?? statsRow?.outsiderApprovedCount) || 0;
 
-    const totalCheckedIn = Number(statsRow?.totalCheckedIn) || 0;
-    const universityCheckedIn = Number(statsRow?.universityCheckedIn) || 0;
-    const outsiderCheckedIn = Number(statsRow?.outsiderCheckedIn) || 0;
+    const totalCheckedIn = Number(statsRow?.totalcheckedin ?? statsRow?.totalCheckedIn) || 0;
+    const universityCheckedIn = Number(statsRow?.universitycheckedin ?? statsRow?.universityCheckedIn) || 0;
+    const outsiderCheckedIn = Number(statsRow?.outsidercheckedin ?? statsRow?.outsiderCheckedIn) || 0;
     const remainingNotCheckedIn = Math.max(0, totalTicketsIssued - totalCheckedIn);
 
     const studentRevenue = studentApprovedCount * config.pricing.student;
     const outsiderRevenue = outsiderApprovedCount * config.pricing.outsider;
     const totalRevenue = studentRevenue + outsiderRevenue;
 
-    const emailsSent = Number(statsRow?.emailsSent) || 0;
-    const emailsPending = Number(statsRow?.emailsPending) || 0;
-    const emailsFailed = Number(statsRow?.emailsFailed) || 0;
+    const emailsSent = Number(statsRow?.emailssent ?? statsRow?.emailsSent) || 0;
+    const emailsPending = Number(statsRow?.emailspending ?? statsRow?.emailsPending) || 0;
+    const emailsFailed = Number(statsRow?.emailsfailed ?? statsRow?.emailsFailed) || 0;
 
     // Get event settings
-    const settings = db.prepare('SELECT total_capacity, remaining_allocation FROM event_settings WHERE id = 1').get() as any;
+    const settings = (await db.prepare('SELECT total_capacity, remaining_allocation FROM event_settings WHERE id = 1').get()) as any;
 
     // Fixes 3 Section 6 Dividend & Percentage Distribution
     const universityTicketPercentage = totalTicketsIssued > 0
@@ -152,6 +152,12 @@ export const revenueService = {
     const outsiderTicketPercentage = totalTicketsIssued > 0
       ? Number(((outsiderApprovedCount / totalTicketsIssued) * 100).toFixed(1))
       : 0;
+
+    // Additional database entity statistics
+    const userRow = (await db.prepare('SELECT COUNT(*) as c FROM users').get()) as any;
+    const auditRow = (await db.prepare('SELECT COUNT(*) as c FROM system_audit_logs').get()) as any;
+    const errorRow = (await db.prepare("SELECT COUNT(*) as c FROM system_audit_logs WHERE (severity IN ('ERROR', 'CRITICAL') OR status_code >= 400 OR error_code IS NOT NULL)").get()) as any;
+    const subLogRow = (await db.prepare("SELECT COUNT(*) as c FROM activity_logs WHERE (action LIKE '%SUBMISSION%' OR action LIKE '%APPLICATION%' OR action LIKE '%QR%' OR action LIKE '%TICKET%')").get()) as any;
 
     return {
       // Fixes 3 Top-Level Authoritative Fields (Section 3)
@@ -215,7 +221,7 @@ export const revenueService = {
 
       // Flat legacy compatibility
       pendingCount,
-      pendingTickets: Number(statsRow?.pendingTickets) || 0,
+      pendingTickets: Number(statsRow?.pendingtickets ?? statsRow?.pendingTickets) || 0,
       approvedCount,
       rejectedCount,
       totalSubmissions: totalSubmitted,
@@ -227,10 +233,10 @@ export const revenueService = {
       remainingAllocation: settings?.remaining_allocation ?? 142,
 
       // Authoritative Database Statistics (BACKENDFIXES6 Sections 24-25)
-      totalUsers: Number((db.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c) || 0,
-      totalAuditLogs: Number((db.prepare('SELECT COUNT(*) as c FROM system_audit_logs').get() as any)?.c) || 0,
-      totalErrorLogs: Number((db.prepare("SELECT COUNT(*) as c FROM system_audit_logs WHERE (severity IN ('ERROR', 'CRITICAL') OR status_code >= 400 OR error_code IS NOT NULL)").get() as any)?.c) || 0,
-      totalSubmissionLogs: Number((db.prepare("SELECT COUNT(*) as c FROM activity_logs WHERE (action LIKE '%SUBMISSION%' OR action LIKE '%APPLICATION%' OR action LIKE '%QR%' OR action LIKE '%TICKET%')").get() as any)?.c) || 0,
+      totalUsers: Number(userRow?.c) || 0,
+      totalAuditLogs: Number(auditRow?.c) || 0,
+      totalErrorLogs: Number(errorRow?.c) || 0,
+      totalSubmissionLogs: Number(subLogRow?.c) || 0,
       validTickets: totalTicketsIssued,
       remainingTickets: remainingNotCheckedIn,
     };

@@ -3,8 +3,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/react-18.x-61dafb.svg)](https://reactjs.org/)
-[![Database](https://img.shields.io/badge/database-SQLite%203%20(WAL)-yellow.svg)](https://www.sqlite.org/)
-[![Test Suite](https://img.shields.io/badge/tests-56%2F56%20passing%20(100%25)-success.svg)](./server/tests/backend.test.ts)
+[![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue.svg)](https://www.postgresql.org/)
 
 A high-performance, enterprise-grade ticketing, bank-transfer verification, and gate access management system built for **Memoria'26 — The Eclipse Of Memories** (Annual Cultural Event, University of Sri Jayewardenepura).
 
@@ -28,7 +27,7 @@ A high-performance, enterprise-grade ticketing, bank-transfer verification, and 
 
 ## 1. System Architecture
 
-Memoria'26 separates concerns between a reactive client application and a hardened, transaction-safe Node.js backend backed by SQLite in WAL (Write-Ahead Logging) mode:
+Memoria'26 separates concerns between a reactive client application and a hardened, transaction-safe Node.js backend backed by **PostgreSQL 16** with asynchronous connection pooling and row-level locking for zero gate check-in contention:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -50,11 +49,12 @@ Memoria'26 separates concerns between a reactive client application and a harden
 ├─────────────────────────────────────────────────────────────────────────┤
 │  Audit & Error Management Engine (System & Activity Audit Logs)         │
 └────────────────────────────────────┬────────────────────────────────────┘
-                                     │ Synchronous / ACID Transactions
+                                     │ Asynchronous Connection Pool (pg.Pool)
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│              Authoritative SQLite Database (data/memoria.db)            │
-│  - WAL Mode, Foreign Keys, High-Concurrency Indexes                     │
+│              PostgreSQL 16 Database (Port 5432 / Docker)                │
+│  - Row-level locking (FOR UPDATE) for simultaneous gate scanners        │
+│  - Atomic allocation decrement & idempotent check-ins                   │
 │  - 10 Relational Tables: Users, Submissions, History, Audits, SMTP, etc.│
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -77,7 +77,7 @@ Memoria'26 separates concerns between a reactive client application and a harden
 - **Runtime**: Node.js 18+ (tested on Node v22)
 - **Server Framework**: Express 5
 - **Execution**: TypeScript via `tsx`
-- **Database**: SQLite 3 with `better-sqlite3` (native C++ bindings, WAL mode)
+- **Database**: Pure PostgreSQL 16 via `pg.Pool` (connection pooling, parameterized queries)
 - **Security & Crypto**: `bcryptjs` (password hashing), `jsonwebtoken` (JWTs), native Node `crypto` (secure tokens)
 - **Email Delivery**: `nodemailer` (connection pooling, dynamic transport, RFC 5322 formatting)
 - **File Uploads**: `multer` with MIME verification & size limiting
@@ -303,7 +303,13 @@ All requests accept and return `application/json`. Authenticated routes require 
    npm install
    ```
 
-3. **Configure Environment Variables**:
+3. **Start PostgreSQL Database**:
+   Launch PostgreSQL 16 using Docker Compose:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Configure Environment Variables**:
    Copy the example environment file:
    ```bash
    cp .env.example .env
@@ -312,7 +318,12 @@ All requests accept and return `application/json`. Authenticated routes require 
    ```env
    PORT=5000
    NODE_ENV=development
-   DATABASE_PATH=./data/memoria.db
+   DATABASE_URL=postgresql://memoria:memoria2026@localhost:5432/memoria
+   PGHOST=localhost
+   PGPORT=5432
+   PGUSER=memoria
+   PGPASSWORD=memoria2026
+   PGDATABASE=memoria
    JWT_SECRET=your_super_secret_jwt_key_for_production
    QR_SECRET=your_cryptographically_secure_qr_secret
    FRONTEND_URL=http://localhost:5173
@@ -321,8 +332,8 @@ All requests accept and return `application/json`. Authenticated routes require 
    UPLOAD_DIR=./uploads
    ```
 
-4. **Seed Database**:
-   Initial seed users are created automatically on first boot:
+5. **Bootstrap & Seed Database**:
+   Initial schema creation and seed users are executed automatically on first server boot:
    - **Admin**: `admin@memoria.lk` / `admin123`
    - **Approver**: `approver@memoria.lk` / `approve123`
    - **Staff**: `staff@memoria.lk` / `staff123`

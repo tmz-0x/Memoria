@@ -3,8 +3,6 @@ import cors from 'cors';
 import path from 'path';
 import crypto from 'crypto';
 import { config } from './config/env';
-import { initializeDatabase } from './db/schema';
-import { seedDatabase } from './db/seed';
 import { errorHandler } from './middleware/errorHandler';
 import { authRoutes } from './routes/authRoutes';
 import { ticketRoutes } from './routes/ticketRoutes';
@@ -14,10 +12,6 @@ import { adminRoutes } from './routes/adminRoutes';
 import { db } from './db/database';
 
 export function createApp() {
-  // Ensure schema and seed data exist
-  initializeDatabase();
-  seedDatabase();
-
   const app = express();
 
   // Request Correlation ID Middleware (BACKENDFIXES4 Section 3)
@@ -63,10 +57,10 @@ export function createApp() {
   app.use('/uploads', express.static(config.uploadDir));
 
   // 33. Health Check Endpoint
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', async (req, res) => {
     let dbStatus = 'ok';
     try {
-      db.prepare('SELECT 1').get();
+      await db.query('SELECT 1');
     } catch {
       dbStatus = 'error';
     }

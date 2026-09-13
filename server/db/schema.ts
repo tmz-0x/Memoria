@@ -1,7 +1,7 @@
 import { db } from './database';
 
-export function initializeDatabase() {
-  db.exec(`
+export async function initializeDatabase(): Promise<void> {
+  await db.exec(`
     -- Users table (Role Based: admin, approver, staff)
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -129,6 +129,7 @@ export function initializeDatabase() {
       result TEXT NOT NULL,
       metadata TEXT
     );
+
     -- Dedicated System Audit Logs (System Reliability, Exceptions & Admin Security)
     CREATE TABLE IF NOT EXISTS system_audit_logs (
       id TEXT PRIMARY KEY,
@@ -174,48 +175,24 @@ export function initializeDatabase() {
     );
   `);
 
-  // Safe migrations for existing tables
-  const cols = (db.pragma('table_info(submissions)') as Array<{ name: string }>).map((c) => c.name);
-  if (!cols.includes('created_at')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN created_at TEXT");
-    db.exec("UPDATE submissions SET created_at = submitted_at WHERE created_at IS NULL");
-  }
-  if (!cols.includes('deleted_at')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN deleted_at TEXT");
-  }
-  if (!cols.includes('deleted_by')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN deleted_by TEXT");
-  }
-  if (!cols.includes('delete_reason')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN delete_reason TEXT");
-  }
-  if (!cols.includes('email_attempt_count')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN email_attempt_count INTEGER NOT NULL DEFAULT 0");
-  }
-  if (!cols.includes('email_last_attempt_at')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN email_last_attempt_at TEXT");
-  }
-  if (!cols.includes('email_last_error')) {
-    db.exec("ALTER TABLE submissions ADD COLUMN email_last_error TEXT");
-  }
+  // Safe PostgreSQL migrations for existing tables
+  await db.exec(`
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS created_at TEXT;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS deleted_at TEXT;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS deleted_by TEXT;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS delete_reason TEXT;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS email_attempt_count INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS email_last_attempt_at TEXT;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS email_last_error TEXT;
 
-  // Safe migrations for system_audit_logs error handling
-  const sysCols = (db.pragma('table_info(system_audit_logs)') as Array<{ name: string }>).map((c) => c.name);
-  if (!sysCols.includes('resolution_status')) {
-    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolution_status TEXT DEFAULT 'open'");
-  }
-  if (!sysCols.includes('resolution_note')) {
-    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolution_note TEXT");
-  }
-  if (!sysCols.includes('resolved_by')) {
-    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolved_by TEXT");
-  }
-  if (!sysCols.includes('resolved_at')) {
-    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolved_at TEXT");
-  }
+    ALTER TABLE system_audit_logs ADD COLUMN IF NOT EXISTS resolution_status TEXT DEFAULT 'open';
+    ALTER TABLE system_audit_logs ADD COLUMN IF NOT EXISTS resolution_note TEXT;
+    ALTER TABLE system_audit_logs ADD COLUMN IF NOT EXISTS resolved_by TEXT;
+    ALTER TABLE system_audit_logs ADD COLUMN IF NOT EXISTS resolved_at TEXT;
+  `);
 
   // Performance Indexes for 15,000+ Crowd Scale
-  db.exec(`
+  await db.exec(`
     -- Strict Database-Level Student Reg Uniqueness
     CREATE UNIQUE INDEX IF NOT EXISTS idx_student_reg_unique 
     ON submissions(normalized_reg_number) 
@@ -260,11 +237,12 @@ export function initializeDatabase() {
 
   // Ensure default SMTP configuration row exists from environment variables if not present
   try {
-    const existingSmtp = db.prepare('SELECT id FROM smtp_settings WHERE id = 1').get();
+    const existingSmtp = await db.prepare('SELECT id FROM smtp_settings WHERE id = 1').get();
     if (!existingSmtp) {
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO smtp_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_from, sender_name, updated_at, updated_by)
         VALUES (1, ?, ?, ?, ?, ?, ?, 'Memoria 26 Ticketing Desk', ?, 'system')
+        ON CONFLICT (id) DO NOTHING
       `).run(
         process.env.SMTP_HOST || 'smtp.gmail.com',
         parseInt(process.env.SMTP_PORT || '587', 10),

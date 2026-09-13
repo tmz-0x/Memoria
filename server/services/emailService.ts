@@ -3,7 +3,7 @@ try {
   dns.setDefaultResultOrder('ipv4first');
 } catch {}
 
-import nodemailer from 'nodemailer';
+import nodemailer, { Transporter, SendMailOptions } from 'nodemailer';
 import { config } from '../config/env';
 import { db } from '../db/database';
 import { auditService } from './auditService';
@@ -20,18 +20,19 @@ export interface SmtpConfig {
   updatedBy?: string | null;
 }
 
-let activeTransporter: nodemailer.Transporter | null = null;
+let activeTransporter: Transporter | null = null;
 let activeConfigHash = '';
+let cachedSmtpConfig: SmtpConfig | null = null;
 
 function getConfigHash(cfg: SmtpConfig): string {
   return `${cfg.smtpHost}:${cfg.smtpPort}:${cfg.smtpUser}:${cfg.smtpPass}:${cfg.smtpSecure}:${cfg.smtpFrom}:${cfg.senderName}`;
 }
 
-function getActiveConfig(): SmtpConfig {
+export async function loadActiveConfig(): Promise<SmtpConfig> {
   try {
-    const row = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as any;
+    const row = await db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as any;
     if (row && (row.smtp_host || row.smtp_user || row.smtp_pass)) {
-      return {
+      cachedSmtpConfig = {
         smtpHost: row.smtp_host || '',
         smtpPort: Number(row.smtp_port) || 587,
         smtpUser: row.smtp_user !== null && row.smtp_user !== undefined ? row.smtp_user : '',
@@ -42,10 +43,29 @@ function getActiveConfig(): SmtpConfig {
         updatedAt: row.updated_at,
         updatedBy: row.updated_by,
       };
+      return cachedSmtpConfig;
     }
   } catch {}
 
-  // Fallback to environment configuration only if environment variables actually provide valid credentials
+  const hasEnvCredentials = Boolean(config.email.smtpUser && config.email.smtpPass);
+  cachedSmtpConfig = {
+    smtpHost: hasEnvCredentials ? config.email.smtpHost : '',
+    smtpPort: config.email.smtpPort || 587,
+    smtpUser: config.email.smtpUser || '',
+    smtpPass: config.email.smtpPass || '',
+    smtpSecure: config.email.smtpSecure || false,
+    smtpFrom: config.email.from || '',
+    senderName: "Memoria'26 Ticketing Desk",
+    updatedAt: null,
+    updatedBy: null,
+  };
+  return cachedSmtpConfig;
+}
+
+function getActiveConfig(): SmtpConfig {
+  if (cachedSmtpConfig) {
+    return cachedSmtpConfig;
+  }
   const hasEnvCredentials = Boolean(config.email.smtpUser && config.email.smtpPass);
   return {
     smtpHost: hasEnvCredentials ? config.email.smtpHost : '',
@@ -60,7 +80,7 @@ function getActiveConfig(): SmtpConfig {
   };
 }
 
-function getTransporter(customConfig?: SmtpConfig): nodemailer.Transporter {
+function getTransporter(customConfig?: SmtpConfig): Transporter {
   if (customConfig) {
     return nodemailer.createTransport({
       host: customConfig.smtpHost,
@@ -104,6 +124,7 @@ function getTransporter(customConfig?: SmtpConfig): nodemailer.Transporter {
 }
 
 export const emailService = {
+  loadActiveConfig,
   getActiveConfig,
 
   /**
@@ -147,7 +168,7 @@ export const emailService = {
    * Save dynamic runtime SMTP configuration directly from Admin Panel.
    * Takes effect immediately without restarting node. Audited with password excluded.
    */
-  saveConfig: (
+  saveConfig: async (
     newConfig: Partial<SmtpConfig>,
     adminUser: { id?: string; name: string }
   ) => {
@@ -177,20 +198,20 @@ export const emailService = {
     if (from !== current.smtpFrom) changedFields.push('smtpFrom');
     if (senderName !== current.senderName) changedFields.push('senderName');
 
-    db.prepare(`
+    await db.run(`
       INSERT INTO smtp_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_from, sender_name, updated_at, updated_by)
       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
-        smtp_host = excluded.smtp_host,
-        smtp_port = excluded.smtp_port,
-        smtp_user = excluded.smtp_user,
-        smtp_pass = excluded.smtp_pass,
-        smtp_secure = excluded.smtp_secure,
-        smtp_from = excluded.smtp_from,
-        sender_name = excluded.sender_name,
-        updated_at = excluded.updated_at,
-        updated_by = excluded.updated_by
-    `).run(
+        smtp_host = EXCLUDED.smtp_host,
+        smtp_port = EXCLUDED.smtp_port,
+        smtp_user = EXCLUDED.smtp_user,
+        smtp_pass = EXCLUDED.smtp_pass,
+        smtp_secure = EXCLUDED.smtp_secure,
+        smtp_from = EXCLUDED.smtp_from,
+        sender_name = EXCLUDED.sender_name,
+        updated_at = EXCLUDED.updated_at,
+        updated_by = EXCLUDED.updated_by
+    `, [
       host,
       port,
       user || '',
@@ -199,14 +220,15 @@ export const emailService = {
       from,
       senderName,
       now,
-      adminUser.name
-    );
+      adminUser.name,
+    ]);
 
-    // Dynamic reload without restarting Node
+    // Reload active config cache and transporter
+    await loadActiveConfig();
     emailService.reloadTransporter();
 
     // Audit log without plaintext password
-    auditService.logActivity(adminUser.name, 'SMTP_CONFIGURATION_UPDATED', 'SUCCESS', '1', {
+    await auditService.logActivity(adminUser.name, 'SMTP_CONFIGURATION_UPDATED', 'SUCCESS', '1', {
       changedFields,
       smtpHost: host,
       smtpPort: port,
@@ -215,7 +237,7 @@ export const emailService = {
       senderName,
     });
 
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'INFO',
       eventType: 'SMTP_CONFIGURATION_UPDATED',
       action: 'UPDATE_SMTP_CONFIG',
@@ -239,11 +261,13 @@ export const emailService = {
    * Reset persistent and runtime SMTP configuration to unconfigured default (BACKENDFIXES6 Section 1-5).
    * Deletes persistent DB record, shuts down active transporter pool, and logs audit event.
    */
-  resetConfig: (adminUser: { id?: string; name: string }) => {
+  resetConfig: async (adminUser: { id?: string; name: string }) => {
     const current = getActiveConfig();
 
     // 1. Delete persisted database configuration
-    db.prepare('DELETE FROM smtp_settings WHERE id = 1').run();
+    await db.run('DELETE FROM smtp_settings WHERE id = 1');
+    cachedSmtpConfig = null;
+    await loadActiveConfig();
 
     // 2. Shut down and destroy active nodemailer transporter
     if (activeTransporter) {
@@ -254,12 +278,12 @@ export const emailService = {
     }
 
     // 3. Audit trail (destructive administrative action)
-    auditService.logActivity(adminUser.name, 'SMTP_SETTINGS_RESET', 'SUCCESS', '1', {
+    await auditService.logActivity(adminUser.name, 'SMTP_SETTINGS_RESET', 'SUCCESS', '1', {
       previousHost: current.smtpHost,
       previousFrom: current.smtpFrom,
     });
 
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'WARNING',
       eventType: 'SMTP_SETTINGS_RESET',
       action: 'RESET_SMTP_CONFIG',
@@ -281,7 +305,7 @@ export const emailService = {
    * Test SMTP Connectivity & Credentials.
    */
   testConnection: async (customConfig?: Partial<SmtpConfig>): Promise<{ success: boolean; status: string; message: string }> => {
-    let testTransporter: nodemailer.Transporter;
+    let testTransporter: Transporter;
     if (customConfig && customConfig.smtpHost) {
       const current = getActiveConfig();
       const cfg: SmtpConfig = {
@@ -300,7 +324,7 @@ export const emailService = {
 
     try {
       await testTransporter.verify();
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'SMTP_CONNECTION_TEST',
         action: 'TEST_SMTP_CONNECTION',
@@ -319,7 +343,7 @@ export const emailService = {
         status = 'Authentication Failed';
       }
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'SMTP_CONNECTION_TEST_FAILED',
         action: 'TEST_SMTP_CONNECTION',
@@ -371,7 +395,7 @@ export const emailService = {
    * Does NOT fake success: if credentials are missing or SMTP fails, records FAILED with the exact reason.
    */
   sendTicketEmail: async (submissionId: string): Promise<{ success: boolean; error?: string }> => {
-    const sub = db.prepare(`
+    const sub = await db.prepare(`
       SELECT *
       FROM submissions
       WHERE id = ?
@@ -388,23 +412,23 @@ export const emailService = {
     // Check if SMTP is configured
     if (!activeCfg.smtpUser || !activeCfg.smtpPass) {
       const errorMsg = 'SMTP credentials not configured (SMTP_USER/SMTP_PASS missing). Configure SMTP in Admin Settings.';
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET email_status = 'FAILED',
             email_last_error = ?,
             email_last_attempt_at = ?,
             email_attempt_count = ?
         WHERE id = ?
-      `).run(errorMsg, now, nextAttemptCount, submissionId);
+      `, [errorMsg, now, nextAttemptCount, submissionId]);
 
-      auditService.logActivity('system', 'EMAIL_FAILED', 'FAILURE', submissionId, {
+      await auditService.logActivity('system', 'EMAIL_FAILED', 'FAILURE', submissionId, {
         email: sub.email,
         ticketId: sub.ticket_id,
         reason: errorMsg,
         attempt: nextAttemptCount,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'EMAIL_SEND_FAILED',
         action: 'SEND_TICKET_EMAIL',
@@ -524,7 +548,7 @@ ${senderDisplayName}
 ${activeCfg.smtpFrom}
 `;
 
-      const mailOptions: nodemailer.SendMailOptions = {
+      const mailOptions: SendMailOptions = {
         from: formattedFrom,
         replyTo: activeCfg.smtpFrom,
         to: sub.email,
@@ -543,12 +567,12 @@ ${activeCfg.smtpFrom}
       const info = await client.sendMail(mailOptions);
 
       // Verify that SMTP service actually accepted the email
-      if (!info || (info.rejected && info.rejected.length > 0 && info.accepted.length === 0)) {
+      if (!info || (info.rejected && info.rejected.length > 0 && (!info.accepted || info.accepted.length === 0))) {
         throw new Error(`Email rejected by recipient server: ${(info.rejected || []).join(', ')}`);
       }
 
       // Mark email status as SENT with exact timestamp
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET email_status = 'SENT',
             email_sent_at = ?,
@@ -556,16 +580,16 @@ ${activeCfg.smtpFrom}
             email_last_attempt_at = ?,
             email_attempt_count = ?
         WHERE id = ?
-      `).run(now, now, nextAttemptCount, submissionId);
+      `, [now, now, nextAttemptCount, submissionId]);
 
-      auditService.logActivity('system', 'EMAIL_SENT', 'SUCCESS', submissionId, {
+      await auditService.logActivity('system', 'EMAIL_SENT', 'SUCCESS', submissionId, {
         email: sub.email,
         ticketId: sub.ticket_id,
         messageId: info.messageId,
         attempt: nextAttemptCount,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'EMAIL_SENT',
         action: 'SEND_TICKET_EMAIL',
@@ -585,23 +609,23 @@ ${activeCfg.smtpFrom}
       const errorMsg = err.message || 'SMTP connection failed';
       console.error(`[Email Delivery Failure for ${sub.email}]:`, errorMsg);
 
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET email_status = 'FAILED',
             email_last_error = ?,
             email_last_attempt_at = ?,
             email_attempt_count = ?
         WHERE id = ?
-      `).run(errorMsg, now, nextAttemptCount, submissionId);
+      `, [errorMsg, now, nextAttemptCount, submissionId]);
 
-      auditService.logActivity('system', 'EMAIL_FAILED', 'FAILURE', submissionId, {
+      await auditService.logActivity('system', 'EMAIL_FAILED', 'FAILURE', submissionId, {
         email: sub.email,
         ticketId: sub.ticket_id,
         error: errorMsg,
         attempt: nextAttemptCount,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'ERROR',
         eventType: 'EMAIL_SEND_FAILED',
         action: 'SEND_TICKET_EMAIL',
@@ -629,7 +653,7 @@ ${activeCfg.smtpFrom}
    * Clearly informs attendee that their previous QR code is revoked and invalid.
    */
   sendRegeneratedQrEmail: async (submissionId: string): Promise<{ success: boolean; error?: string }> => {
-    const sub = db.prepare(`
+    const sub = await db.prepare(`
       SELECT *
       FROM submissions
       WHERE id = ?
@@ -645,22 +669,22 @@ ${activeCfg.smtpFrom}
 
     if (!activeCfg.smtpUser || !activeCfg.smtpPass) {
       const errorMsg = 'SMTP credentials not configured. Regenerated QR saved in database, but email delivery is unavailable.';
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET email_status = 'FAILED',
             email_last_error = ?,
             email_last_attempt_at = ?,
             email_attempt_count = ?
         WHERE id = ?
-      `).run(errorMsg, now, nextAttemptCount, submissionId);
+      `, [errorMsg, now, nextAttemptCount, submissionId]);
 
-      auditService.logActivity('system', 'QR_REGENERATION_EMAIL_FAILED', 'FAILURE', submissionId, {
+      await auditService.logActivity('system', 'QR_REGENERATION_EMAIL_FAILED', 'FAILURE', submissionId, {
         email: sub.email,
         ticketId: sub.ticket_id,
         reason: errorMsg,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'EMAIL_SEND_FAILED',
         action: 'SEND_REGENERATED_QR_EMAIL',
@@ -782,7 +806,7 @@ ${senderDisplayName}
 ${activeCfg.smtpFrom}
 `;
 
-      const mailOptions: nodemailer.SendMailOptions = {
+      const mailOptions: SendMailOptions = {
         from: formattedFrom,
         replyTo: activeCfg.smtpFrom,
         to: sub.email,
@@ -800,11 +824,11 @@ ${activeCfg.smtpFrom}
 
       const info = await client.sendMail(mailOptions);
 
-      if (!info || (info.rejected && info.rejected.length > 0 && info.accepted.length === 0)) {
+      if (!info || (info.rejected && info.rejected.length > 0 && (!info.accepted || info.accepted.length === 0))) {
         throw new Error(`Email rejected by recipient server: ${(info.rejected || []).join(', ')}`);
       }
 
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET email_status = 'SENT',
             email_sent_at = ?,
@@ -812,15 +836,15 @@ ${activeCfg.smtpFrom}
             email_last_attempt_at = ?,
             email_attempt_count = ?
         WHERE id = ?
-      `).run(now, now, nextAttemptCount, submissionId);
+      `, [now, now, nextAttemptCount, submissionId]);
 
-      auditService.logActivity('system', 'QR_REGENERATION_EMAIL_SENT', 'SUCCESS', submissionId, {
+      await auditService.logActivity('system', 'QR_REGENERATION_EMAIL_SENT', 'SUCCESS', submissionId, {
         email: sub.email,
         ticketId: sub.ticket_id,
         messageId: info.messageId,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'QR_REGENERATION_EMAIL_SENT',
         action: 'SEND_REGENERATED_QR_EMAIL',
@@ -833,16 +857,16 @@ ${activeCfg.smtpFrom}
       return { success: true };
     } catch (err: any) {
       const errorMsg = err.message || 'SMTP delivery failed for regenerated QR';
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET email_status = 'FAILED',
             email_last_error = ?,
             email_last_attempt_at = ?,
             email_attempt_count = ?
         WHERE id = ?
-      `).run(errorMsg, now, nextAttemptCount, submissionId);
+      `, [errorMsg, now, nextAttemptCount, submissionId]);
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'ERROR',
         eventType: 'EMAIL_SEND_FAILED',
         action: 'SEND_REGENERATED_QR_EMAIL',
@@ -890,7 +914,7 @@ ${senderDisplayName}
 ${activeCfg.smtpFrom}
 `;
 
-      const mailOptions: nodemailer.SendMailOptions = {
+      const mailOptions: SendMailOptions = {
         from: formattedFrom,
         replyTo: activeCfg.smtpFrom,
         to: email,
@@ -907,12 +931,12 @@ ${activeCfg.smtpFrom}
 
       const info = await client.sendMail(mailOptions);
 
-      auditService.logActivity(adminUser?.name || 'admin', 'TEST_EMAIL_SENT', 'SUCCESS', null, {
+      await auditService.logActivity(adminUser?.name || 'admin', 'TEST_EMAIL_SENT', 'SUCCESS', null, {
         recipientEmail: email,
         messageId: info.messageId,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'TEST_EMAIL_SENT',
         action: 'SEND_TEST_EMAIL',
@@ -929,7 +953,7 @@ ${activeCfg.smtpFrom}
       return { success: true, messageId: info.messageId };
     } catch (err: any) {
       const errorMsg = err.message || 'SMTP connection failed';
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'EMAIL_SEND_FAILED',
         action: 'SEND_TEST_EMAIL',

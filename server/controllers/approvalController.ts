@@ -40,18 +40,18 @@ function formatSubmission(s: any) {
 }
 
 export const approvalController = {
-  getStats: (req: Request, res: Response, next: NextFunction): void => {
+  getStats: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const stats = revenueService.getAdminStats();
+      const stats = await revenueService.getAdminStats();
       res.status(200).json(stats);
     } catch (err) {
       next(err);
     }
   },
 
-  getPending: (req: Request, res: Response, next: NextFunction): void => {
+  getPending: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const list = approvalService.getPendingSubmissions();
+      const list = await approvalService.getPendingSubmissions();
       const formatted = list.map(formatSubmission);
       res.status(200).json(formatted);
     } catch (err) {
@@ -59,10 +59,10 @@ export const approvalController = {
     }
   },
 
-  getSubmissionById: (req: Request, res: Response, next: NextFunction): void => {
+  getSubmissionById: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
-      const sub = db.prepare('SELECT * FROM submissions WHERE id = ? AND deleted_at IS NULL').get(id) as any;
+      const id = String(req.params.id);
+      const sub = await db.prepare('SELECT * FROM submissions WHERE id = ? AND deleted_at IS NULL').get(id) as any;
       if (!sub) {
         throw new AppError('Application record not found.', 404, 'NOT_FOUND');
       }
@@ -74,7 +74,7 @@ export const approvalController = {
 
   approve: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const approverName = req.user?.name || req.body.approverName || 'Authorized Approver';
       const result = await approvalService.approveSubmission(id, approverName);
       res.status(200).json(result);
@@ -85,7 +85,7 @@ export const approvalController = {
 
   reject: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const approverName = req.user?.name || req.body.approverName || 'Authorized Approver';
       const reason = req.body.reason || 'Payment transfer slip was rejected by review desk.';
       const result = await approvalService.rejectSubmission(id, approverName, reason);
@@ -95,14 +95,14 @@ export const approvalController = {
     }
   },
 
-  triggerAlert: (req: Request, res: Response, next: NextFunction): void => {
+  triggerAlert: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { submissionId, reason } = req.body;
       if (!submissionId || !reason) {
         throw new AppError('submissionId and reason are required to trigger an admin alert.', 400, 'MISSING_FIELDS');
       }
 
-      const sub = db.prepare('SELECT id, name, ticket_id FROM submissions WHERE id = ? AND deleted_at IS NULL').get(submissionId) as any;
+      const sub = await db.prepare('SELECT id, name, ticket_id FROM submissions WHERE id = ? AND deleted_at IS NULL').get(submissionId) as any;
       if (!sub) {
         throw new AppError('Referenced application record not found.', 404, 'SUBMISSION_NOT_FOUND');
       }
@@ -112,12 +112,12 @@ export const approvalController = {
       const approverName = req.user?.name || 'Approver';
       const trimmedReason = String(reason).trim();
 
-      db.prepare(`
+      await db.run(`
         INSERT INTO admin_alerts (id, submission_id, triggered_by, reason, created_at, status)
         VALUES (?, ?, ?, ?, ?, 'pending')
-      `).run(alertId, submissionId, approverName, trimmedReason, now);
+      `, [alertId, submissionId, approverName, trimmedReason, now]);
 
-      auditService.logActivity(approverName, 'ADMIN_ALERT_TRIGGERED', 'SUCCESS', submissionId, {
+      await auditService.logActivity(approverName, 'ADMIN_ALERT_TRIGGERED', 'SUCCESS', submissionId, {
         alertId,
         reason: trimmedReason,
         attendeeName: sub.name,
@@ -133,9 +133,9 @@ export const approvalController = {
     }
   },
 
-  getHistory: (req: Request, res: Response, next: NextFunction): void => {
+  getHistory: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const history = approvalService.getApprovalHistory();
+      const history = await approvalService.getApprovalHistory();
       const formatted = history.map((h: any) => ({
         id: h.id,
         submissionId: h.submission_id,
@@ -153,8 +153,8 @@ export const approvalController = {
 
   resendEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
-      const sub = db.prepare('SELECT id, ticket_id, name, email, status FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      const id = String(req.params.id);
+      const sub = await db.prepare('SELECT id, ticket_id, name, email, status FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) {
         throw new AppError('Application record not found.', 404, 'NOT_FOUND');
       }
@@ -163,7 +163,7 @@ export const approvalController = {
       }
 
       const result = await emailService.sendTicketEmail(sub.id);
-      auditService.logActivity(req.user?.name || 'approver', 'TICKET_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
+      await auditService.logActivity(req.user?.name || 'approver', 'TICKET_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
         ticketId: sub.ticket_id,
         email: sub.email,
         result,

@@ -7,7 +7,7 @@ import { AppError } from '../middleware/errorHandler';
 import { auditService } from '../services/auditService';
 
 export const authController = {
-  login: (req: Request, res: Response, next: NextFunction): void => {
+  login: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
@@ -15,14 +15,14 @@ export const authController = {
       }
 
       const normalizedEmail = String(email).trim().toLowerCase();
-      const user = db.prepare(`
+      const user = await db.prepare(`
         SELECT id, name, email, password_hash, role
         FROM users
         WHERE LOWER(email) = ?
       `).get(normalizedEmail) as any;
 
       if (!user || !bcrypt.compareSync(String(password).trim(), user.password_hash)) {
-        auditService.logSystemEvent({
+        await auditService.logSystemEvent({
           severity: 'WARNING',
           eventType: 'LOGIN_FAILED',
           action: 'USER_LOGIN',
@@ -45,8 +45,8 @@ export const authController = {
         expiresIn: '7d',
       });
 
-      auditService.logActivity(user.name, 'USER_LOGIN', 'SUCCESS', user.id, { role: user.role });
-      auditService.logSystemEvent({
+      await auditService.logActivity(user.name, 'USER_LOGIN', 'SUCCESS', user.id, { role: user.role });
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'LOGIN_SUCCESS',
         action: 'USER_LOGIN',
@@ -79,14 +79,14 @@ export const authController = {
     }
   },
 
-  updateProfile: (req: Request, res: Response, next: NextFunction): void => {
+  updateProfile: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
         throw new AppError('Authentication required.', 401, 'UNAUTHORIZED');
       }
 
       const userId = req.user.id;
-      const currentUser = db.prepare('SELECT id, name, email, password_hash, role FROM users WHERE id = ?').get(userId) as any;
+      const currentUser = await db.prepare('SELECT id, name, email, password_hash, role FROM users WHERE id = ?').get(userId) as any;
       if (!currentUser) {
         throw new AppError('User record not found.', 404, 'USER_NOT_FOUND');
       }
@@ -103,7 +103,7 @@ export const authController = {
           throw new AppError('Please provide a valid email address.', 400, 'INVALID_EMAIL');
         }
 
-        const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?').get(newEmail, userId);
+        const existing = await db.prepare('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?').get(newEmail, userId);
         if (existing) {
           throw new AppError('This email address is already in use by another account.', 409, 'EMAIL_EXISTS');
         }
@@ -130,19 +130,19 @@ export const authController = {
         newPassHash = bcrypt.hashSync(String(newPassword).trim(), 10);
       }
 
-      db.prepare(`
+      await db.run(`
         UPDATE users
         SET name = ?, email = ?, password_hash = ?
         WHERE id = ?
-      `).run(newName, newEmail, newPassHash, userId);
+      `, [newName, newEmail, newPassHash, userId]);
 
-      auditService.logActivity(newName, 'PROFILE_UPDATED', 'SUCCESS', userId, {
+      await auditService.logActivity(newName, 'PROFILE_UPDATED', 'SUCCESS', userId, {
         emailChanged: newEmail !== currentUser.email,
         passwordChanged: Boolean(newPassword),
       });
 
       if (newPassword) {
-        auditService.logSystemEvent({
+        await auditService.logSystemEvent({
           severity: 'INFO',
           eventType: 'PASSWORD_CHANGED',
           action: 'UPDATE_PROFILE_PASSWORD',
@@ -175,9 +175,9 @@ export const authController = {
     }
   },
 
-  logout: (req: Request, res: Response): void => {
+  logout: async (req: Request, res: Response): Promise<void> => {
     if (req.user) {
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'LOGOUT',
         action: 'USER_LOGOUT',

@@ -6,7 +6,16 @@ dotenv.config();
 export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  databasePath: process.env.DATABASE_PATH || path.resolve(process.cwd(), 'data/memoria.db'),
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/memoria',
+  pg: {
+    connectionString: process.env.DATABASE_URL,
+    host: process.env.PGHOST || 'localhost',
+    port: parseInt(process.env.PGPORT || '5432', 10),
+    user: process.env.PGUSER || 'postgres',
+    password: process.env.PGPASSWORD || 'postgres',
+    database: process.env.PGDATABASE || 'memoria',
+    ssl: (process.env.PGSSL === 'true' || process.env.DATABASE_URL?.includes('sslmode=require')) ? { rejectUnauthorized: false } : undefined,
+  },
   jwtSecret: process.env.JWT_SECRET || 'memoria_eclipse_2026_jwt_secret_dev_key',
   qrSecret: process.env.QR_SECRET || 'memoria_qr_cryptographic_signing_key_2026',
   authTokenExpiry: process.env.AUTH_TOKEN_EXPIRY || '7d',

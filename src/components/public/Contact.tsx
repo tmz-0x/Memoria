@@ -1,4 +1,4 @@
-import React from 'react';
+ import React from 'react';
 import { SectionDivider } from './SectionDivider';
 import { Sparkles, MessageSquare, Mail, Clock, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
@@ -12,21 +12,21 @@ export const WHATSAPP_SUPPORT_LINES = [
     label: 'Support Hotline 01',
     displayNumber: '+94 76 877 3240', // Primary WhatsApp Number
     cleanNumber: '94768773240',
-    desc: 'Primary Ticket Desk & Bank Verification',
+    desc: 'Nethmi',
   },
   {
     id: 2,
     label: 'Support Hotline 02',
-    displayNumber: '+94 XX XXX XXXX', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 2
-    cleanNumber: '94XXXXXXXXX',       // <-- Digits for wa.me link (e.g. 94771234567)
-    desc: 'Student Registration & Entry Inquiries',
+    displayNumber: '+94 78 599 8594', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 2
+    cleanNumber: '94785998594',       // <-- Digits for wa.me link (e.g. 94771234567)
+    desc: 'Thisal Methwidu',
   },
   {
     id: 3,
     label: 'Support Hotline 03',
-    displayNumber: '+94 XX XXX XXXX', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 3
-    cleanNumber: '94XXXXXXXXX',       // <-- Digits for wa.me link (e.g. 94719876543)
-    desc: 'General Inquiries & Emergency Assistance',
+    displayNumber: '+94 74 063 8431', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 3
+    cleanNumber: '94740638431',       // <-- Digits for wa.me link (e.g. 94719876543)
+    desc: 'Thilruwan Kanishka',
   },
 ];
 

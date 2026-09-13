@@ -2,11 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { checkinService } from '../services/checkinService';
 
 export const checkinController = {
-  verify: (req: Request, res: Response, next: NextFunction): void => {
+  verify: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const query = req.body.query || req.body.ticketId || req.body.token || '';
       const staffName = req.user?.name || req.body.staffName || 'Admissions Staff';
-      const result = checkinService.verifyAndCheckIn(query, staffName);
+      const result = await checkinService.verifyAndCheckIn(query, staffName);
 
       if (result.submission) {
         // Format to camelCase
@@ -35,9 +35,9 @@ export const checkinController = {
     }
   },
 
-  getStats: (req: Request, res: Response, next: NextFunction): void => {
+  getStats: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const stats = checkinService.getCheckinStats();
+      const stats = await checkinService.getCheckinStats();
       res.status(200).json(stats);
     } catch (err) {
       next(err);

@@ -65,14 +65,14 @@ export const auditService = {
    * Log to persistent dedicated system_audit_logs table.
    * Never stores plaintext passwords, tokens, or sensitive secrets.
    */
-  logSystemEvent: (params: SystemLogParams): string => {
+  logSystemEvent: async (params: SystemLogParams): Promise<string> => {
     try {
       const id = `syslog-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
       const now = new Date().toISOString();
       const sanitizedMeta = params.metadata ? sanitizeDetails(params.metadata) : null;
       const sanitizedMsg = typeof params.message === 'string' ? sanitizeDetails(params.message) : '';
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO system_audit_logs (
           id, timestamp, severity, event_type, action, module, message,
           user_id, username, target_type, target_id, request_id,
@@ -119,7 +119,7 @@ export const auditService = {
   /**
    * Query system audit logs with backend pagination and filtering.
    */
-  querySystemLogs: (params: AuditQueryParams) => {
+  querySystemLogs: async (params: AuditQueryParams) => {
     const page = Math.max(1, Number(params.page) || 1);
     const limit = Math.min(200, Math.max(1, Number(params.limit) || 25));
     const offset = (page - 1) * limit;
@@ -172,16 +172,16 @@ export const auditService = {
 
     const whereClause = whereConditions.join(' AND ');
 
-    const countRow = db.prepare(`SELECT COUNT(*) as total FROM system_audit_logs WHERE ${whereClause}`).get(...sqlParams) as any;
+    const countRow = (await db.prepare(`SELECT COUNT(*) as total FROM system_audit_logs WHERE ${whereClause}`).get(...sqlParams)) as any;
     const total = Number(countRow?.total) || 0;
     const totalPages = Math.ceil(total / limit) || 1;
 
-    const rows = db.prepare(`
+    const rows = (await db.prepare(`
       SELECT * FROM system_audit_logs
       WHERE ${whereClause}
       ORDER BY timestamp DESC
       LIMIT ? OFFSET ?
-    `).all(...sqlParams, limit, offset) as any[];
+    `).all(...sqlParams, limit, offset)) as any[];
 
     const formattedLogs = rows.map((r) => {
       let meta = null;
@@ -234,7 +234,7 @@ export const auditService = {
    * Dedicated Error Handling query engine (BACKENDFIXES5 Sections 26-29)
    * Queries failures, exceptions, and rejected operations with safe sanitization.
    */
-  querySystemErrors: (params: AuditQueryParams) => {
+  querySystemErrors: async (params: AuditQueryParams) => {
     const page = Math.max(1, Number(params.page) || 1);
     const limit = Math.min(200, Math.max(1, Number(params.limit) || 25));
     const offset = (page - 1) * limit;
@@ -282,16 +282,16 @@ export const auditService = {
 
     const whereClause = whereConditions.join(' AND ');
 
-    const countRow = db.prepare(`SELECT COUNT(*) as total FROM system_audit_logs WHERE ${whereClause}`).get(...sqlParams) as any;
+    const countRow = (await db.prepare(`SELECT COUNT(*) as total FROM system_audit_logs WHERE ${whereClause}`).get(...sqlParams)) as any;
     const total = Number(countRow?.total) || 0;
     const totalPages = Math.ceil(total / limit) || 1;
 
-    const rows = db.prepare(`
+    const rows = (await db.prepare(`
       SELECT * FROM system_audit_logs
       WHERE ${whereClause}
       ORDER BY timestamp DESC
       LIMIT ? OFFSET ?
-    `).all(...sqlParams, limit, offset) as any[];
+    `).all(...sqlParams, limit, offset)) as any[];
 
     const formattedErrors = rows.map((r) => {
       let meta = null;
@@ -346,7 +346,7 @@ export const auditService = {
   /**
    * Updates error operational resolution status (BACKENDFIXES5 Section 29).
    */
-  updateErrorStatus: (
+  updateErrorStatus: async (
     errorId: string,
     status: 'open' | 'investigating' | 'resolved' | 'ignored',
     note?: string,
@@ -357,7 +357,7 @@ export const auditService = {
       throw new Error(`Invalid resolution status. Must be one of: ${validStatuses.join(', ')}`);
     }
 
-    const errorRow = db.prepare('SELECT id, severity, module, message FROM system_audit_logs WHERE id = ?').get(errorId) as any;
+    const errorRow = (await db.prepare('SELECT id, severity, module, message FROM system_audit_logs WHERE id = ?').get(errorId)) as any;
     if (!errorRow) {
       throw new Error('System error record not found.');
     }
@@ -365,7 +365,7 @@ export const auditService = {
     const now = new Date().toISOString();
     const adminName = adminUser?.name || 'admin';
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE system_audit_logs
       SET resolution_status = ?,
           resolution_note = ?,
@@ -375,7 +375,7 @@ export const auditService = {
     `).run(status, note || null, adminName, now, errorId);
 
     // Audit the operational status change
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'INFO',
       eventType: 'ERROR_RESOLUTION_UPDATED',
       action: 'UPDATE_ERROR_STATUS',
@@ -405,7 +405,7 @@ export const auditService = {
   /**
    * Safe, confirmed clearing of audit logs preserving accountability.
    */
-  clearSystemLogs: (
+  clearSystemLogs: async (
     adminUser: { id?: string; name: string },
     options: { confirm: boolean; reason?: string; beforeDate?: string }
   ) => {
@@ -419,21 +419,21 @@ export const auditService = {
     const params: any[] = [];
 
     if (options.beforeDate) {
-      const countRow = db.prepare('SELECT COUNT(*) as count FROM system_audit_logs WHERE timestamp < ?').get(options.beforeDate) as any;
+      const countRow = (await db.prepare('SELECT COUNT(*) as count FROM system_audit_logs WHERE timestamp < ?').get(options.beforeDate)) as any;
       countToDelete = Number(countRow?.count) || 0;
       deleteStmt = 'DELETE FROM system_audit_logs WHERE timestamp < ?';
       params.push(options.beforeDate);
     } else {
-      const countRow = db.prepare('SELECT COUNT(*) as count FROM system_audit_logs').get() as any;
+      const countRow = (await db.prepare('SELECT COUNT(*) as count FROM system_audit_logs').get()) as any;
       countToDelete = Number(countRow?.count) || 0;
       deleteStmt = 'DELETE FROM system_audit_logs';
     }
 
     // Execute deletion
     if (params.length > 0) {
-      db.prepare(deleteStmt).run(...params);
+      await db.prepare(deleteStmt).run(...params);
     } else {
-      db.prepare(deleteStmt).run();
+      await db.prepare(deleteStmt).run();
     }
 
     // Record the clearing action itself AFTER deletion so accountability is permanently preserved
@@ -442,7 +442,7 @@ export const auditService = {
       ? `Administrator ${adminUser.name} cleared ${countToDelete} audit logs dated prior to ${options.beforeDate}. Reason: ${options.reason || 'Routine archival'}`
       : `Administrator ${adminUser.name} cleared all ${countToDelete} system audit logs. Reason: ${options.reason || 'Manual log rotation'}`;
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO system_audit_logs (
         id, timestamp, severity, event_type, action, module, message,
         user_id, username, created_at, metadata
@@ -470,10 +470,8 @@ export const auditService = {
 
   /**
    * Safe, targeted clearing of error logs (BACKENDFIXES6 Sections 17-21).
-   * Deletes ONLY records where severity IN ('ERROR', 'CRITICAL') or status_code >= 400 or error_code IS NOT NULL.
-   * Preserves normal audit trails and business records. Audits the action.
    */
-  clearSystemErrors: (
+  clearSystemErrors: async (
     adminUser: { id?: string; name: string },
     options: { confirm: boolean; reason?: string; beforeDate?: string; module?: string; requestId?: string }
   ) => {
@@ -495,11 +493,11 @@ export const auditService = {
     }
 
     const whereClause = whereConditions.join(' AND ');
-    const countRow = db.prepare(`SELECT COUNT(*) as count FROM system_audit_logs WHERE ${whereClause}`).get(...params) as any;
+    const countRow = (await db.prepare(`SELECT COUNT(*) as count FROM system_audit_logs WHERE ${whereClause}`).get(...params)) as any;
     const countToDelete = Number(countRow?.count) || 0;
 
     // Execute deletion of error records
-    db.prepare(`DELETE FROM system_audit_logs WHERE ${whereClause}`).run(...params);
+    await db.prepare(`DELETE FROM system_audit_logs WHERE ${whereClause}`).run(...params);
 
     const now = new Date().toISOString();
     const clearMessage = options.beforeDate
@@ -508,11 +506,11 @@ export const auditService = {
 
     // Record audit event in remaining audit trail (INFO severity so it is not treated as an error)
     const auditId = `syslog-clear-err-${Date.now()}`;
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO system_audit_logs (
         id, timestamp, severity, event_type, action, module, message,
         user_id, username, request_id, created_at, metadata
-      ) VALUES (?, ?, 'INFO', 'ADMIN_CLEAR_ERROR_LOGS', 'CLEAR_ERROR_LOGS', 'AUDIT', ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, 'INFO', 'ADMIN_CLEAR_ERROR_LOGS', 'CLEAR_ERROR_LOGS', 'AUDIT', ?, ?, ?, ?, ?)
     `).run(
       auditId,
       now,
@@ -530,7 +528,7 @@ export const auditService = {
       })
     );
 
-    auditService.logActivity(adminUser.name, 'ADMIN_CLEAR_ERROR_LOGS', 'SUCCESS', null, {
+    await auditService.logActivity(adminUser.name, 'ADMIN_CLEAR_ERROR_LOGS', 'SUCCESS', null, {
       deletedCount: countToDelete,
       reason: options.reason,
     });
@@ -544,10 +542,8 @@ export const auditService = {
 
   /**
    * Safe, targeted clearing of submission history/activity logs (BACKENDFIXES6 Sections 18-21).
-   * Deletes ONLY submission activity and event log records.
-   * NEVER touches submissions, tickets, or users tables!
    */
-  clearSubmissionLogs: (
+  clearSubmissionLogs: async (
     adminUser: { id?: string; name: string },
     options: { confirm: boolean; reason?: string; beforeDate?: string; requestId?: string }
   ) => {
@@ -563,11 +559,11 @@ export const auditService = {
       actParams.push(options.beforeDate);
     }
     const actWhere = actConditions.join(' AND ');
-    const actCountRow = db.prepare(`SELECT COUNT(*) as count FROM activity_logs WHERE ${actWhere}`).get(...actParams) as any;
+    const actCountRow = (await db.prepare(`SELECT COUNT(*) as count FROM activity_logs WHERE ${actWhere}`).get(...actParams)) as any;
     const actDeleted = Number(actCountRow?.count) || 0;
-    db.prepare(`DELETE FROM activity_logs WHERE ${actWhere}`).run(...actParams);
+    await db.prepare(`DELETE FROM activity_logs WHERE ${actWhere}`).run(...actParams);
 
-    // 2. Delete from system_audit_logs matching ticket/submission module (excluding the clearing action itself)
+    // 2. Delete from system_audit_logs matching ticket/submission module
     const sysConditions = [
       "(module IN ('TICKETS', 'APPROVAL') OR target_type IN ('submission', 'ticket') OR event_type LIKE '%TICKET%' OR event_type LIKE '%SUBMISSION%' OR event_type LIKE '%APPLICATION%')",
       "event_type NOT IN ('ADMIN_CLEAR_SUBMISSION_LOGS', 'ADMIN_CLEAR_ERROR_LOGS', 'AUDIT_LOGS_CLEARED')"
@@ -578,9 +574,9 @@ export const auditService = {
       sysParams.push(options.beforeDate);
     }
     const sysWhere = sysConditions.join(' AND ');
-    const sysCountRow = db.prepare(`SELECT COUNT(*) as count FROM system_audit_logs WHERE ${sysWhere}`).get(...sysParams) as any;
+    const sysCountRow = (await db.prepare(`SELECT COUNT(*) as count FROM system_audit_logs WHERE ${sysWhere}`).get(...sysParams)) as any;
     const sysDeleted = Number(sysCountRow?.count) || 0;
-    db.prepare(`DELETE FROM system_audit_logs WHERE ${sysWhere}`).run(...sysParams);
+    await db.prepare(`DELETE FROM system_audit_logs WHERE ${sysWhere}`).run(...sysParams);
 
     const totalDeleted = actDeleted + sysDeleted;
     const now = new Date().toISOString();
@@ -588,11 +584,11 @@ export const auditService = {
 
     // Record audit event of the clearing operation
     const auditId = `syslog-clear-sub-${Date.now()}`;
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO system_audit_logs (
         id, timestamp, severity, event_type, action, module, message,
         user_id, username, request_id, created_at, metadata
-      ) VALUES (?, ?, 'INFO', 'ADMIN_CLEAR_SUBMISSION_LOGS', 'CLEAR_SUBMISSION_LOGS', 'AUDIT', ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, 'INFO', 'ADMIN_CLEAR_SUBMISSION_LOGS', 'CLEAR_SUBMISSION_LOGS', 'AUDIT', ?, ?, ?, ?, ?)
     `).run(
       auditId,
       now,
@@ -611,7 +607,7 @@ export const auditService = {
       })
     );
 
-    auditService.logActivity(adminUser.name, 'ADMIN_CLEAR_SUBMISSION_LOGS', 'SUCCESS', null, {
+    await auditService.logActivity(adminUser.name, 'ADMIN_CLEAR_SUBMISSION_LOGS', 'SUCCESS', null, {
       deletedCount: totalDeleted,
       reason: options.reason,
     });
@@ -623,16 +619,16 @@ export const auditService = {
     };
   },
 
-  logActivity: (
+  logActivity: async (
     actor: string,
     action: string,
     result: string,
     entityId?: string | null,
     metadata?: Record<string, any>
-  ): void => {
+  ): Promise<void> => {
     try {
       const id = `act-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO activity_logs (id, timestamp, actor, action, entity_id, result, metadata)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(
@@ -649,17 +645,17 @@ export const auditService = {
     }
   },
 
-  logScan: (
+  logScan: async (
     query: string,
     result: 'VALID' | 'ALREADY_USED' | 'INVALID',
     scannedBy: string,
     ticketId?: string | null,
     submissionId?: string | null,
     reason?: string | null
-  ): void => {
+  ): Promise<void> => {
     try {
       const id = `scan-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO scan_audit_logs (id, ticket_id, submission_id, result, scanned_at, scanned_by, query, reason)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(

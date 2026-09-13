@@ -1,18 +1,20 @@
 import bcrypt from 'bcryptjs';
 import { db } from './database';
 
-export function seedDatabase() {
+export async function seedDatabase(): Promise<void> {
   // 1. Ensure Admin Account is Thisal Methwidu (Section 20)
-  db.prepare(`
+  await db.prepare(`
     UPDATE users SET name = 'Thisal Methwidu' WHERE email = 'admin@memoria.lk'
   `).run();
 
   // Seed Users if table is empty
-  const userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
+  const userCountRow = (await db.prepare('SELECT COUNT(*) as count FROM users').get()) as { count: number } | undefined;
+  const userCount = Number(userCountRow?.count) || 0;
   if (userCount === 0) {
     const insertUser = db.prepare(`
       INSERT INTO users (id, name, email, password_hash, role, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT (id) DO NOTHING
     `);
 
     const users = [
@@ -23,19 +25,17 @@ export function seedDatabase() {
       { id: 'usr-5', name: 'Samadhi Jayakody', email: 'samadhi@memoria.lk', pass: 'samadhi123', role: 'staff' },
     ];
 
-    const seedUsersTx = db.transaction(() => {
-      for (const u of users) {
-        const hash = bcrypt.hashSync(u.pass, 10);
-        insertUser.run(u.id, u.name, u.email, hash, u.role, new Date().toISOString());
-      }
-    });
-    seedUsersTx();
+    for (const u of users) {
+      const hash = bcrypt.hashSync(u.pass, 10);
+      await insertUser.run(u.id, u.name, u.email, hash, u.role, new Date().toISOString());
+    }
   }
 
   // 2. Seed Event Settings if empty
-  const settingsCount = (db.prepare('SELECT COUNT(*) as count FROM event_settings').get() as { count: number }).count;
+  const settingsCountRow = (await db.prepare('SELECT COUNT(*) as count FROM event_settings').get()) as { count: number } | undefined;
+  const settingsCount = Number(settingsCountRow?.count) || 0;
   if (settingsCount === 0) {
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO event_settings (
         id, event_name, tagline, event_date, event_venue, total_capacity,
         remaining_allocation, ticket_price, cutoff_date, bank_name,
@@ -43,6 +43,7 @@ export function seedDatabase() {
       ) VALUES (
         1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
+      ON CONFLICT (id) DO NOTHING
     `).run(
       "Memoria'26",
       'The Eclipse of Memories',
@@ -62,7 +63,8 @@ export function seedDatabase() {
   }
 
   // 3. Seed initial submissions if empty
-  const subCount = (db.prepare('SELECT COUNT(*) as count FROM submissions').get() as { count: number }).count;
+  const subCountRow = (await db.prepare('SELECT COUNT(*) as count FROM submissions').get()) as { count: number } | undefined;
+  const subCount = Number(subCountRow?.count) || 0;
   if (subCount === 0) {
     const insertSub = db.prepare(`
       INSERT INTO submissions (
@@ -71,6 +73,7 @@ export function seedDatabase() {
         payment_slip_url, status, rejection_reason, submitted_at, created_at, approved_at, approver,
         qr_token, qr_payload, qr_image_data, checked_in, checked_in_at, email_status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (id) DO NOTHING
     `);
 
     const initialSubs = [
@@ -160,36 +163,34 @@ export function seedDatabase() {
       },
     ];
 
-    const seedSubsTx = db.transaction(() => {
-      for (const s of initialSubs) {
-        insertSub.run(
-          s.id,
-          s.ticketId,
-          s.name,
-          s.email,
-          s.phone,
-          s.quantity,
-          s.ticketType,
-          s.regNum,
-          s.regNum ? s.regNum.toUpperCase().trim() : null,
-          s.unitPrice,
-          s.totalPrice,
-          s.paymentSlipUrl,
-          s.status,
-          null,
-          s.submittedAt,
-          s.submittedAt,
-          s.approvedAt,
-          s.approver,
-          s.qrToken,
-          s.qrPayload,
-          null,
-          s.checkedIn,
-          s.checkedInAt,
-          s.status === 'approved' ? 'SENT' : 'PENDING'
-        );
-      }
-    });
-    seedSubsTx();
+    for (const s of initialSubs) {
+      await insertSub.run(
+        s.id,
+        s.ticketId,
+        s.name,
+        s.email,
+        s.phone,
+        s.quantity,
+        s.ticketType,
+        s.regNum,
+        s.regNum ? s.regNum.toUpperCase().trim() : null,
+        s.unitPrice,
+        s.totalPrice,
+        s.paymentSlipUrl,
+        s.status,
+        null,
+        s.submittedAt,
+        s.submittedAt,
+        s.approvedAt,
+        s.approver,
+        s.qrToken,
+        s.qrPayload,
+        null,
+        s.checkedIn,
+        s.checkedInAt,
+        s.status === 'approved' ? 'SENT' : 'PENDING'
+      );
+    }
   }
 }
+

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { db } from '../db/database';
+import { db, TxRunner } from '../db/database';
 import { AppError } from '../middleware/errorHandler';
 import { qrService } from './qrService';
 import { emailService } from './emailService';
@@ -14,9 +14,9 @@ export const approvalService = {
   approveSubmission: async (
     submissionId: string,
     approverName: string
-  ): Promise<{ success: boolean; ticketId: string; alreadyApproved?: boolean }> => {
+  ): Promise<{ success: boolean; ticketId: string; alreadyApproved?: boolean; emailSent?: boolean; emailStatus?: string; emailError?: string; recipientEmail?: string; attendeeName?: string }> => {
     // 1. Fetch submission
-    const sub = db.prepare(`
+    const sub = await db.prepare(`
       SELECT id, status, ticket_id, name, email, ticket_type,
              normalized_reg_number, quantity, total_price
       FROM submissions
@@ -51,7 +51,7 @@ export const approvalService = {
 
     // 2. Re-verify student registration uniqueness
     if (sub.ticket_type === 'student' && sub.normalized_reg_number) {
-      const conflicting = db.prepare(`
+      const conflicting = await db.prepare(`
         SELECT id, ticket_id FROM submissions
         WHERE normalized_reg_number = ? AND status = 'approved' AND id != ?
       `).get(sub.normalized_reg_number, submissionId) as any;
@@ -71,7 +71,7 @@ export const approvalService = {
     while (!isUnique) {
       const randNum = Math.floor(1000 + Math.random() * 9000);
       ticketId = `MEM-26-${randNum}`;
-      const existing = db.prepare('SELECT id FROM submissions WHERE ticket_id = ?').get(ticketId);
+      const existing = await db.prepare('SELECT id FROM submissions WHERE ticket_id = ?').get(ticketId);
       if (!existing) {
         isUnique = true;
       }
@@ -85,9 +85,9 @@ export const approvalService = {
     const historyId = `hist-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
 
     // 5. Execute atomic transaction
-    const approveTx = db.transaction(() => {
+    await db.transaction(async (tx: TxRunner) => {
       // Update submission to approved
-      db.prepare(`
+      await tx.run(`
         UPDATE submissions
         SET status = 'approved',
             ticket_id = ?,
@@ -97,24 +97,22 @@ export const approvalService = {
             qr_payload = ?,
             qr_image_data = ?
         WHERE id = ? AND status = 'pending'
-      `).run(ticketId, now, approverName, qrToken, qrPayload, qrImageData, submissionId);
+      `, [ticketId, now, approverName, qrToken, qrPayload, qrImageData, submissionId]);
 
       // Record approval history
-      db.prepare(`
+      await tx.run(`
         INSERT INTO approval_history (id, submission_id, attendee_name, action, approver, timestamp, reason)
         VALUES (?, ?, ?, 'approved', ?, ?, NULL)
-      `).run(historyId, submissionId, sub.name, approverName, now);
+      `, [historyId, submissionId, sub.name, approverName, now]);
     });
 
-    approveTx();
-
-    auditService.logActivity(approverName, 'APPLICATION_APPROVED', 'SUCCESS', submissionId, {
+    await auditService.logActivity(approverName, 'APPLICATION_APPROVED', 'SUCCESS', submissionId, {
       ticketId,
       attendeeName: sub.name,
       ticketType: sub.ticket_type,
       qrTokenPrefix: qrToken.slice(0, 8),
     });
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'INFO',
       eventType: 'TICKET_APPROVED',
       action: 'APPROVE_TICKET',
@@ -167,7 +165,7 @@ export const approvalService = {
     approverName: string,
     reason: string
   ): Promise<{ success: boolean }> => {
-    const sub = db.prepare('SELECT id, status, name, ticket_type, normalized_reg_number FROM submissions WHERE id = ?').get(submissionId) as any;
+    const sub = await db.prepare('SELECT id, status, name, ticket_type, normalized_reg_number FROM submissions WHERE id = ?').get(submissionId) as any;
 
     if (!sub) {
       throw new AppError('Application record not found.', 404, 'SUBMISSION_NOT_FOUND');
@@ -181,28 +179,26 @@ export const approvalService = {
     const now = new Date().toISOString();
     const historyId = `hist-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
 
-    const rejectTx = db.transaction(() => {
-      db.prepare(`
+    await db.transaction(async (tx: TxRunner) => {
+      await tx.run(`
         UPDATE submissions
         SET status = 'rejected',
             rejection_reason = ?,
             approver = ?
         WHERE id = ?
-      `).run(trimmedReason, approverName, submissionId);
+      `, [trimmedReason, approverName, submissionId]);
 
-      db.prepare(`
+      await tx.run(`
         INSERT INTO approval_history (id, submission_id, attendee_name, action, approver, timestamp, reason)
         VALUES (?, ?, ?, 'rejected', ?, ?, ?)
-      `).run(historyId, submissionId, sub.name, approverName, now, trimmedReason);
+      `, [historyId, submissionId, sub.name, approverName, now, trimmedReason]);
     });
 
-    rejectTx();
-
-    auditService.logActivity(approverName, 'APPLICATION_REJECTED', 'SUCCESS', submissionId, {
+    await auditService.logActivity(approverName, 'APPLICATION_REJECTED', 'SUCCESS', submissionId, {
       reason: trimmedReason,
       attendeeName: sub.name,
     });
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'INFO',
       eventType: 'TICKET_REJECTED',
       action: 'REJECT_TICKET',
@@ -222,7 +218,7 @@ export const approvalService = {
   /**
    * Gets pending submissions queue.
    */
-  getPendingSubmissions: () => {
+  getPendingSubmissions: async () => {
     return db.prepare(`
       SELECT * FROM submissions
       WHERE status = 'pending'
@@ -233,7 +229,7 @@ export const approvalService = {
   /**
    * Gets complete approval/rejection audit history.
    */
-  getApprovalHistory: () => {
+  getApprovalHistory: async () => {
     return db.prepare(`
       SELECT * FROM approval_history
       ORDER BY timestamp DESC

@@ -13,10 +13,10 @@ export const checkinService = {
    * Concurrency-safe atomic check-in.
    * Prevents race conditions and double check-in under simultaneous scans.
    */
-  verifyAndCheckIn: (query: string, staffName: string): CheckinResult => {
+  verifyAndCheckIn: async (query: string, staffName: string): Promise<CheckinResult> => {
     const raw = query?.trim();
     if (!raw) {
-      auditService.logScan('', 'INVALID', staffName, null, null, 'Empty query');
+      await auditService.logScan('', 'INVALID', staffName, null, null, 'Empty query');
       return { valid: false, reason: 'Empty QR code or ticket query provided.' };
     }
 
@@ -30,7 +30,7 @@ export const checkinService = {
     const normalizedToken = tokenQuery.toLowerCase();
 
     // Find submission by token, payload, ticketId, id, email, or student reg
-    const sub = db.prepare(`
+    const sub = await db.prepare(`
       SELECT * FROM submissions
       WHERE qr_token = ?
          OR qr_payload = ?
@@ -41,13 +41,13 @@ export const checkinService = {
     `).get(tokenQuery, raw, normalizedUpper, normalizedUpper, normalizedUpper, normalizedUpper) as any;
 
     if (!sub) {
-      const revoked = db.prepare(`
+      const revoked = await db.prepare(`
         SELECT * FROM revoked_qr_tokens WHERE token = ? OR token = ?
       `).get(tokenQuery, raw) as any;
 
       if (revoked) {
-        auditService.logScan(raw, 'INVALID', staffName, revoked.ticket_id, revoked.submission_id, 'Scanned invalidated/regenerated QR credential');
-        auditService.logSystemEvent({
+        await auditService.logScan(raw, 'INVALID', staffName, revoked.ticket_id, revoked.submission_id, 'Scanned invalidated/regenerated QR credential');
+        await auditService.logSystemEvent({
           severity: 'WARNING',
           eventType: 'INVALID_QR_SCAN',
           action: 'CHECKIN_SCAN',
@@ -63,8 +63,8 @@ export const checkinService = {
         };
       }
 
-      auditService.logScan(raw, 'INVALID', staffName, null, null, 'Ticket not found');
-      auditService.logSystemEvent({
+      await auditService.logScan(raw, 'INVALID', staffName, null, null, 'Ticket not found');
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'INVALID_QR_SCAN',
         action: 'CHECKIN_SCAN',
@@ -77,8 +77,8 @@ export const checkinService = {
 
     // Check status
     if (sub.status === 'rejected') {
-      auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Application rejected');
-      auditService.logSystemEvent({
+      await auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Application rejected');
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'INVALID_QR_SCAN',
         action: 'CHECKIN_SCAN',
@@ -96,8 +96,8 @@ export const checkinService = {
     }
 
     if (sub.status === 'pending') {
-      auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Pending verification');
-      auditService.logSystemEvent({
+      await auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Pending verification');
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'INVALID_QR_SCAN',
         action: 'CHECKIN_SCAN',
@@ -117,8 +117,8 @@ export const checkinService = {
     // If already marked checked in before atomic attempt
     if (sub.checked_in === 1) {
       const formattedTime = sub.checked_in_at ? new Date(sub.checked_in_at).toLocaleTimeString() : 'Earlier';
-      auditService.logScan(raw, 'ALREADY_USED', staffName, sub.ticket_id, sub.id, `First admitted at ${formattedTime}`);
-      auditService.logSystemEvent({
+      await auditService.logScan(raw, 'ALREADY_USED', staffName, sub.ticket_id, sub.id, `First admitted at ${formattedTime}`);
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'DUPLICATE_CHECKIN_ATTEMPT',
         action: 'CHECKIN_SCAN',
@@ -137,21 +137,21 @@ export const checkinService = {
 
     const now = new Date().toISOString();
 
-    // ATOMIC UPDATE: Only updates if checked_in is strictly 0 at the instant of execution
-    const updateResult = db.prepare(`
+    // ATOMIC UPDATE: PostgreSQL row-level lock. Only updates if checked_in is strictly 0 at the instant of execution
+    const updateResult = await db.run(`
       UPDATE submissions
       SET checked_in = 1,
           checked_in_at = ?,
           checked_in_by = ?
       WHERE id = ? AND checked_in = 0 AND status = 'approved'
-    `).run(now, staffName, sub.id);
+    `, [now, staffName, sub.id]);
 
     if (updateResult.changes === 0) {
       // A concurrent scan executed at the exact same millisecond won the race!
-      const current = db.prepare('SELECT * FROM submissions WHERE id = ?').get(sub.id) as any;
+      const current = await db.prepare('SELECT * FROM submissions WHERE id = ?').get(sub.id) as any;
       const formattedTime = current?.checked_in_at ? new Date(current.checked_in_at).toLocaleTimeString() : 'Just now';
-      auditService.logScan(raw, 'ALREADY_USED', staffName, sub.ticket_id, sub.id, 'Concurrent scan race lost');
-      auditService.logSystemEvent({
+      await auditService.logScan(raw, 'ALREADY_USED', staffName, sub.ticket_id, sub.id, 'Concurrent scan race lost');
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: 'DUPLICATE_CHECKIN_ATTEMPT',
         action: 'CHECKIN_SCAN',
@@ -169,13 +169,13 @@ export const checkinService = {
     }
 
     // Single-winner successful check-in
-    auditService.logScan(raw, 'VALID', staffName, sub.ticket_id, sub.id, 'Entry granted');
-    auditService.logActivity(staffName, 'TICKET_CHECKED_IN', 'SUCCESS', sub.id, {
+    await auditService.logScan(raw, 'VALID', staffName, sub.ticket_id, sub.id, 'Entry granted');
+    await auditService.logActivity(staffName, 'TICKET_CHECKED_IN', 'SUCCESS', sub.id, {
       ticketId: sub.ticket_id,
       attendeeName: sub.name,
       checkInTime: now,
     });
-    auditService.logSystemEvent({
+    await auditService.logSystemEvent({
       severity: 'INFO',
       eventType: 'TICKET_CHECKED_IN',
       action: 'CHECKIN_SCAN',
@@ -205,7 +205,7 @@ export const checkinService = {
   /**
    * Get Gate Admission statistics via centralized attendance service.
    */
-  getCheckinStats: () => {
+  getCheckinStats: async () => {
     return attendanceService.getAttendanceStatistics();
   },
 };

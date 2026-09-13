@@ -48,16 +48,16 @@ function formatSubmission(s: any) {
 }
 
 export const adminController = {
-  getStats: (req: Request, res: Response, next: NextFunction): void => {
+  getStats: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const stats = revenueService.getAdminStats();
+      const stats = await revenueService.getAdminStats();
       res.status(200).json(stats);
     } catch (err) {
       next(err);
     }
   },
 
-  getSubmissions: (req: Request, res: Response, next: NextFunction): void => {
+  getSubmissions: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const {
         status,
@@ -130,7 +130,7 @@ export const adminController = {
       const whereClause = whereConditions.join(' AND ');
 
       // Total count query for pagination
-      const countRow = db.prepare(`SELECT COUNT(*) as count FROM submissions WHERE ${whereClause}`).get(...params) as any;
+      const countRow = await db.prepare(`SELECT COUNT(*) as count FROM submissions WHERE ${whereClause}`).get(...params) as any;
       const total = Number(countRow?.count) || 0;
 
       // Sorting: default newest-first
@@ -144,7 +144,7 @@ export const adminController = {
       const totalPages = Math.ceil(total / limitNum) || 1;
 
       sql += ' LIMIT ? OFFSET ?';
-      const rows = db.prepare(sql).all(...params, limitNum, offset);
+      const rows = await db.prepare(sql).all(...params, limitNum, offset);
 
       const formatted = rows.map(formatSubmission);
 
@@ -171,10 +171,10 @@ export const adminController = {
     }
   },
 
-  getSubmissionById: (req: Request, res: Response, next: NextFunction): void => {
+  getSubmissionById: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const sub = db.prepare('SELECT * FROM submissions WHERE id = ? OR ticket_id = ?').get(id, id) as any;
+      const sub = await db.prepare('SELECT * FROM submissions WHERE id = ? OR ticket_id = ?').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
@@ -190,10 +190,10 @@ export const adminController = {
    * Revalidates all fields, enforces student reg uniqueness and authoritative pricing.
    * Preserves ticket ID, existing QR, approval history, and does not create duplicates.
    */
-  updateSubmission: (req: Request, res: Response, next: NextFunction): void => {
+  updateSubmission: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const sub = db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      const sub = await db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
@@ -264,7 +264,7 @@ export const adminController = {
         }
 
         // Strict uniqueness check against any other active submission
-        const collision = db.prepare(`
+        const collision = await db.prepare(`
           SELECT id, ticket_id FROM submissions
           WHERE normalized_reg_number = ? AND id != ? AND deleted_at IS NULL
         `).get(newNormReg, sub.id) as any;
@@ -293,15 +293,15 @@ export const adminController = {
         newTotalPrice = newQuantity * config.pricing.outsider;
       }
 
-      db.prepare(`
+      await db.run(`
         UPDATE submissions
         SET name = ?, email = ?, phone = ?, ticket_type = ?,
             university_registration_number = ?, normalized_reg_number = ?,
             quantity = ?, unit_price = ?, total_price = ?
         WHERE id = ?
-      `).run(newName, newEmail, newPhone, newType, newReg, newNormReg, newQuantity, newUnitPrice, newTotalPrice, sub.id);
+      `, [newName, newEmail, newPhone, newType, newReg, newNormReg, newQuantity, newUnitPrice, newTotalPrice, sub.id]);
 
-      auditService.logActivity(req.user?.name || 'admin', 'SUBMISSION_UPDATED', 'SUCCESS', sub.id, {
+      await auditService.logActivity(req.user?.name || 'admin', 'SUBMISSION_UPDATED', 'SUCCESS', sub.id, {
         name: newName,
         email: newEmail,
         ticketType: newType,
@@ -310,7 +310,7 @@ export const adminController = {
         regNumber: newNormReg,
       });
 
-      const updated = db.prepare('SELECT * FROM submissions WHERE id = ?').get(sub.id) as any;
+      const updated = await db.prepare('SELECT * FROM submissions WHERE id = ?').get(sub.id) as any;
       res.status(200).json(formatSubmission(updated));
     } catch (err) {
       next(err);
@@ -322,10 +322,10 @@ export const adminController = {
    * Strictly retrieves existing persisted QR code and attendee details.
    * Does NOT generate a new QR, does NOT create duplicate tickets, and never resets check-in state.
    */
-  getTicketQR: (req: Request, res: Response, next: NextFunction): void => {
+  getTicketQR: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const sub = db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      const sub = await db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
@@ -381,7 +381,7 @@ export const adminController = {
         );
       }
 
-      const sub = db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      const sub = await db.prepare('SELECT * FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) {
         throw new AppError('Application record not found.', 404, 'NOT_FOUND');
       }
@@ -398,33 +398,31 @@ export const adminController = {
       const adminName = req.user?.name || 'admin';
       const reason = req.body?.reason ? String(req.body.reason).trim() : 'Administrative QR replacement';
 
-      const regenTx = db.transaction(() => {
+      await db.transaction(async (tx) => {
         // Record revoked token so any future scan of the old token is explicitly rejected
         if (oldToken) {
           const revokedId = `rev-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-          db.prepare(`
+          await tx.run(`
             INSERT INTO revoked_qr_tokens (id, submission_id, ticket_id, token, revoked_at, revoked_by, reason)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-          `).run(revokedId, sub.id, sub.ticket_id, oldToken, now, adminName, reason);
+          `, [revokedId, sub.id, sub.ticket_id, oldToken, now, adminName, reason]);
         }
 
         // Update submission with new QR credentials
-        db.prepare(`
+        await tx.run(`
           UPDATE submissions
           SET qr_token = ?,
               qr_payload = ?,
               qr_image_data = ?,
               email_status = 'PENDING'
           WHERE id = ?
-        `).run(newToken, newPayload, newQrImageData, sub.id);
+        `, [newToken, newPayload, newQrImageData, sub.id]);
       });
-
-      regenTx();
 
       // Dispatch dedicated regenerated QR email (BACKENDFIXES5 Sections 1-3)
       const emailResult = await emailService.sendRegeneratedQrEmail(sub.id);
 
-      auditService.logActivity(adminName, 'QR_REGENERATED', 'SUCCESS', sub.id, {
+      await auditService.logActivity(adminName, 'QR_REGENERATED', 'SUCCESS', sub.id, {
         ticketId: sub.ticket_id,
         attendeeName: sub.name,
         previousTokenPrefix: oldToken ? oldToken.slice(0, 8) : 'none',
@@ -433,7 +431,7 @@ export const adminController = {
         reason,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'QR_REGENERATED',
         action: 'REGENERATE_QR',
@@ -477,11 +475,11 @@ export const adminController = {
   resendRegeneratedQrEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const sub = db.prepare('SELECT id, ticket_id, name, email FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      const sub = await db.prepare('SELECT id, ticket_id, name, email FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) throw new AppError('Ticket record not found.', 404, 'NOT_FOUND');
 
       const result = await emailService.sendRegeneratedQrEmail(sub.id);
-      auditService.logActivity(req.user?.name || 'admin', 'REGENERATED_QR_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
+      await auditService.logActivity(req.user?.name || 'admin', 'REGENERATED_QR_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
         ticketId: sub.ticket_id,
         email: sub.email,
         result,
@@ -505,14 +503,14 @@ export const adminController = {
   resendTicketEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const sub = db.prepare('SELECT id, ticket_id, name, email, status FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      const sub = await db.prepare('SELECT id, ticket_id, name, email, status FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
       if (!sub) throw new AppError('Ticket record not found.', 404, 'NOT_FOUND');
       if (sub.status !== 'approved' || !sub.ticket_id) {
         throw new AppError('Cannot send ticket pass email for non-approved application.', 400, 'TICKET_NOT_APPROVED');
       }
 
       const result = await emailService.sendTicketEmail(sub.id);
-      auditService.logActivity(req.user?.name || 'admin', 'TICKET_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
+      await auditService.logActivity(req.user?.name || 'admin', 'TICKET_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
         ticketId: sub.ticket_id,
         email: sub.email,
         result,
@@ -537,7 +535,7 @@ export const adminController = {
    * Safe Individual Deletion with Confirmation & Auditing (Sections 5-10)
    * Supports both soft-archival and permanent database deletion.
    */
-  deleteSubmission: (req: Request, res: Response, next: NextFunction): void => {
+  deleteSubmission: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
       const confirm = req.body?.confirm === true || req.query?.confirm === 'true';
@@ -550,7 +548,7 @@ export const adminController = {
         );
       }
 
-      const sub = db.prepare('SELECT id, name, email, ticket_id, deleted_at FROM submissions WHERE (id = ? OR ticket_id = ?)').get(id, id) as any;
+      const sub = await db.prepare('SELECT id, name, email, ticket_id, deleted_at FROM submissions WHERE (id = ? OR ticket_id = ?)').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
@@ -564,39 +562,37 @@ export const adminController = {
       const adminName = req.user?.name || 'admin';
       const reason = req.body?.reason ? String(req.body.reason).trim() : 'Administrative deletion';
 
-      const delTx = db.transaction(() => {
+      await db.transaction(async (tx) => {
         if (permanent) {
           // Cascade child operational records
-          db.prepare('DELETE FROM admin_alerts WHERE submission_id = ?').run(sub.id);
-          db.prepare('DELETE FROM approval_history WHERE submission_id = ?').run(sub.id);
-          db.prepare('DELETE FROM revoked_qr_tokens WHERE submission_id = ?').run(sub.id);
+          await tx.run('DELETE FROM admin_alerts WHERE submission_id = ?', [sub.id]);
+          await tx.run('DELETE FROM approval_history WHERE submission_id = ?', [sub.id]);
+          await tx.run('DELETE FROM revoked_qr_tokens WHERE submission_id = ?', [sub.id]);
           // Preserve scan audit trail by decoupling foreign key link
-          db.prepare('UPDATE scan_audit_logs SET submission_id = NULL WHERE submission_id = ?').run(sub.id);
+          await tx.run('UPDATE scan_audit_logs SET submission_id = NULL WHERE submission_id = ?', [sub.id]);
           // Real database deletion: actually remove the record from submissions (BACKENDFIXES5 Section 5)
-          db.prepare('DELETE FROM submissions WHERE id = ?').run(sub.id);
+          await tx.run('DELETE FROM submissions WHERE id = ?', [sub.id]);
         } else {
           // Soft delete submission
-          db.prepare(`
+          await tx.run(`
             UPDATE submissions
             SET deleted_at = ?, deleted_by = ?, delete_reason = ?
             WHERE id = ?
-          `).run(now, adminName, reason, sub.id);
+          `, [now, adminName, reason, sub.id]);
 
           // Resolve any open admin alerts for this submission
-          db.prepare(`
+          await tx.run(`
             UPDATE admin_alerts
             SET status = 'resolved',
                 resolved_by = ?,
                 resolved_at = ?,
                 resolution_note = 'Record deleted by administrator'
             WHERE submission_id = ? AND status = 'pending'
-          `).run(adminName, now, sub.id);
+          `, [adminName, now, sub.id]);
         }
       });
 
-      delTx();
-
-      auditService.logActivity(adminName, 'SUBMISSION_DELETED', 'SUCCESS', sub.id, {
+      await auditService.logActivity(adminName, 'SUBMISSION_DELETED', 'SUCCESS', sub.id, {
         ticketId: sub.ticket_id,
         attendeeName: sub.name,
         reason,
@@ -604,7 +600,7 @@ export const adminController = {
         permanent,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'WARNING',
         eventType: permanent ? 'SUBMISSION_PERMANENTLY_DELETED' : 'SUBMISSION_SOFT_DELETED',
         action: 'DELETE_SUBMISSION',
@@ -640,7 +636,7 @@ export const adminController = {
    * Complete Database Reset with Admin Password Verification (Sections 14-21)
    * Atomically resets operational data while strictly preserving the primary Admin account.
    */
-  resetDatabase: (req: Request, res: Response, next: NextFunction): void => {
+  resetDatabase: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { password, confirm } = req.body;
 
@@ -657,7 +653,7 @@ export const adminController = {
       }
 
       // Fetch the logged-in admin user to verify credentials server-side
-      const adminUser = db.prepare('SELECT id, name, email, password_hash, role FROM users WHERE id = ?').get(req.user?.id) as any;
+      const adminUser = await db.prepare('SELECT id, name, email, password_hash, role FROM users WHERE id = ?').get(req.user?.id) as any;
       if (!adminUser || adminUser.role !== 'admin') {
         throw new AppError('Forbidden: Only an authenticated administrator may perform a database reset.', 403, 'FORBIDDEN');
       }
@@ -669,31 +665,29 @@ export const adminController = {
       const now = new Date().toISOString();
 
       // Atomic Reset: Clears operational tables while preserving Admin account
-      const resetTx = db.transaction(() => {
-        db.prepare('DELETE FROM submissions').run();
-        db.prepare('DELETE FROM admin_alerts').run();
-        db.prepare('DELETE FROM approval_history').run();
-        db.prepare('DELETE FROM scan_audit_logs').run();
-        db.prepare('DELETE FROM revoked_qr_tokens').run();
+      await db.transaction(async (tx) => {
+        await tx.run('DELETE FROM submissions');
+        await tx.run('DELETE FROM admin_alerts');
+        await tx.run('DELETE FROM approval_history');
+        await tx.run('DELETE FROM scan_audit_logs');
+        await tx.run('DELETE FROM revoked_qr_tokens');
 
         // Reset remaining allocation in event settings back to total capacity
-        db.prepare('UPDATE event_settings SET remaining_allocation = total_capacity, updated_at = ? WHERE id = 1').run(now);
+        await tx.run('UPDATE event_settings SET remaining_allocation = total_capacity, updated_at = ? WHERE id = 1', [now]);
 
         // Record the system reset event in activity_logs
         const logId = `act-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-        db.prepare(`
+        await tx.run(`
           INSERT INTO activity_logs (id, timestamp, actor, action, entity_id, result, metadata)
           VALUES (?, ?, ?, 'RESET_DATABASE', 'database', 'SUCCESS', ?)
-        `).run(logId, now, adminUser.name, JSON.stringify({
+        `, [logId, now, adminUser.name, JSON.stringify({
           resetBy: adminUser.name,
           email: adminUser.email,
           preservedAdmin: 'Thisal Methwidu (admin@memoria.lk)',
-        }));
+        })]);
       });
 
-      resetTx();
-
-      const freshStats = revenueService.getAdminStats();
+      const freshStats = await revenueService.getAdminStats();
 
       res.status(200).json({
         success: true,
@@ -708,7 +702,7 @@ export const adminController = {
   /**
    * Admin-Only Creation of New Admin Accounts (Sections 31-33)
    */
-  createAdmin: (req: Request, res: Response, next: NextFunction): void => {
+  createAdmin: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { name, email, password } = req.body;
       if (!name || !email) {
@@ -721,7 +715,7 @@ export const adminController = {
         throw new AppError('Please provide a valid email address for the new administrator.', 400, 'INVALID_EMAIL');
       }
 
-      const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(normalizedEmail);
+      const existing = await db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(normalizedEmail);
       if (existing) {
         throw new AppError('An account with this email address already exists.', 409, 'USER_EXISTS');
       }
@@ -735,12 +729,12 @@ export const adminController = {
       const id = `usr-adm-${Date.now().toString().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
       const now = new Date().toISOString();
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO users (id, name, email, password_hash, role, created_at)
         VALUES (?, ?, ?, ?, 'admin', ?)
       `).run(id, String(name).trim(), normalizedEmail, hash, now);
 
-      auditService.logActivity(req.user?.name || 'admin', 'ADMIN_ACCOUNT_CREATED', 'SUCCESS', id, {
+      await auditService.logActivity(req.user?.name || 'admin', 'ADMIN_ACCOUNT_CREATED', 'SUCCESS', id, {
         createdBy: req.user?.name,
         newAdmin: String(name).trim(),
         email: normalizedEmail,
@@ -764,7 +758,7 @@ export const adminController = {
   /**
    * Admin Password Management (Sections 28-29)
    */
-  updatePassword: (req: Request, res: Response, next: NextFunction): void => {
+  updatePassword: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { currentPassword, newPassword, confirmPassword } = req.body;
       if (!currentPassword || !newPassword) {
@@ -779,7 +773,7 @@ export const adminController = {
         throw new AppError('New password must be at least 6 characters long.', 400, 'WEAK_PASSWORD');
       }
 
-      const adminUser = db.prepare('SELECT id, name, password_hash FROM users WHERE id = ?').get(req.user?.id) as any;
+      const adminUser = await db.prepare('SELECT id, name, password_hash FROM users WHERE id = ?').get(req.user?.id) as any;
       if (!adminUser) {
         throw new AppError('Administrator account not found.', 404, 'USER_NOT_FOUND');
       }
@@ -793,10 +787,10 @@ export const adminController = {
       }
 
       const newHash = bcrypt.hashSync(String(newPassword).trim(), 10);
-      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, adminUser.id);
+      await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, adminUser.id);
 
-      auditService.logActivity(adminUser.name, 'PASSWORD_CHANGED', 'SUCCESS', adminUser.id);
-      auditService.logSystemEvent({
+      await auditService.logActivity(adminUser.name, 'PASSWORD_CHANGED', 'SUCCESS', adminUser.id);
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'PASSWORD_CHANGED',
         action: 'UPDATE_OWN_PASSWORD',
@@ -818,10 +812,10 @@ export const adminController = {
   /**
    * Admin Profile Information Management (Section 30)
    */
-  updateProfile: (req: Request, res: Response, next: NextFunction): void => {
+  updateProfile: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { name, email } = req.body;
-      const adminUser = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(req.user?.id) as any;
+      const adminUser = await db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(req.user?.id) as any;
       if (!adminUser) {
         throw new AppError('User not found.', 404, 'NOT_FOUND');
       }
@@ -836,15 +830,15 @@ export const adminController = {
           throw new AppError('Please enter a valid email address.', 400, 'INVALID_EMAIL');
         }
 
-        const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?').get(newEmail, adminUser.id);
+        const existing = await db.prepare('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?').get(newEmail, adminUser.id);
         if (existing) {
           throw new AppError('Email address is already in use by another account.', 409, 'EMAIL_EXISTS');
         }
       }
 
-      db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(newName, newEmail, adminUser.id);
+      await db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(newName, newEmail, adminUser.id);
 
-      auditService.logActivity(newName, 'PROFILE_UPDATED', 'SUCCESS', adminUser.id, {
+      await auditService.logActivity(newName, 'PROFILE_UPDATED', 'SUCCESS', adminUser.id, {
         oldName: adminUser.name,
         newName,
         oldEmail: adminUser.email,
@@ -880,7 +874,7 @@ export const adminController = {
       const target = recipientEmail || req.user?.email || 'admin@memoria.lk';
       const result = await emailService.sendTestEmail(target);
 
-      auditService.logActivity(req.user?.name || 'admin', 'EMAIL_TEST_SENT', result.success ? 'SUCCESS' : 'FAILURE', null, {
+      await auditService.logActivity(req.user?.name || 'admin', 'EMAIL_TEST_SENT', result.success ? 'SUCCESS' : 'FAILURE', null, {
         recipient: target,
         error: result.error,
       });
@@ -906,18 +900,18 @@ export const adminController = {
 
   retryEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const result = await emailService.retryFailedEmail(id);
-      auditService.logActivity(req.user?.name || 'admin', 'EMAIL_RETRY_REQUESTED', result.success ? 'SUCCESS' : 'FAILURE', id, result);
+      await auditService.logActivity(req.user?.name || 'admin', 'EMAIL_RETRY_REQUESTED', result.success ? 'SUCCESS' : 'FAILURE', id, result);
       res.status(200).json(result);
     } catch (err) {
       next(err);
     }
   },
 
-  getSettings: (req: Request, res: Response, next: NextFunction): void => {
+  getSettings: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const s = db.prepare('SELECT * FROM event_settings WHERE id = 1').get() as any;
+      const s = await db.prepare('SELECT * FROM event_settings WHERE id = 1').get() as any;
       if (!s) {
         throw new AppError('Event settings not initialized.', 500, 'SETTINGS_NOT_FOUND');
       }
@@ -942,10 +936,10 @@ export const adminController = {
     }
   },
 
-  updateSettings: (req: Request, res: Response, next: NextFunction): void => {
+  updateSettings: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const body = req.body;
-      const current = db.prepare('SELECT * FROM event_settings WHERE id = 1').get() as any;
+      const current = await db.prepare('SELECT * FROM event_settings WHERE id = 1').get() as any;
 
       const eventName = body.eventName ?? current.event_name;
       const tagline = body.tagline ?? current.tagline;
@@ -962,7 +956,7 @@ export const adminController = {
       const announcement = body.announcement ?? current.announcement;
       const now = new Date().toISOString();
 
-      db.prepare(`
+      await db.prepare(`
         UPDATE event_settings
         SET event_name = ?, tagline = ?, event_date = ?, event_venue = ?,
             total_capacity = ?, remaining_allocation = ?, ticket_price = ?,
@@ -976,7 +970,7 @@ export const adminController = {
         branch, announcement, now
       );
 
-      auditService.logActivity(req.user?.name || 'admin', 'SETTINGS_UPDATED', 'SUCCESS', '1');
+      await auditService.logActivity(req.user?.name || 'admin', 'SETTINGS_UPDATED', 'SUCCESS', '1');
 
       res.status(200).json({
         eventName,
@@ -998,10 +992,10 @@ export const adminController = {
     }
   },
 
-  getUsers: (req: Request, res: Response, next: NextFunction): void => {
+  getUsers: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const rows = db.prepare(`
-        SELECT id, name, email, role, created_at as createdAt
+      const rows = await db.prepare(`
+        SELECT id, name, email, role, created_at as "createdAt"
         FROM users
         ORDER BY created_at DESC
       `).all();
@@ -1011,7 +1005,7 @@ export const adminController = {
     }
   },
 
-  createUser: (req: Request, res: Response, next: NextFunction): void => {
+  createUser: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { name, email, role, password } = req.body;
       if (!name || !email || !role) {
@@ -1023,7 +1017,7 @@ export const adminController = {
       }
 
       const normalizedEmail = String(email).trim().toLowerCase();
-      const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(normalizedEmail);
+      const existing = await db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(normalizedEmail);
       if (existing) {
         throw new AppError('A user with this email address already exists.', 409, 'USER_EXISTS');
       }
@@ -1033,12 +1027,12 @@ export const adminController = {
       const id = `usr-${Date.now().toString().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
       const now = new Date().toISOString();
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO users (id, name, email, password_hash, role, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(id, String(name).trim(), normalizedEmail, hash, role, now);
 
-      auditService.logActivity(req.user?.name || 'admin', 'USER_CREATED', 'SUCCESS', id, { role, email: normalizedEmail });
+      await auditService.logActivity(req.user?.name || 'admin', 'USER_CREATED', 'SUCCESS', id, { role, email: normalizedEmail });
 
       res.status(201).json({
         id,
@@ -1052,29 +1046,29 @@ export const adminController = {
     }
   },
 
-  updateUserRole: (req: Request, res: Response, next: NextFunction): void => {
+  updateUserRole: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { role } = req.body;
 
       if (!role || !['admin', 'approver', 'staff'].includes(role)) {
         throw new AppError('Role must be one of: admin, approver, staff.', 400, 'INVALID_ROLE');
       }
 
-      const target = db.prepare('SELECT id, name, role FROM users WHERE id = ?').get(id) as any;
+      const target = await db.prepare('SELECT id, name, role FROM users WHERE id = ?').get(id) as any;
       if (!target) {
         throw new AppError('User not found.', 404, 'USER_NOT_FOUND');
       }
 
       if (target.role === 'admin' && role !== 'admin') {
-        const adminCount = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get() as any).count;
-        if (adminCount <= 1) {
+        const adminCount = ((await db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get()) as any).count;
+        if (Number(adminCount) <= 1) {
           throw new AppError('Cannot demote the last remaining system administrator.', 400, 'LAST_ADMIN');
         }
       }
 
-      db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
-      auditService.logActivity(req.user?.name || 'admin', 'USER_ROLE_UPDATED', 'SUCCESS', id, {
+      await db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+      await auditService.logActivity(req.user?.name || 'admin', 'USER_ROLE_UPDATED', 'SUCCESS', id, {
         oldRole: target.role,
         newRole: role,
       });
@@ -1090,9 +1084,9 @@ export const adminController = {
     }
   },
 
-  deleteUser: (req: Request, res: Response, next: NextFunction): void => {
+  deleteUser: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const confirm = req.body?.confirm === true || req.query?.confirm === 'true';
 
       if (!confirm) {
@@ -1107,27 +1101,27 @@ export const adminController = {
         throw new AppError('You cannot delete your own administrative account.', 400, 'CANNOT_DELETE_SELF');
       }
 
-      const target = db.prepare('SELECT id, email, role, name FROM users WHERE id = ?').get(id) as any;
+      const target = await db.prepare('SELECT id, email, role, name FROM users WHERE id = ?').get(id) as any;
       if (!target) {
         throw new AppError('User not found.', 404, 'USER_NOT_FOUND');
       }
 
       if (target.role === 'admin') {
-        const adminCount = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get() as any).count;
-        if (adminCount <= 1) {
+        const adminCount = ((await db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get()) as any).count;
+        if (Number(adminCount) <= 1) {
           throw new AppError('Cannot delete the last remaining system administrator.', 400, 'LAST_ADMIN');
         }
       }
 
-      db.prepare('DELETE FROM users WHERE id = ?').run(id);
+      await db.prepare('DELETE FROM users WHERE id = ?').run(id);
       const adminName = req.user?.name || 'admin';
-      auditService.logActivity(adminName, 'USER_DELETED', 'SUCCESS', id, {
+      await auditService.logActivity(adminName, 'USER_DELETED', 'SUCCESS', id, {
         targetEmail: target.email,
         targetRole: target.role,
         targetName: target.name,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'USER_DELETED',
         action: 'DELETE_USER',
@@ -1150,14 +1144,14 @@ export const adminController = {
     }
   },
 
-  getAlerts: (req: Request, res: Response, next: NextFunction): void => {
+  getAlerts: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const rows = db.prepare(`
-        SELECT a.id, a.submission_id as submissionId, a.triggered_by as triggeredBy,
-               a.reason, a.created_at as createdAt, a.status, a.resolved_by as resolvedBy,
-               a.resolved_at as resolvedAt, a.resolution_note as resolutionNote,
-               s.name as attendeeName, s.ticket_id as ticketId, s.ticket_type as ticketType,
-               s.status as submissionStatus
+      const rows = await db.prepare(`
+        SELECT a.id, a.submission_id as "submissionId", a.triggered_by as "triggeredBy",
+               a.reason, a.created_at as "createdAt", a.status, a.resolved_by as "resolvedBy",
+               a.resolved_at as "resolvedAt", a.resolution_note as "resolutionNote",
+               s.name as "attendeeName", s.ticket_id as "ticketId", s.ticket_type as "ticketType",
+               s.status as "submissionStatus"
         FROM admin_alerts a
         LEFT JOIN submissions s ON a.submission_id = s.id
         ORDER BY a.created_at DESC
@@ -1169,12 +1163,12 @@ export const adminController = {
     }
   },
 
-  resolveAlert: (req: Request, res: Response, next: NextFunction): void => {
+  resolveAlert: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { note } = req.body;
 
-      const alert = db.prepare('SELECT id, status FROM admin_alerts WHERE id = ?').get(id) as any;
+      const alert = await db.prepare('SELECT id, status FROM admin_alerts WHERE id = ?').get(id) as any;
       if (!alert) {
         throw new AppError('Admin alert not found.', 404, 'NOT_FOUND');
       }
@@ -1183,7 +1177,7 @@ export const adminController = {
       const adminName = req.user?.name || 'admin';
       const resolutionNote = note ? String(note).trim() : 'Reviewed and resolved by administrator.';
 
-      db.prepare(`
+      await db.prepare(`
         UPDATE admin_alerts
         SET status = 'resolved',
             resolved_by = ?,
@@ -1192,7 +1186,7 @@ export const adminController = {
         WHERE id = ?
       `).run(adminName, now, resolutionNote, id);
 
-      auditService.logActivity(adminName, 'ADMIN_ALERT_RESOLVED', 'SUCCESS', id, { resolutionNote });
+      await auditService.logActivity(adminName, 'ADMIN_ALERT_RESOLVED', 'SUCCESS', id, { resolutionNote });
 
       res.status(200).json({
         success: true,
@@ -1206,9 +1200,9 @@ export const adminController = {
     }
   },
 
-  getActivityLogs: (req: Request, res: Response, next: NextFunction): void => {
+  getActivityLogs: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const rows = db.prepare(`
+      const rows = await db.prepare(`
         SELECT * FROM activity_logs
         ORDER BY timestamp DESC
         LIMIT 100
@@ -1222,10 +1216,10 @@ export const adminController = {
   /**
    * System Audit Logs with pagination and filtering (BACKENDFIXES4 Section 4)
    */
-  getAuditLogs: (req: Request, res: Response, next: NextFunction): void => {
+  getAuditLogs: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { page, limit, severity, eventType, module, userId, requestId, startDate, endDate, search } = req.query;
-      const result = auditService.querySystemLogs({
+      const result = await auditService.querySystemLogs({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 25,
         severity: severity as string,
@@ -1246,7 +1240,7 @@ export const adminController = {
   /**
    * Destructive audit log clearing with accountability logging (BACKENDFIXES4 Section 5)
    */
-  clearAuditLogs: (req: Request, res: Response, next: NextFunction): void => {
+  clearAuditLogs: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { confirm, reason, beforeDate } = req.body;
       if (confirm !== true) {
@@ -1257,7 +1251,7 @@ export const adminController = {
         id: req.user?.id,
         name: req.user?.name || 'admin',
       };
-      const result = auditService.clearSystemLogs(adminUser, { confirm, reason, beforeDate });
+      const result = await auditService.clearSystemLogs(adminUser, { confirm, reason, beforeDate });
       res.status(200).json(result);
     } catch (err) {
       next(err);
@@ -1267,12 +1261,12 @@ export const adminController = {
   /**
    * Admin Resets / Changes Another User's Password (BACKENDFIXES4 Section 7)
    */
-  resetUserPassword: (req: Request, res: Response, next: NextFunction): void => {
+  resetUserPassword: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { newPassword, password, confirmPassword } = req.body;
 
-      const target = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(id) as any;
+      const target = await db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(id) as any;
       if (!target) {
         throw new AppError('User account not found.', 404, 'USER_NOT_FOUND');
       }
@@ -1288,16 +1282,16 @@ export const adminController = {
       }
 
       const newHash = bcrypt.hashSync(passToSet, 10);
-      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, id);
+      await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, id);
 
       const adminName = req.user?.name || 'admin';
-      auditService.logActivity(adminName, 'ADMIN_PASSWORD_RESET', 'SUCCESS', id, {
+      await auditService.logActivity(adminName, 'ADMIN_PASSWORD_RESET', 'SUCCESS', id, {
         targetUser: target.name,
         targetEmail: target.email,
         targetRole: target.role,
       });
 
-      auditService.logSystemEvent({
+      await auditService.logSystemEvent({
         severity: 'INFO',
         eventType: 'ADMIN_PASSWORD_RESET',
         action: 'RESET_USER_PASSWORD',
@@ -1342,13 +1336,13 @@ export const adminController = {
   /**
    * Update runtime SMTP configuration without server restart (BACKENDFIXES4 Section 19)
    */
-  updateSmtpConfig: (req: Request, res: Response, next: NextFunction): void => {
+  updateSmtpConfig: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const adminUser = {
         id: req.user?.id,
         name: req.user?.name || 'admin',
       };
-      const updated = emailService.saveConfig(req.body, adminUser);
+      const updated = await emailService.saveConfig(req.body, adminUser);
       res.status(200).json({
         success: true,
         message: 'SMTP configuration saved and mail transport reloaded successfully.',
@@ -1406,9 +1400,9 @@ export const adminController = {
   /**
    * Authoritative Gate Attendance Statistics (BACKENDFIXES4 Section 10 & 13)
    */
-  getAttendanceStats: (req: Request, res: Response, next: NextFunction): void => {
+  getAttendanceStats: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const stats = attendanceService.getAttendanceStatistics();
+      const stats = await attendanceService.getAttendanceStatistics();
       res.status(200).json(stats);
     } catch (err) {
       next(err);
@@ -1418,9 +1412,9 @@ export const adminController = {
   /**
    * Dedicated System Errors query endpoint (BACKENDFIXES5 Sections 26-29)
    */
-  getSystemErrors: (req: Request, res: Response, next: NextFunction): void => {
+  getSystemErrors: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = auditService.querySystemErrors(req.query as any);
+      const result = await auditService.querySystemErrors(req.query as any);
       res.status(200).json(result);
     } catch (err) {
       next(err);
@@ -1430,9 +1424,9 @@ export const adminController = {
   /**
    * Update error operational resolution status (BACKENDFIXES5 Section 29)
    */
-  updateSystemErrorStatus: (req: Request, res: Response, next: NextFunction): void => {
+  updateSystemErrorStatus: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { status, note } = req.body;
       if (!status) {
         throw new AppError('Status is required ("open", "investigating", "resolved", or "ignored")', 400, 'MISSING_STATUS');
@@ -1441,7 +1435,7 @@ export const adminController = {
         id: req.user?.id,
         name: req.user?.name || 'admin',
       };
-      const updated = auditService.updateErrorStatus(id, status, note, adminUser);
+      const updated = await auditService.updateErrorStatus(id, status, note, adminUser);
       res.status(200).json({
         success: true,
         message: `Error status updated to ${status}.`,
@@ -1455,13 +1449,13 @@ export const adminController = {
   /**
    * Reset runtime and persisted SMTP configuration to unconfigured default (BACKENDFIXES6 Sections 1-5)
    */
-  resetSmtpConfig: (req: Request, res: Response, next: NextFunction): void => {
+  resetSmtpConfig: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const adminUser = {
         id: req.user?.id,
         name: req.user?.name || 'admin',
       };
-      const safeConfig = emailService.resetConfig(adminUser);
+      const safeConfig = await emailService.resetConfig(adminUser);
       res.status(200).json({
         success: true,
         message: 'SMTP settings successfully reset to unconfigured default.',
@@ -1475,7 +1469,7 @@ export const adminController = {
   /**
    * Clear error logs with administrator confirmation and auditing (BACKENDFIXES6 Sections 17, 19-21)
    */
-  clearSystemErrors: (req: Request, res: Response, next: NextFunction): void => {
+  clearSystemErrors: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { confirm, reason, beforeDate, module } = req.body;
       if (confirm !== true) {
@@ -1485,7 +1479,7 @@ export const adminController = {
         id: req.user?.id,
         name: req.user?.name || 'admin',
       };
-      const result = auditService.clearSystemErrors(adminUser, {
+      const result = await auditService.clearSystemErrors(adminUser, {
         confirm,
         reason,
         beforeDate,
@@ -1501,7 +1495,7 @@ export const adminController = {
   /**
    * Clear submission logs with administrator confirmation and auditing (BACKENDFIXES6 Sections 18-21)
    */
-  clearSubmissionLogs: (req: Request, res: Response, next: NextFunction): void => {
+  clearSubmissionLogs: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { confirm, reason, beforeDate } = req.body;
       if (confirm !== true) {
@@ -1511,7 +1505,7 @@ export const adminController = {
         id: req.user?.id,
         name: req.user?.name || 'admin',
       };
-      const result = auditService.clearSubmissionLogs(adminUser, {
+      const result = await auditService.clearSubmissionLogs(adminUser, {
         confirm,
         reason,
         beforeDate,

@@ -4,7 +4,7 @@ import { db } from '../db/database';
 import { AppError } from '../middleware/errorHandler';
 
 export const ticketController = {
-  submit: (req: Request, res: Response, next: NextFunction): void => {
+  submit: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       let slipUrl = req.body.paymentSlipUrl || req.body.paymentSlip;
 
@@ -13,7 +13,7 @@ export const ticketController = {
         slipUrl = `/uploads/${req.file.filename}`;
       }
 
-      const result = ticketService.submitTicket({
+      const result = await ticketService.submitTicket({
         name: req.body.name,
         email: req.body.email,
         phone: req.body.phone,
@@ -30,14 +30,14 @@ export const ticketController = {
     }
   },
 
-  lookup: (req: Request, res: Response, next: NextFunction): void => {
+  lookup: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const query = String(req.query.q || req.params.query || '').trim();
       if (!query) {
         throw new AppError('Search query (application ID, ticket ID, or registration number) is required.', 400, 'MISSING_QUERY');
       }
 
-      const sub = db.prepare(`
+      const sub = await db.prepare(`
         SELECT id, ticket_id, name, email, ticket_type, quantity, status, rejection_reason,
                submitted_at, approved_at, checked_in, checked_in_at, email_status,
                qr_token, qr_image_data
