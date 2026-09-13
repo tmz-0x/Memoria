@@ -1,5 +1,6 @@
 import { db } from '../db/database';
 import { auditService } from './auditService';
+import { attendanceService } from './attendanceService';
 
 export interface CheckinResult {
   valid: boolean;
@@ -46,6 +47,16 @@ export const checkinService = {
 
       if (revoked) {
         auditService.logScan(raw, 'INVALID', staffName, revoked.ticket_id, revoked.submission_id, 'Scanned invalidated/regenerated QR credential');
+        auditService.logSystemEvent({
+          severity: 'WARNING',
+          eventType: 'INVALID_QR_SCAN',
+          action: 'CHECKIN_SCAN',
+          module: 'CHECKIN',
+          message: `Attempted scan of invalidated/regenerated QR credential for ticket ${revoked.ticket_id}`,
+          targetType: 'ticket',
+          targetId: revoked.ticket_id,
+          username: staffName,
+        });
         return {
           valid: false,
           reason: 'INVALID TICKET: This QR credential was invalidated and replaced by an administrator. Please use the newly issued QR code.',
@@ -53,12 +64,30 @@ export const checkinService = {
       }
 
       auditService.logScan(raw, 'INVALID', staffName, null, null, 'Ticket not found');
+      auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: 'INVALID_QR_SCAN',
+        action: 'CHECKIN_SCAN',
+        module: 'CHECKIN',
+        message: `Scanned query did not match any active ticket: ${raw.slice(0, 30)}`,
+        username: staffName,
+      });
       return { valid: false, reason: 'Invalid Ticket: No matching record found.' };
     }
 
     // Check status
     if (sub.status === 'rejected') {
       auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Application rejected');
+      auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: 'INVALID_QR_SCAN',
+        action: 'CHECKIN_SCAN',
+        module: 'CHECKIN',
+        message: `Scan rejected: Application for ticket ${sub.ticket_id} was rejected (${sub.rejection_reason || 'Declined'})`,
+        targetType: 'ticket',
+        targetId: sub.ticket_id,
+        username: staffName,
+      });
       return {
         valid: false,
         reason: `Invalid Ticket: Application was rejected (${sub.rejection_reason || 'Declined'}).`,
@@ -68,6 +97,16 @@ export const checkinService = {
 
     if (sub.status === 'pending') {
       auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Pending verification');
+      auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: 'INVALID_QR_SCAN',
+        action: 'CHECKIN_SCAN',
+        module: 'CHECKIN',
+        message: `Scan rejected: Ticket ${sub.ticket_id} is still pending verification`,
+        targetType: 'ticket',
+        targetId: sub.ticket_id,
+        username: staffName,
+      });
       return {
         valid: false,
         reason: 'Invalid Ticket: Payment transfer is still PENDING verification desk review.',
@@ -79,6 +118,16 @@ export const checkinService = {
     if (sub.checked_in === 1) {
       const formattedTime = sub.checked_in_at ? new Date(sub.checked_in_at).toLocaleTimeString() : 'Earlier';
       auditService.logScan(raw, 'ALREADY_USED', staffName, sub.ticket_id, sub.id, `First admitted at ${formattedTime}`);
+      auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: 'DUPLICATE_CHECKIN_ATTEMPT',
+        action: 'CHECKIN_SCAN',
+        module: 'CHECKIN',
+        message: `Duplicate check-in attempt for ticket ${sub.ticket_id}. Previously admitted at ${formattedTime} by ${sub.checked_in_by || 'Staff'}`,
+        targetType: 'ticket',
+        targetId: sub.ticket_id,
+        username: staffName,
+      });
       return {
         valid: false,
         reason: `TICKET ALREADY USED: Admitted at ${formattedTime} by ${sub.checked_in_by || 'Staff'}.`,
@@ -102,6 +151,16 @@ export const checkinService = {
       const current = db.prepare('SELECT * FROM submissions WHERE id = ?').get(sub.id) as any;
       const formattedTime = current?.checked_in_at ? new Date(current.checked_in_at).toLocaleTimeString() : 'Just now';
       auditService.logScan(raw, 'ALREADY_USED', staffName, sub.ticket_id, sub.id, 'Concurrent scan race lost');
+      auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: 'DUPLICATE_CHECKIN_ATTEMPT',
+        action: 'CHECKIN_SCAN',
+        module: 'CHECKIN',
+        message: `Concurrent scan race lost on ticket ${sub.ticket_id}. Admitted at ${formattedTime} by ${current?.checked_in_by || 'Staff'}`,
+        targetType: 'ticket',
+        targetId: sub.ticket_id,
+        username: staffName,
+      });
       return {
         valid: false,
         reason: `TICKET ALREADY USED: Admitted at ${formattedTime} by ${current?.checked_in_by || 'Staff'}.`,
@@ -116,6 +175,21 @@ export const checkinService = {
       attendeeName: sub.name,
       checkInTime: now,
     });
+    auditService.logSystemEvent({
+      severity: 'INFO',
+      eventType: 'TICKET_CHECKED_IN',
+      action: 'CHECKIN_SCAN',
+      module: 'CHECKIN',
+      message: `Admission granted for ticket ${sub.ticket_id} (${sub.name}) by ${staffName}`,
+      targetType: 'ticket',
+      targetId: sub.ticket_id,
+      username: staffName,
+      metadata: {
+        ticketType: sub.ticket_type,
+        quantity: sub.quantity,
+        checkedInAt: now,
+      },
+    });
 
     return {
       valid: true,
@@ -129,24 +203,9 @@ export const checkinService = {
   },
 
   /**
-   * Get Gate Admission statistics.
+   * Get Gate Admission statistics via centralized attendance service.
    */
   getCheckinStats: () => {
-    const row = db.prepare(`
-      SELECT 
-        COALESCE(SUM(CASE WHEN status = 'approved' AND checked_in = 1 THEN quantity ELSE 0 END), 0) as checkedInCount,
-        COALESCE(SUM(CASE WHEN status = 'approved' THEN quantity ELSE 0 END), 0) as totalApprovedTickets
-      FROM submissions
-    `).get() as any;
-
-    const checkedInCount = Number(row?.checkedInCount) || 0;
-    const totalApprovedTickets = Number(row?.totalApprovedTickets) || 0;
-    const percentage = totalApprovedTickets > 0 ? Math.round((checkedInCount / totalApprovedTickets) * 100) : 0;
-
-    return {
-      checkedInCount,
-      totalApprovedTickets,
-      percentage,
-    };
+    return attendanceService.getAttendanceStatistics();
   },
 };

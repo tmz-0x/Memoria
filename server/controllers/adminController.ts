@@ -8,6 +8,7 @@ import { emailService } from '../services/emailService';
 import { qrService } from '../services/qrService';
 import { AppError } from '../middleware/errorHandler';
 import { auditService } from '../services/auditService';
+import { attendanceService } from '../services/attendanceService';
 import { config } from '../config/env';
 
 function formatSubmission(s: any) {
@@ -420,20 +421,50 @@ export const adminController = {
 
       regenTx();
 
+      // Dispatch dedicated regenerated QR email (BACKENDFIXES5 Sections 1-3)
+      const emailResult = await emailService.sendRegeneratedQrEmail(sub.id);
+
       auditService.logActivity(adminName, 'QR_REGENERATED', 'SUCCESS', sub.id, {
         ticketId: sub.ticket_id,
         attendeeName: sub.name,
         previousTokenPrefix: oldToken ? oldToken.slice(0, 8) : 'none',
+        emailSent: emailResult.success,
+        emailError: emailResult.error,
         reason,
+      });
+
+      auditService.logSystemEvent({
+        severity: 'INFO',
+        eventType: 'QR_REGENERATED',
+        action: 'REGENERATE_QR',
+        module: 'ADMIN',
+        message: `Administrator ${adminName} regenerated QR code for ticket ${sub.ticket_id} (${sub.name}). Previous QR invalidated. Email delivery: ${emailResult.success ? 'SENT' : 'FAILED'}.`,
+        targetType: 'ticket',
+        targetId: sub.ticket_id,
+        userId: req.user?.id,
+        username: adminName,
+        metadata: {
+          ticketId: sub.ticket_id,
+          attendeeName: sub.name,
+          email: sub.email,
+          previousTokenPrefix: oldToken ? oldToken.slice(0, 8) : 'none',
+          emailSent: emailResult.success,
+          emailError: emailResult.error,
+          reason,
+        },
       });
 
       res.status(200).json({
         success: true,
-        message: 'QR credential successfully regenerated. Previous QR invalidated.',
+        message: emailResult.success
+          ? 'QR credential successfully regenerated, previous QR invalidated, and updated pass emailed to attendee.'
+          : 'QR credential successfully regenerated and previous QR invalidated. Note: Outbound email delivery failed (SMTP unavailable).',
         id: sub.id,
         ticketId: sub.ticket_id,
         qrToken: newToken,
         qrImageData: newQrImageData,
+        emailSent: emailResult.success,
+        emailError: emailResult.error,
       });
     } catch (err) {
       next(err);
@@ -441,7 +472,70 @@ export const adminController = {
   },
 
   /**
-   * Safe Individual Deletion with Confirmation & Auditing (Sections 10-13)
+   * Resend regenerated QR pass email strictly for Admin users (BACKENDFIXES5 Section 3)
+   */
+  resendRegeneratedQrEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const sub = db.prepare('SELECT id, ticket_id, name, email FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      if (!sub) throw new AppError('Ticket record not found.', 404, 'NOT_FOUND');
+
+      const result = await emailService.sendRegeneratedQrEmail(sub.id);
+      auditService.logActivity(req.user?.name || 'admin', 'REGENERATED_QR_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
+        ticketId: sub.ticket_id,
+        email: sub.email,
+        result,
+      });
+
+      res.status(200).json({
+        success: result.success,
+        message: result.success
+          ? `Regenerated QR pass successfully dispatched to ${sub.email}.`
+          : `Dispatch attempted but delivery failed: ${result.error || 'SMTP server unavailable'}.`,
+        error: result.error,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Resend standard ticket pass email strictly for Admin users
+   */
+  resendTicketEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const sub = db.prepare('SELECT id, ticket_id, name, email, status FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      if (!sub) throw new AppError('Ticket record not found.', 404, 'NOT_FOUND');
+      if (sub.status !== 'approved' || !sub.ticket_id) {
+        throw new AppError('Cannot send ticket pass email for non-approved application.', 400, 'TICKET_NOT_APPROVED');
+      }
+
+      const result = await emailService.sendTicketEmail(sub.id);
+      auditService.logActivity(req.user?.name || 'admin', 'TICKET_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
+        ticketId: sub.ticket_id,
+        email: sub.email,
+        result,
+      });
+
+      res.status(200).json({
+        success: result.success,
+        message: result.success
+          ? `Official ticket pass email successfully dispatched to ${sub.email} (${sub.ticket_id}).`
+          : `Dispatch attempted but delivery failed: ${result.error || 'SMTP server unavailable'}.`,
+        error: result.error,
+        emailStatus: result.success ? 'SENT' : 'FAILED',
+        recipientEmail: sub.email,
+        ticketId: sub.ticket_id,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Safe Individual Deletion with Confirmation & Auditing (Sections 5-10)
+   * Supports both soft-archival and permanent database deletion.
    */
   deleteSubmission: (req: Request, res: Response, next: NextFunction): void => {
     try {
@@ -450,18 +544,19 @@ export const adminController = {
 
       if (!confirm) {
         throw new AppError(
-          'Warning: You are about to delete this submission. This is a destructive administrative action and may affect associated ticket, QR, revenue, and application records. Confirm only if you are certain this record should be deleted. Explicit confirmation required: pass { confirm: true }.',
+          'Warning: You are about to delete this submission. This is a destructive administrative action. Explicit confirmation required: pass { confirm: true }.',
           400,
           'CONFIRMATION_REQUIRED'
         );
       }
 
-      const sub = db.prepare('SELECT id, name, ticket_id, deleted_at FROM submissions WHERE (id = ? OR ticket_id = ?)').get(id, id) as any;
+      const sub = db.prepare('SELECT id, name, email, ticket_id, deleted_at FROM submissions WHERE (id = ? OR ticket_id = ?)').get(id, id) as any;
       if (!sub) {
         throw new AppError('Submission record not found.', 404, 'NOT_FOUND');
       }
 
-      if (sub.deleted_at) {
+      const permanent = req.body?.permanent === true || req.query?.permanent === 'true';
+      if (!permanent && sub.deleted_at) {
         throw new AppError('Submission record has already been deleted.', 400, 'ALREADY_DELETED');
       }
 
@@ -470,22 +565,33 @@ export const adminController = {
       const reason = req.body?.reason ? String(req.body.reason).trim() : 'Administrative deletion';
 
       const delTx = db.transaction(() => {
-        // Soft delete submission
-        db.prepare(`
-          UPDATE submissions
-          SET deleted_at = ?, deleted_by = ?, delete_reason = ?
-          WHERE id = ?
-        `).run(now, adminName, reason, sub.id);
+        if (permanent) {
+          // Cascade child operational records
+          db.prepare('DELETE FROM admin_alerts WHERE submission_id = ?').run(sub.id);
+          db.prepare('DELETE FROM approval_history WHERE submission_id = ?').run(sub.id);
+          db.prepare('DELETE FROM revoked_qr_tokens WHERE submission_id = ?').run(sub.id);
+          // Preserve scan audit trail by decoupling foreign key link
+          db.prepare('UPDATE scan_audit_logs SET submission_id = NULL WHERE submission_id = ?').run(sub.id);
+          // Real database deletion: actually remove the record from submissions (BACKENDFIXES5 Section 5)
+          db.prepare('DELETE FROM submissions WHERE id = ?').run(sub.id);
+        } else {
+          // Soft delete submission
+          db.prepare(`
+            UPDATE submissions
+            SET deleted_at = ?, deleted_by = ?, delete_reason = ?
+            WHERE id = ?
+          `).run(now, adminName, reason, sub.id);
 
-        // Resolve any open admin alerts for this submission
-        db.prepare(`
-          UPDATE admin_alerts
-          SET status = 'resolved',
-              resolved_by = ?,
-              resolved_at = ?,
-              resolution_note = 'Record deleted by administrator'
-          WHERE submission_id = ? AND status = 'pending'
-        `).run(adminName, now, sub.id);
+          // Resolve any open admin alerts for this submission
+          db.prepare(`
+            UPDATE admin_alerts
+            SET status = 'resolved',
+                resolved_by = ?,
+                resolved_at = ?,
+                resolution_note = 'Record deleted by administrator'
+            WHERE submission_id = ? AND status = 'pending'
+          `).run(adminName, now, sub.id);
+        }
       });
 
       delTx();
@@ -495,12 +601,35 @@ export const adminController = {
         attendeeName: sub.name,
         reason,
         deletedBy: adminName,
+        permanent,
+      });
+
+      auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: permanent ? 'SUBMISSION_PERMANENTLY_DELETED' : 'SUBMISSION_SOFT_DELETED',
+        action: 'DELETE_SUBMISSION',
+        module: 'ADMIN',
+        message: `Administrator ${adminName} ${permanent ? 'permanently deleted' : 'soft-deleted'} record for ${sub.name} (${sub.email}, Ticket: ${sub.ticket_id || 'none'}). Reason: ${reason}`,
+        targetType: 'submission',
+        targetId: sub.id,
+        userId: req.user?.id,
+        username: adminName,
+        metadata: {
+          ticketId: sub.ticket_id,
+          attendeeName: sub.name,
+          email: sub.email,
+          permanent,
+          reason,
+        },
       });
 
       res.status(200).json({
         success: true,
-        message: 'Submission successfully soft-deleted and archived.',
+        message: permanent
+          ? 'Submission permanently deleted from database.'
+          : 'Submission successfully soft-deleted and archived.',
         id: sub.id,
+        permanent,
       });
     } catch (err) {
       next(err);
@@ -659,10 +788,23 @@ export const adminController = {
         throw new AppError('Current password provided does not match our records.', 400, 'INVALID_CURRENT_PASSWORD');
       }
 
+      if (bcrypt.compareSync(String(newPassword).trim(), adminUser.password_hash)) {
+        throw new AppError('New password cannot be the same as your current password.', 400, 'SAME_PASSWORD');
+      }
+
       const newHash = bcrypt.hashSync(String(newPassword).trim(), 10);
       db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, adminUser.id);
 
       auditService.logActivity(adminUser.name, 'PASSWORD_CHANGED', 'SUCCESS', adminUser.id);
+      auditService.logSystemEvent({
+        severity: 'INFO',
+        eventType: 'PASSWORD_CHANGED',
+        action: 'UPDATE_OWN_PASSWORD',
+        module: 'AUTH',
+        message: `Administrator ${adminUser.name} changed their password successfully`,
+        userId: adminUser.id,
+        username: adminUser.name,
+      });
 
       res.status(200).json({
         success: true,
@@ -951,12 +1093,21 @@ export const adminController = {
   deleteUser: (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { id } = req.params;
+      const confirm = req.body?.confirm === true || req.query?.confirm === 'true';
+
+      if (!confirm) {
+        throw new AppError(
+          'Warning: You are about to permanently delete this user account. Explicit confirmation required: pass { confirm: true }.',
+          400,
+          'CONFIRMATION_REQUIRED'
+        );
+      }
 
       if (req.user?.id === id) {
         throw new AppError('You cannot delete your own administrative account.', 400, 'CANNOT_DELETE_SELF');
       }
 
-      const target = db.prepare('SELECT role FROM users WHERE id = ?').get(id) as any;
+      const target = db.prepare('SELECT id, email, role, name FROM users WHERE id = ?').get(id) as any;
       if (!target) {
         throw new AppError('User not found.', 404, 'USER_NOT_FOUND');
       }
@@ -969,7 +1120,29 @@ export const adminController = {
       }
 
       db.prepare('DELETE FROM users WHERE id = ?').run(id);
-      auditService.logActivity(req.user?.name || 'admin', 'USER_DELETED', 'SUCCESS', id);
+      const adminName = req.user?.name || 'admin';
+      auditService.logActivity(adminName, 'USER_DELETED', 'SUCCESS', id, {
+        targetEmail: target.email,
+        targetRole: target.role,
+        targetName: target.name,
+      });
+
+      auditService.logSystemEvent({
+        severity: 'INFO',
+        eventType: 'USER_DELETED',
+        action: 'DELETE_USER',
+        module: 'USER',
+        message: `Administrator ${adminName} permanently deleted user ${target.name} (${target.email}, ${target.role}).`,
+        targetType: 'user',
+        targetId: id,
+        userId: req.user?.id,
+        username: adminName,
+        metadata: {
+          targetEmail: target.email,
+          targetRole: target.role,
+          targetName: target.name,
+        },
+      });
 
       res.status(200).json({ success: true, message: 'User deleted successfully.' });
     } catch (err) {
@@ -1045,4 +1218,309 @@ export const adminController = {
       next(err);
     }
   },
+
+  /**
+   * System Audit Logs with pagination and filtering (BACKENDFIXES4 Section 4)
+   */
+  getAuditLogs: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { page, limit, severity, eventType, module, userId, requestId, startDate, endDate, search } = req.query;
+      const result = auditService.querySystemLogs({
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 25,
+        severity: severity as string,
+        eventType: eventType as string,
+        module: module as string,
+        userId: userId as string,
+        requestId: requestId as string,
+        startDate: startDate as string,
+        endDate: endDate as string,
+        search: search as string,
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Destructive audit log clearing with accountability logging (BACKENDFIXES4 Section 5)
+   */
+  clearAuditLogs: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { confirm, reason, beforeDate } = req.body;
+      if (confirm !== true) {
+        throw new AppError('Explicit confirmation is required to clear system audit logs.', 400, 'CONFIRMATION_REQUIRED');
+      }
+
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const result = auditService.clearSystemLogs(adminUser, { confirm, reason, beforeDate });
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Admin Resets / Changes Another User's Password (BACKENDFIXES4 Section 7)
+   */
+  resetUserPassword: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { id } = req.params;
+      const { newPassword, password, confirmPassword } = req.body;
+
+      const target = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(id) as any;
+      if (!target) {
+        throw new AppError('User account not found.', 404, 'USER_NOT_FOUND');
+      }
+
+      const rawPass = newPassword || password;
+      const passToSet = rawPass ? String(rawPass).trim() : crypto.randomBytes(6).toString('hex');
+      if (passToSet.length < 6) {
+        throw new AppError('New password must be at least 6 characters long.', 400, 'WEAK_PASSWORD');
+      }
+
+      if (confirmPassword && passToSet !== String(confirmPassword).trim()) {
+        throw new AppError('New password and confirmation do not match.', 400, 'PASSWORD_MISMATCH');
+      }
+
+      const newHash = bcrypt.hashSync(passToSet, 10);
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, id);
+
+      const adminName = req.user?.name || 'admin';
+      auditService.logActivity(adminName, 'ADMIN_PASSWORD_RESET', 'SUCCESS', id, {
+        targetUser: target.name,
+        targetEmail: target.email,
+        targetRole: target.role,
+      });
+
+      auditService.logSystemEvent({
+        severity: 'INFO',
+        eventType: 'ADMIN_PASSWORD_RESET',
+        action: 'RESET_USER_PASSWORD',
+        module: 'ADMIN',
+        message: `Administrator ${adminName} reset password for user ${target.name} (${target.email})`,
+        userId: req.user?.id,
+        username: adminName,
+        targetType: 'user',
+        targetId: id,
+        metadata: {
+          targetUser: target.name,
+          targetEmail: target.email,
+          targetRole: target.role,
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Password for ${target.name} (${target.email}) was updated successfully.`,
+        temporaryPassword: rawPass ? undefined : passToSet,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Get safe runtime SMTP configuration (password masked) (BACKENDFIXES4 Section 17-18)
+   */
+  getSmtpConfig: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const safeConfig = emailService.getSafeConfig();
+      res.status(200).json({
+        ...safeConfig,
+        config: safeConfig,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Update runtime SMTP configuration without server restart (BACKENDFIXES4 Section 19)
+   */
+  updateSmtpConfig: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const updated = emailService.saveConfig(req.body, adminUser);
+      res.status(200).json({
+        success: true,
+        message: 'SMTP configuration saved and mail transport reloaded successfully.',
+        config: updated,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Test SMTP Connectivity (BACKENDFIXES4 Section 20)
+   */
+  testSmtpConnection: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await emailService.testConnection(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Send test email to verify transactional delivery (BACKENDFIXES4 Section 21)
+   */
+  sendSmtpTestEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const recipient = req.body.recipientEmail || req.body.email || req.body.to;
+      if (!recipient) {
+        throw new AppError('A valid recipient email address is required.', 400, 'MISSING_RECIPIENT');
+      }
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const result = await emailService.sendTestEmail(recipient, adminUser);
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: `Diagnostic test email sent successfully to ${recipient}`,
+          messageId: result.messageId,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          code: 'EMAIL_SEND_FAILED',
+          message: result.error || 'SMTP delivery failed.',
+        });
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Authoritative Gate Attendance Statistics (BACKENDFIXES4 Section 10 & 13)
+   */
+  getAttendanceStats: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const stats = attendanceService.getAttendanceStatistics();
+      res.status(200).json(stats);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Dedicated System Errors query endpoint (BACKENDFIXES5 Sections 26-29)
+   */
+  getSystemErrors: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const result = auditService.querySystemErrors(req.query as any);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Update error operational resolution status (BACKENDFIXES5 Section 29)
+   */
+  updateSystemErrorStatus: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { id } = req.params;
+      const { status, note } = req.body;
+      if (!status) {
+        throw new AppError('Status is required ("open", "investigating", "resolved", or "ignored")', 400, 'MISSING_STATUS');
+      }
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const updated = auditService.updateErrorStatus(id, status, note, adminUser);
+      res.status(200).json({
+        success: true,
+        message: `Error status updated to ${status}.`,
+        error: updated,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Reset runtime and persisted SMTP configuration to unconfigured default (BACKENDFIXES6 Sections 1-5)
+   */
+  resetSmtpConfig: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const safeConfig = emailService.resetConfig(adminUser);
+      res.status(200).json({
+        success: true,
+        message: 'SMTP settings successfully reset to unconfigured default.',
+        config: safeConfig,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Clear error logs with administrator confirmation and auditing (BACKENDFIXES6 Sections 17, 19-21)
+   */
+  clearSystemErrors: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { confirm, reason, beforeDate, module } = req.body;
+      if (confirm !== true) {
+        throw new AppError('Explicit confirmation is required to clear error logs.', 400, 'CONFIRMATION_REQUIRED');
+      }
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const result = auditService.clearSystemErrors(adminUser, {
+        confirm,
+        reason,
+        beforeDate,
+        module,
+        requestId: (req as any).id || (req.headers['x-request-id'] as string) || undefined,
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Clear submission logs with administrator confirmation and auditing (BACKENDFIXES6 Sections 18-21)
+   */
+  clearSubmissionLogs: (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const { confirm, reason, beforeDate } = req.body;
+      if (confirm !== true) {
+        throw new AppError('Explicit confirmation is required to clear submission logs.', 400, 'CONFIRMATION_REQUIRED');
+      }
+      const adminUser = {
+        id: req.user?.id,
+        name: req.user?.name || 'admin',
+      };
+      const result = auditService.clearSubmissionLogs(adminUser, {
+        confirm,
+        reason,
+        beforeDate,
+        requestId: (req as any).id || (req.headers['x-request-id'] as string) || undefined,
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
+

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import crypto from 'crypto';
 import { config } from './config/env';
 import { initializeDatabase } from './db/schema';
 import { seedDatabase } from './db/seed';
@@ -18,6 +19,15 @@ export function createApp() {
   seedDatabase();
 
   const app = express();
+
+  // Request Correlation ID Middleware (BACKENDFIXES4 Section 3)
+  app.use((req, res, next) => {
+    const rawReqId = (req.headers['x-request-id'] as string) || (req.headers['x-correlation-id'] as string);
+    const requestId = rawReqId && rawReqId.trim() ? rawReqId.trim() : `req-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    (req as any).id = requestId;
+    res.setHeader('X-Request-Id', requestId);
+    next();
+  });
 
   // Basic security headers
   app.use((req, res, next) => {
@@ -40,7 +50,8 @@ export function createApp() {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-idempotency-key', 'x-demo-user'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-idempotency-key', 'x-demo-user', 'x-request-id', 'x-correlation-id'],
+      exposedHeaders: ['X-Request-Id'],
     })
   );
 

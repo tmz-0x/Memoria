@@ -32,19 +32,6 @@ export const LoginForm: React.FC = () => {
     }
   };
 
-  const fillCredentials = (role: 'admin' | 'approver' | 'staff') => {
-    if (role === 'admin') {
-      setEmail('admin@memoria.lk');
-      setPassword('admin123');
-    } else if (role === 'approver') {
-      setEmail('approver@memoria.lk');
-      setPassword('approve123');
-    } else if (role === 'staff') {
-      setEmail('staff@memoria.lk');
-      setPassword('staff123');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -125,39 +112,6 @@ export const LoginForm: React.FC = () => {
               </button>
             </div>
           </form>
-
-          {/* Quick Demo Credentials Panel */}
-          <div className="mt-6 pt-6 border-t border-slate-700">
-            <span className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
-              Click Demo Credentials to Auto-Fill:
-            </span>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => fillCredentials('admin')}
-                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-center font-medium border border-slate-600 transition-colors"
-              >
-                <strong className="block text-white text-[11px]">Admin</strong>
-                <span className="text-[9px] text-blue-400">admin@memoria.lk</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('approver')}
-                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-center font-medium border border-slate-600 transition-colors"
-              >
-                <strong className="block text-white text-[11px]">Approver</strong>
-                <span className="text-[9px] text-amber-400">approver@memoria.lk</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('staff')}
-                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-center font-medium border border-slate-600 transition-colors"
-              >
-                <strong className="block text-white text-[11px]">Staff</strong>
-                <span className="text-[9px] text-emerald-400">staff@memoria.lk</span>
-              </button>
-            </div>
-          </div>
 
           <div className="mt-6 text-center">
             <a href="/" className="text-xs text-slate-400 hover:text-white transition-colors">

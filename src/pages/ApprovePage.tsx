@@ -61,14 +61,18 @@ export const ApprovePage: React.FC = () => {
 
     const res = await api.approveSubmission(id, approver);
     if (res.success) {
-      setNotification(`Successfully approved ${approvedSub?.name || 'registration'}! Ticket ID ${res.ticketId} issued.`);
+      if (res.emailSent) {
+        setNotification(`Successfully approved ${approvedSub?.name || 'attendee'}! Ticket ${res.ticketId} issued and pass delivered to ${res.recipientEmail || approvedSub?.email}.`);
+      } else {
+        setNotification(`Approved ${approvedSub?.name || 'attendee'}! Ticket ${res.ticketId} issued. (Note: Email delivery failed: ${res.emailError || 'SMTP unavailable'}. Use Resend in history below).`);
+      }
       const [updatedHistory, updatedStats] = await Promise.all([
         api.getApprovalHistory(),
         api.getApprovalStats(),
       ]);
       setHistory(updatedHistory);
       setStats(updatedStats);
-      setTimeout(() => setNotification(null), 4000);
+      setTimeout(() => setNotification(null), 6000);
     }
   };
 

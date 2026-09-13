@@ -84,10 +84,10 @@ export const ticketService = {
         );
       }
 
-      // Strict uniqueness check against any non-rejected application
+      // Strict uniqueness check against any active non-rejected application
       const existingStudent = db.prepare(`
         SELECT id FROM submissions
-        WHERE normalized_reg_number = ? AND status != 'rejected'
+        WHERE normalized_reg_number = ? AND status != 'rejected' AND deleted_at IS NULL
       `).get(normalizedReg) as any;
 
       if (existingStudent) {
@@ -160,6 +160,21 @@ export const ticketService = {
       quantity,
       totalPrice,
       regNumber: normalizedReg,
+    });
+
+    auditService.logSystemEvent({
+      severity: 'INFO',
+      eventType: 'TICKET_CREATED',
+      action: 'SUBMIT_TICKET',
+      module: 'TICKETS',
+      message: `New ticket application submitted for ${name} (${dto.ticketType}, ${quantity} pass)`,
+      targetType: 'submission',
+      targetId: submissionId,
+      metadata: {
+        ticketType: dto.ticketType,
+        quantity,
+        totalPrice,
+      },
     });
 
     return {

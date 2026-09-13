@@ -10,8 +10,8 @@ import {
   LogOut,
   ExternalLink,
   ShieldCheck,
-  Zap,
   ArrowRight,
+  RotateCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -31,14 +31,30 @@ export const CheckinPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const fetchStats = async () => {
-    const s = await api.getCheckinStats();
-    setStats(s);
+  const fetchStats = async (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    try {
+      const s = await api.getAttendanceStats();
+      setStats({
+        checkedInCount: s.checkedInCount ?? s.totalCheckedIn,
+        totalApprovedTickets: s.totalApprovedTickets ?? s.totalTicketsIssued,
+        percentage: s.percentage ?? s.attendanceRate,
+      });
+      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    } catch (err) {
+      console.error('Failed to sync gate attendance statistics:', err);
+    } finally {
+      if (isManual) setRefreshing(false);
+    }
   };
 
   useEffect(() => {
     fetchStats();
+    const timer = setInterval(() => fetchStats(), 30000); // 30s periodic background sync
+    return () => clearInterval(timer);
   }, []);
 
   const handleVerify = async (query: string) => {
@@ -109,6 +125,23 @@ export const CheckinPage: React.FC = () => {
 
       {/* Main Container - max-w-md centered for perfect mobile app experience */}
       <main className="max-w-md mx-auto w-full px-4 pt-4 space-y-4 flex-1">
+        {/* Authoritative Gate Synchronization Bar (BACKENDFIXES4 Section 14) */}
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{lastUpdated ? `Last updated: ${lastUpdated}` : 'Live database sync'}</span>
+          </div>
+          <button
+            onClick={() => fetchStats(true)}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] transition-colors cursor-pointer disabled:opacity-50"
+            title="Fetch fresh attendance data directly from database"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-emerald-400' : ''}`} />
+            <span>{refreshing ? 'Syncing...' : 'Refresh Data'}</span>
+          </button>
+        </div>
+
         {/* Persistent Running Counter (Section 35) */}
         <RunningCounter
           checkedIn={stats.checkedInCount}
@@ -161,56 +194,6 @@ export const CheckinPage: React.FC = () => {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </form>
-            </div>
-
-            {/* Quick Demo Simulator Buttons for instantaneous testing */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-xs space-y-2">
-              <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Simulate Sample Barcode / Reg No Scans:</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => handleVerify('FC122716')}
-                  className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-purple-300 transition-colors"
-                >
-                  <strong className="block text-white">FC122716</strong>
-                  <span>Student Pass (Kasun)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleVerify('MEM-26-9042')}
-                  className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-emerald-300 transition-colors"
-                >
-                  <strong className="block text-white">MEM-26-9042</strong>
-                  <span>Valid Pass (Kasun)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleVerify('MEM-26-9041')}
-                  className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-rose-300 transition-colors"
-                >
-                  <strong className="block text-white">MEM-26-9041</strong>
-                  <span>Already Admitted</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleVerify('sub-006')}
-                  className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-rose-300 transition-colors"
-                >
-                  <strong className="block text-white">sub-006</strong>
-                  <span>Rejected Slip</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleVerify('MEM-INVALID-999')}
-                  className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 text-amber-300 transition-colors"
-                >
-                  <strong className="block text-white">Unknown Code</strong>
-                  <span>Invalid Ticket</span>
-                </button>
-              </div>
             </div>
           </div>
         )}

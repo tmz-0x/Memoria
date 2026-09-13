@@ -106,9 +106,14 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-2.5 text-xs text-slate-600">
-            <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-            <span className="font-semibold text-slate-800">{submission.email}</span>
+          <div className="flex items-center justify-between text-xs text-slate-600">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="font-semibold text-slate-800 truncate">{submission.email}</span>
+            </div>
+            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
+              Ticket Delivery Recipient
+            </span>
           </div>
           <div className="flex items-center gap-2.5 text-xs text-slate-600">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
@@ -273,7 +278,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Approve & Issue Ticket</span>
+                <span>Approve & Email Ticket</span>
               </>
             )}
           </button>

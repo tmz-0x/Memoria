@@ -5,6 +5,8 @@ import { StatCard } from '../components/admin/StatCard';
 import { SubmissionsTable } from '../components/admin/SubmissionsTable';
 import { UserTable } from '../components/admin/UserTable';
 import { EventSettingsForm } from '../components/admin/EventSettingsForm';
+import { AuditLogViewer } from '../components/admin/AuditLogViewer';
+import { ErrorHandlingViewer } from '../components/admin/ErrorHandlingViewer';
 import {
   LayoutDashboard,
   Users,
@@ -17,21 +19,33 @@ import {
   Clock,
   QrCode,
   ShieldCheck,
+  FileText,
+  AlertOctagon,
+  RotateCw,
+  CheckCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const AdminPage: React.FC = () => {
   const { user, logout } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'users' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'users' | 'audit' | 'errors' | 'settings'>('overview');
 
   const [stats, setStats] = useState<any>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [settings, setSettings] = useState<EventSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isManual = false) => {
+    if (isManual) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setFetchError(null);
     try {
       const [sData, subData, uData, setts] = await Promise.all([
         api.getAdminStats(),
@@ -43,15 +57,30 @@ export const AdminPage: React.FC = () => {
       setSubmissions(subData);
       setUsers(uData);
       setSettings(setts);
-    } catch (e) {
-      console.error(e);
+      setLastUpdated(
+        new Date().toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        })
+      );
+    } catch (e: any) {
+      console.error('Failed to load administrative data:', e);
+      setFetchError(e?.message || 'Failed to connect to database or administrative API.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadData();
+    // Section 15: Sensible auto-refresh every 45s for live event monitoring
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 45000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -75,36 +104,34 @@ export const AdminPage: React.FC = () => {
 
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <span className="text-slate-500">Logged as:</span>
-              <strong className="text-slate-800 font-semibold">{user?.name}</strong>
-              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] font-bold uppercase">
-                {user?.role}
-              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="font-semibold text-slate-700">{user?.name || 'Administrator'}</span>
+              <span className="text-slate-400">({user?.role})</span>
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Approver Portal Link (BACKENDFIXES6 Sections 13-16) */}
               <Link
                 to="/approve"
-                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
+                title="Open Committee Approvals Desk"
               >
-                <span>Approver View</span>
+                <CheckCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Approvals Desk</span>
               </Link>
+
               <Link
                 to="/checkin"
-                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
+                title="Open Gate Check-in"
               >
-                <span>Check-in App</span>
+                <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden sm:inline">Gate Scanner</span>
               </Link>
-              <Link
-                to="/"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200"
-              >
-                <span>Public Site</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </Link>
+
               <button
                 onClick={logout}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -114,35 +141,78 @@ export const AdminPage: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8 border-t border-slate-100 text-xs font-semibold">
-          {[
-            { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
-            { id: 'submissions', label: 'All Submissions', icon: ListOrdered },
-            { id: 'users', label: 'User Roles', icon: Users },
-            { id: 'settings', label: 'Event Settings', icon: Settings },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 flex items-center gap-2 border-b-2 font-medium transition-colors cursor-pointer ${
-                  isActive
-                    ? 'border-blue-600 text-blue-600 font-bold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 text-xs font-semibold gap-2">
+          <div className="flex space-x-6 sm:space-x-8 overflow-x-auto">
+            {[
+              { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
+              { id: 'submissions', label: 'All Submissions', icon: ListOrdered },
+              { id: 'users', label: 'User Roles', icon: Users },
+              { id: 'audit', label: 'Audit Logs', icon: FileText },
+              { id: 'errors', label: 'Error Handling', icon: AlertOctagon },
+              { id: 'settings', label: 'Event Settings', icon: Settings },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`py-3 flex items-center gap-2 border-b-2 font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'border-blue-600 text-blue-600 font-bold'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Section 14: Clear Manual Refresh Button with Loading and Timestamp */}
+          <div className="flex items-center justify-between sm:justify-end gap-3 py-2 border-t sm:border-t-0 border-slate-100">
+            {lastUpdated && (
+              <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Last updated: {lastUpdated}</span>
+              </div>
+            )}
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              title="Fetch fresh data directly from database"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
+              <span>{refreshing ? 'Syncing...' : 'Refresh Data'}</span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Administrative Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        {fetchError && (
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 border-2 border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-rose-100 text-rose-700 flex-shrink-0">
+                <AlertOctagon className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-rose-900">Database Connection / API Error</h4>
+                <p className="text-xs text-rose-700">{fetchError}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => loadData(true)}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              Retry Sync
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="py-24 text-center text-slate-400 text-sm">
             Synchronizing administrative records...
@@ -303,6 +373,14 @@ export const AdminPage: React.FC = () => {
 
             {activeTab === 'users' && (
               <UserTable users={users} onRefresh={loadData} />
+            )}
+
+            {activeTab === 'audit' && (
+              <AuditLogViewer />
+            )}
+
+            {activeTab === 'errors' && (
+              <ErrorHandlingViewer />
             )}
 
             {activeTab === 'settings' && settings && (

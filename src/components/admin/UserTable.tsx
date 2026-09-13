@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, api } from '../../api/mockApi';
-import { Plus, Trash2, Shield, UserCheck, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Shield, UserCheck, AlertCircle, KeyRound, CheckCircle2, Sparkles } from 'lucide-react';
 
 interface UserTableProps {
   users: User[];
@@ -13,6 +13,14 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onRefresh }) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'admin' | 'approver' | 'staff'>('approver');
   const [loading, setLoading] = useState(false);
+
+  // Reset password modal state (BACKENDFIXES4 Section 7)
+  const [resetUser, setResetUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +38,47 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onRefresh }) => {
       await api.deleteUser(id);
       onRefresh();
     }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetUser) return;
+    if (newPassword.length < 6) {
+      setResetError('New password must be at least 6 characters long.');
+      return;
+    }
+    if (confirmPassword && newPassword !== confirmPassword) {
+      setResetError('New password and confirmation do not match.');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError(null);
+    setResetSuccess(null);
+    try {
+      const res = await api.resetUserPassword(resetUser.id, newPassword, confirmPassword);
+      setResetSuccess(res.message);
+      setTimeout(() => {
+        setResetUser(null);
+        setNewPassword('');
+        setConfirmPassword('');
+        setResetSuccess(null);
+      }, 2000);
+    } catch (err: any) {
+      setResetError(err.message || 'Failed to update user password.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+    let pass = '';
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pass);
+    setConfirmPassword(pass);
   };
 
   return (
@@ -82,15 +131,30 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onRefresh }) => {
                 </td>
                 <td className="px-6 py-4 text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-right">
-                  {u.email !== 'admin@memoria.lk' && (
+                  <div className="inline-flex items-center gap-1 justify-end">
                     <button
-                      onClick={() => handleDelete(u.id)}
-                      className="text-slate-400 hover:text-rose-600 transition-colors p-1"
-                      title="Revoke User"
+                      onClick={() => {
+                        setResetUser(u);
+                        setNewPassword('');
+                        setConfirmPassword('');
+                        setResetError(null);
+                        setResetSuccess(null);
+                      }}
+                      className="text-slate-400 hover:text-blue-600 transition-colors p-1"
+                      title="Reset User Password"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <KeyRound className="w-4 h-4" />
                     </button>
-                  )}
+                    {u.email !== 'admin@memoria.lk' && (
+                      <button
+                        onClick={() => handleDelete(u.id)}
+                        className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                        title="Revoke User"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -98,6 +162,7 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onRefresh }) => {
         </table>
       </div>
 
+      {/* Add User Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
@@ -154,6 +219,102 @@ export const UserTable: React.FC<UserTableProps> = ({ users, onRefresh }) => {
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white shadow-sm disabled:opacity-50"
                 >
                   {loading ? 'Adding...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset User Password Modal (BACKENDFIXES4 Section 7) */}
+      {resetUser && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center gap-2.5 text-blue-600 mb-2">
+              <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Reset User Password</h4>
+                <p className="text-xs text-slate-500">
+                  Target Account: <strong>{resetUser.name}</strong> ({resetUser.email})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 my-3 leading-relaxed">
+              Set a temporary or new password for this user. The existing password is encrypted and cannot be viewed. All password resets are recorded in the system audit log.
+            </p>
+
+            {resetSuccess && (
+              <div className="mb-4 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{resetSuccess}</span>
+              </div>
+            )}
+
+            {resetError && (
+              <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700">New Password</label>
+                  <button
+                    type="button"
+                    onClick={generateRandomPassword}
+                    className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Generate Strong</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="At least 6 characters..."
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Confirm New Password</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Re-enter password..."
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetUser(null);
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setResetError(null);
+                    setResetSuccess(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading || !newPassword}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white shadow-sm disabled:opacity-50"
+                >
+                  {resetLoading ? 'Updating...' : 'Set User Password'}
                 </button>
               </div>
             </form>

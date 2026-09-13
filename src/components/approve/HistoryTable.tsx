@@ -1,17 +1,41 @@
-import React from 'react';
-import { ApprovalHistoryItem } from '../../api/mockApi';
-import { CheckCircle2, XCircle, Clock, Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { ApprovalHistoryItem, api } from '../../api/mockApi';
+import { CheckCircle2, XCircle, Mail, Loader2, Check } from 'lucide-react';
 
 interface HistoryTableProps {
   history: ApprovalHistoryItem[];
 }
 
 export const HistoryTable: React.FC<HistoryTableProps> = ({ history }) => {
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleResend = async (subId: string, attendee: string) => {
+    setResendingId(subId);
+    try {
+      const res = await api.resendTicketEmail(subId);
+      setFeedback(`Email dispatched for ${attendee}: ${res.message}`);
+      setTimeout(() => setFeedback(null), 5000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to dispatch email');
+    } finally {
+      setResendingId(null);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-5 border-b border-slate-200">
-        <h3 className="text-sm font-bold text-slate-900">Audit & Decision Trail</h3>
-        <p className="text-xs text-slate-500 mt-0.5">Chronological log of approver actions.</p>
+      <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">Audit & Decision Trail</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Chronological log of approver actions.</p>
+        </div>
+        {feedback && (
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-medium animate-fadeIn">
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{feedback}</span>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -23,6 +47,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ history }) => {
               <th className="px-6 py-3.5">Decision</th>
               <th className="px-6 py-3.5">Approver Identity</th>
               <th className="px-6 py-3.5">Reason / Note</th>
+              <th className="px-6 py-3.5 text-right">Pass Delivery</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -52,6 +77,24 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ history }) => {
                 </td>
                 <td className="px-6 py-3.5 text-slate-500 text-[11px]">
                   {item.reason || 'Verified with bank receipt'}
+                </td>
+                <td className="px-6 py-3.5 text-right">
+                  {item.action === 'approved' && (
+                    <button
+                      type="button"
+                      disabled={resendingId === item.submissionId}
+                      onClick={() => handleResend(item.submissionId, item.attendeeName)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-[11px] transition-colors cursor-pointer disabled:opacity-50"
+                      title="Resend official ticket admission pass to buyer"
+                    >
+                      {resendingId === item.submissionId ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Mail className="w-3 h-3" />
+                      )}
+                      <span>{resendingId === item.submissionId ? 'Sending...' : 'Resend Email'}</span>
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

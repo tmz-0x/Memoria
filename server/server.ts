@@ -1,3 +1,8 @@
+import dns from 'dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
+
 import { createApp } from './app';
 import { config } from './config/env';
 import { db } from './db/database';

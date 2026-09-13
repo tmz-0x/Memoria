@@ -17,3 +17,5 @@ approvalRoutes.post('/approve/:id', approvalController.approve);
 approvalRoutes.post('/reject/:id', approvalController.reject);
 approvalRoutes.post('/alert', approvalController.triggerAlert);
 approvalRoutes.get('/history', approvalController.getHistory);
+approvalRoutes.post('/submissions/:id/resend-email', approvalController.resendEmail);
+approvalRoutes.post('/tickets/:id/resend-email', approvalController.resendEmail);

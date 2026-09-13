@@ -20,6 +20,9 @@ export interface Submission {
   checkedInAt?: string;
   checkedInBy?: string;
   emailStatus?: string;
+  emailSentAt?: string | null;
+  emailLastError?: string | null;
+  emailAttemptCount?: number;
   qrToken?: string;
   qrPayload?: string;
   qrImageData?: string;
@@ -57,6 +60,67 @@ export interface ApprovalHistoryItem {
   approver: string;
   timestamp: string;
   reason?: string;
+}
+
+export interface SystemAuditLog {
+  id: string;
+  timestamp: string;
+  severity: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
+  eventType: string;
+  action: string;
+  module: string;
+  message: string;
+  userId?: string | null;
+  username?: string | null;
+  targetType?: string | null;
+  targetId?: string | null;
+  requestId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  endpoint?: string | null;
+  httpMethod?: string | null;
+  statusCode?: number | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  stackTrace?: string | null;
+  metadata?: any;
+  createdAt: string;
+}
+
+export interface SystemError extends SystemAuditLog {
+  resolutionStatus: 'open' | 'investigating' | 'resolved' | 'ignored';
+  resolutionNote?: string | null;
+  resolvedBy?: string | null;
+  resolvedAt?: string | null;
+}
+
+export interface SmtpConfigSettings {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass?: string;
+  hasPassword?: boolean;
+  smtpSecure: boolean;
+  smtpFrom: string;
+  senderName: string;
+  status: 'Configured' | 'Not Configured' | 'Connection Failed' | 'Authentication Failed';
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+export interface AttendanceStatistics {
+  totalTicketsIssued: number;
+  totalValidTickets: number;
+  totalCheckedIn: number;
+  totalNotCheckedIn: number;
+  totalApprovedTickets: number;
+  totalPendingTickets: number;
+  totalRejectedScans: number;
+  totalDuplicateScanAttempts: number;
+  checkedInCount: number;
+  percentage: number;
+  attendanceRate: number;
+  lastUpdated: string;
 }
 
 const STORAGE_KEY_SUBMISSIONS = 'memoria_submissions_v2';
@@ -722,7 +786,15 @@ export const api = {
   },
 
   // POST /api/approve/:id
-  approveSubmission: async (id: string, approverName: string): Promise<{ success: boolean; ticketId: string }> => {
+  approveSubmission: async (id: string, approverName: string): Promise<{
+    success: boolean;
+    ticketId: string;
+    emailSent?: boolean;
+    emailStatus?: string;
+    emailError?: string;
+    recipientEmail?: string;
+    attendeeName?: string;
+  }> => {
     try {
       const res = await fetch(`/api/approve/approve/${id}`, {
         method: 'POST',
@@ -953,12 +1025,12 @@ export const api = {
   },
 
   // DELETE /api/admin/submissions/:id
-  deleteSubmission: async (id: string, reason?: string): Promise<boolean> => {
+  deleteSubmission: async (id: string, reason?: string, permanent = false): Promise<boolean> => {
     try {
       const res = await fetch(`/api/admin/submissions/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ confirm: true, reason }),
+        body: JSON.stringify({ confirm: true, reason, permanent }),
       });
       if (res.ok) return true;
       const err = await res.json().catch(() => null);
@@ -975,7 +1047,7 @@ export const api = {
   },
 
   // POST /api/admin/tickets/:id/regenerate-qr
-  regenerateQR: async (id: string, reason?: string): Promise<{ success: boolean; qrToken: string; qrImageData: string }> => {
+  regenerateQR: async (id: string, reason?: string): Promise<{ success: boolean; qrToken: string; qrImageData: string; emailSent?: boolean; emailError?: string; message?: string }> => {
     try {
       const res = await fetch(`/api/admin/tickets/${id}/regenerate-qr`, {
         method: 'POST',
@@ -994,7 +1066,30 @@ export const api = {
       success: true,
       qrToken: `new_token_${Date.now()}`,
       qrImageData: '/assets/sample-qr.png',
+      emailSent: true,
     };
+  },
+
+  // POST /api/admin/tickets/:id/resend-qr-email
+  resendRegeneratedQrEmail: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`/api/admin/tickets/${id}/resend-qr-email`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to resend regenerated QR email');
+  },
+
+  // POST /api/admin/submissions/:id/resend-email
+  resendTicketEmail: async (id: string): Promise<{ success: boolean; message: string; error?: string; emailStatus?: string }> => {
+    const res = await fetch(`/api/admin/submissions/${id}/resend-email`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to resend ticket pass email');
   },
 
   // POST /api/admin/database/reset
@@ -1141,5 +1236,218 @@ export const api = {
   // GET /api/admin/statistics (Fixes 3 Section 3)
   getStatistics: async (): Promise<any> => {
     return await api.getAdminStats();
+  },
+
+  // Dedicated System Audit Logs (BACKENDFIXES4 Sections 4-5)
+  getAuditLogs: async (params: {
+    page?: number;
+    limit?: number;
+    severity?: string;
+    eventType?: string;
+    module?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<{ logs: SystemAuditLog[]; total: number; page: number; limit: number; totalPages: number }> => {
+    try {
+      const query = new URLSearchParams();
+      if (params.page) query.set('page', String(params.page));
+      if (params.limit) query.set('limit', String(params.limit));
+      if (params.severity && params.severity !== 'all') query.set('severity', params.severity);
+      if (params.eventType && params.eventType !== 'all') query.set('eventType', params.eventType);
+      if (params.module && params.module !== 'all') query.set('module', params.module);
+      if (params.search) query.set('search', params.search);
+      if (params.startDate) query.set('startDate', params.startDate);
+      if (params.endDate) query.set('endDate', params.endDate);
+
+      const res = await fetch(`/api/admin/audit-logs?${query.toString()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to retrieve system audit logs');
+    } catch (err: any) {
+      throw err;
+    }
+  },
+
+  clearAuditLogs: async (reason?: string, beforeDate?: string): Promise<{ success: boolean; deletedCount: number; message: string }> => {
+    const res = await fetch('/api/admin/audit-logs/clear', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ confirm: true, reason, beforeDate }),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to clear audit logs');
+  },
+
+  clearSubmissionLogs: async (reason?: string, beforeDate?: string): Promise<{ success: boolean; deletedCount: number; message: string }> => {
+    const res = await fetch('/api/admin/submissions/logs/clear', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ confirm: true, reason, beforeDate }),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to clear submission history logs');
+  },
+
+  // Dedicated System Errors Engine (BACKENDFIXES5 Sections 26-29)
+  getSystemErrors: async (params: {
+    page?: number;
+    limit?: number;
+    severity?: string;
+    module?: string;
+    resolutionStatus?: string;
+    search?: string;
+    requestId?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<{ errors: SystemError[]; total: number; page: number; limit: number; totalPages: number }> => {
+    try {
+      const query = new URLSearchParams();
+      if (params.page) query.set('page', String(params.page));
+      if (params.limit) query.set('limit', String(params.limit));
+      if (params.severity && params.severity !== 'all') query.set('severity', params.severity);
+      if (params.module && params.module !== 'all') query.set('module', params.module);
+      if (params.resolutionStatus && params.resolutionStatus !== 'all') query.set('resolutionStatus', params.resolutionStatus);
+      if (params.search) query.set('search', params.search);
+      if (params.requestId) query.set('requestId', params.requestId);
+      if (params.startDate) query.set('startDate', params.startDate);
+      if (params.endDate) query.set('endDate', params.endDate);
+
+      const res = await fetch(`/api/admin/system-errors?${query.toString()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to retrieve system errors');
+    } catch (err: any) {
+      throw err;
+    }
+  },
+
+  clearSystemErrors: async (reason?: string, beforeDate?: string, module?: string): Promise<{ success: boolean; deletedCount: number; message: string }> => {
+    const res = await fetch('/api/admin/system-errors/clear', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ confirm: true, reason, beforeDate, module }),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to clear system error logs');
+  },
+
+  updateSystemErrorStatus: async (
+    id: string,
+    status: 'open' | 'investigating' | 'resolved' | 'ignored',
+    note?: string
+  ): Promise<{ success: boolean; message: string; error?: any }> => {
+    const res = await fetch(`/api/admin/system-errors/${id}/status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status, note }),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to update error status');
+  },
+
+  // Admin Resets User Password (BACKENDFIXES4 Section 7)
+  resetUserPassword: async (userId: string, newPassword?: string, confirmPassword?: string): Promise<{ success: boolean; message: string; temporaryPassword?: string }> => {
+    const res = await fetch(`/api/admin/users/${userId}/password`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ newPassword, confirmPassword }),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to reset user password');
+  },
+
+  // Dynamic Runtime SMTP Settings (BACKENDFIXES4 Sections 17-23)
+  getSmtpConfig: async (): Promise<SmtpConfigSettings> => {
+    try {
+      const res = await fetch('/api/admin/smtp/config', {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || 'Failed to load SMTP configuration');
+    } catch (err: any) {
+      if (!err.message?.includes('fetch') && !err.message?.includes('NetworkError')) throw err;
+      return {
+        smtpHost: 'smtp.gmail.com',
+        smtpPort: 587,
+        smtpUser: '',
+        smtpPass: '',
+        hasPassword: false,
+        smtpSecure: false,
+        smtpFrom: 'tickets@memoria.lk',
+        senderName: "Memoria'26 Ticketing Desk",
+        status: 'Not Configured',
+      };
+    }
+  },
+
+  updateSmtpConfig: async (configData: Partial<SmtpConfigSettings>): Promise<{ success: boolean; message: string; config: SmtpConfigSettings }> => {
+    const res = await fetch('/api/admin/smtp/config', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(configData),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to save SMTP configuration');
+  },
+
+  testSmtpConnection: async (configData?: Partial<SmtpConfigSettings>): Promise<{ success: boolean; status: string; message: string }> => {
+    const res = await fetch('/api/admin/smtp/test-connection', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(configData || {}),
+    });
+    return await res.json();
+  },
+
+  // Reset SMTP Configuration to unconfigured default (BACKENDFIXES6 Sections 1-5)
+  resetSmtpConfig: async (): Promise<{ success: boolean; message: string; config: SmtpConfigSettings }> => {
+    const res = await fetch('/api/admin/smtp/reset', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message || 'Failed to reset SMTP configuration');
+  },
+
+  // Authoritative Gate Attendance Statistics (BACKENDFIXES4 Section 10 & 13)
+  getAttendanceStatistics: async (): Promise<AttendanceStatistics> => {
+    try {
+      const res = await fetch('/api/checkin/statistics', {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    const checkinStats = await api.getCheckinStats();
+    return {
+      totalTicketsIssued: checkinStats.totalApprovedTickets,
+      totalValidTickets: checkinStats.totalApprovedTickets,
+      totalCheckedIn: checkinStats.checkedInCount,
+      totalNotCheckedIn: Math.max(0, checkinStats.totalApprovedTickets - checkinStats.checkedInCount),
+      totalApprovedTickets: checkinStats.totalApprovedTickets,
+      totalPendingTickets: 0,
+      totalRejectedScans: 0,
+      totalDuplicateScanAttempts: 0,
+      checkedInCount: checkinStats.checkedInCount,
+      percentage: checkinStats.percentage,
+      attendanceRate: checkinStats.percentage,
+      lastUpdated: new Date().toISOString(),
+    };
+  },
+
+  getAttendanceStats: async (): Promise<AttendanceStatistics> => {
+    return api.getAttendanceStatistics();
   },
 };

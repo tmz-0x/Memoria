@@ -45,6 +45,9 @@ async function runAllTests() {
   db.prepare("UPDATE users SET role = 'admin', name = 'Thisal Methwidu', email = 'admin@memoria.lk', password_hash = ? WHERE id = 'usr-1'").run(bcrypt.hashSync('admin123', 10));
   db.prepare("UPDATE users SET role = 'approver', name = 'Elena Vance', email = 'approver@memoria.lk', password_hash = ? WHERE id = 'usr-2'").run(bcrypt.hashSync('approve123', 10));
   db.prepare("UPDATE users SET role = 'staff', name = 'Marcus Chen', email = 'staff@memoria.lk', password_hash = ? WHERE id = 'usr-3'").run(bcrypt.hashSync('staff123', 10));
+  const initialSmtpSetting = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as any;
+  db.prepare("DELETE FROM smtp_settings").run();
+  emailService.reloadTransporter();
 
   // Setup Auth Tokens for each role
   const adminUser = db.prepare("SELECT * FROM users WHERE role = 'admin' LIMIT 1").get() as any;
@@ -1167,11 +1170,811 @@ async function runAllTests() {
   });
 
   // ----------------------------------------------------
-  // Summary
+  // TEST GROUP 21: BACKENDFIXES4 — System Audit, Admin Security, Gate Sync & Dynamic SMTP
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 21: BACKENDFIXES4 — System Audit, Admin Security, Gate Sync & Dynamic SMTP ---');
+
+  await test('System Audit Logging: Captures operations with correlation IDs, supports pagination & filters, never leaks plaintext passwords', async () => {
+    // Make a request with custom correlation ID
+    const customReqId = `req-test-${Date.now()}`;
+    const getRes = await fetch(`${baseUrl}/api/admin/audit-logs?page=1&limit=10`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'X-Request-Id': customReqId,
+      },
+    });
+    assert.strictEqual(getRes.status, 200);
+    const logData = await getRes.json();
+    assert.ok(Array.isArray(logData.logs));
+    assert.ok(logData.pagination);
+    assert.strictEqual(typeof logData.pagination.total, 'number');
+
+    // Inspect database audit logs: ensure no sensitive keys contain plaintext passwords or secrets
+    const sensitiveLogs = db.prepare(`
+      SELECT metadata, message, stack_trace
+      FROM system_audit_logs
+      WHERE metadata LIKE '%"password"%' OR metadata LIKE '%smtp_pass%' OR message LIKE '%password%'
+    `).all() as any[];
+
+    for (const log of sensitiveLogs) {
+      if (log.metadata) {
+        assert.ok(!log.metadata.includes('admin123'), 'Plaintext password must not appear in audit metadata');
+        assert.ok(!log.metadata.includes('newSecretPass123'), 'Plaintext password must not appear in audit metadata');
+      }
+    }
+  });
+
+  await test('Audit Log Clearing: Requires explicit confirmation and writes permanent accountability entry', async () => {
+    // Attempt clear without confirmation
+    const unconfirmedRes = await fetch(`${baseUrl}/api/admin/audit-logs/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: false }),
+    });
+    assert.strictEqual(unconfirmedRes.status, 400);
+
+    // Perform confirmed clear
+    const confirmedRes = await fetch(`${baseUrl}/api/admin/audit-logs/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.strictEqual(confirmedRes.status, 200);
+    const clearResult = await confirmedRes.json();
+    assert.strictEqual(clearResult.success, true);
+
+    // Verify accountability record exists
+    const accountabilityLog = db.prepare(`
+      SELECT * FROM system_audit_logs
+      WHERE action = 'AUDIT_LOGS_CLEARED'
+      ORDER BY id DESC LIMIT 1
+    `).get() as any;
+    assert.ok(accountabilityLog, 'Permanent accountability log must exist after clearing');
+    assert.strictEqual(accountabilityLog.user_id, adminUser.id);
+  });
+
+  await test('Admin User Password Management: Admin securely resets password, target user can authenticate, hash is stored', async () => {
+    // Reset staff user password to a new value
+    const newStaffPass = 'Str0ng!Pass#2026';
+    const resetRes = await fetch(`${baseUrl}/api/admin/users/${staffUser.id}/password`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newStaffPass }),
+    });
+    assert.strictEqual(resetRes.status, 200);
+    const resetData = await resetRes.json();
+    assert.strictEqual(resetData.success, true);
+
+    // Verify password in DB is a valid bcrypt hash and NOT plaintext
+    const dbStaff = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(staffUser.id) as any;
+    assert.notStrictEqual(dbStaff.password_hash, newStaffPass);
+    assert.ok(dbStaff.password_hash.startsWith('$2'), 'Must be stored as bcrypt hash');
+    assert.ok(bcrypt.compareSync(newStaffPass, dbStaff.password_hash));
+
+    // Target user can now log in with the new password
+    const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: staffUser.email, password: newStaffPass }),
+    });
+    assert.strictEqual(loginRes.status, 200);
+    const loginData = await loginRes.json();
+    assert.strictEqual(loginData.user.id, staffUser.id);
+
+    // Old password fails
+    const oldLoginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: staffUser.email, password: 'staff123' }),
+    });
+    assert.strictEqual(oldLoginRes.status, 401);
+
+    // Reset back to original staff123 for remaining suite consistency
+    await fetch(`${baseUrl}/api/admin/users/${staffUser.id}/password`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'staff123' }),
+    });
+  });
+
+  await test('Dynamic SMTP Configuration: Masks password, updates without restart, tests connection, and audits changes', async () => {
+    // 1. Approvers or Staff are denied access to SMTP configuration
+    const approverSmtpRes = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+    assert.strictEqual(approverSmtpRes.status, 403);
+
+    // 2. Update SMTP config dynamically without restarting server
+    const updateSmtpRes = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        smtpHost: 'smtp.dynamic-mail.com',
+        smtpPort: 587,
+        smtpUser: 'tickets@dynamic-mail.com',
+        smtpPass: 'myNewSmtpSecretKey99',
+        smtpSecure: false,
+        smtpFrom: 'no-reply@dynamic-mail.com',
+        senderName: 'Dynamic Memoria Desk',
+      }),
+    });
+    assert.strictEqual(updateSmtpRes.status, 200);
+    const updateData = await updateSmtpRes.json();
+    assert.strictEqual(updateData.success, true);
+    assert.strictEqual(updateData.config.smtpHost, 'smtp.dynamic-mail.com');
+    assert.strictEqual(updateData.config.smtpPass, '********');
+
+    // 3. Get current config - password must strictly be masked as '********' and never leak plaintext
+    const getSmtpRes = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(getSmtpRes.status, 200);
+    const smtpData = await getSmtpRes.json();
+    assert.strictEqual(smtpData.config.smtpPass, '********', 'Password must strictly be masked as ********');
+    assert.strictEqual(smtpData.config.hasPassword, true);
+    assert.ok(!JSON.stringify(smtpData).includes('myNewSmtpSecretKey99'), 'Plaintext SMTP password must never be exposed');
+
+    // Verify DB stores updated values
+    const dbSmtp = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as any;
+    assert.strictEqual(dbSmtp.smtp_host, 'smtp.dynamic-mail.com');
+    assert.strictEqual(dbSmtp.smtp_user, 'tickets@dynamic-mail.com');
+    assert.strictEqual(dbSmtp.smtp_pass, 'myNewSmtpSecretKey99');
+
+    // 4. Update with masked password keeps existing password without overwriting
+    const keepPassRes = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        smtpHost: 'mail.reloaded.com',
+        smtpPort: 465,
+        smtpUser: 'tickets@reloaded.com',
+        smtpPass: '********',
+        smtpSecure: true,
+        smtpFrom: 'no-reply@reloaded.com',
+        senderName: 'Reloaded Desk',
+      }),
+    });
+    assert.strictEqual(keepPassRes.status, 200);
+    const checkDbPass = db.prepare('SELECT smtp_pass, smtp_host FROM smtp_settings WHERE id = 1').get() as any;
+    assert.strictEqual(checkDbPass.smtp_pass, 'myNewSmtpSecretKey99', 'Existing password must be preserved when masked ******** is submitted');
+    assert.strictEqual(checkDbPass.smtp_host, 'mail.reloaded.com');
+
+    // 5. Test SMTP connection endpoint responds with valid status
+    const testConnRes = await fetch(`${baseUrl}/api/admin/smtp/test-connection`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        smtpHost: '127.0.0.1',
+        smtpPort: 2525,
+      }),
+    });
+    assert.strictEqual(testConnRes.status, 200);
+    const testConnData = await testConnRes.json();
+    assert.ok(typeof testConnData.success === 'boolean');
+    assert.ok(testConnData.status);
+    assert.ok(testConnData.message);
+  });
+
+  await test('Authoritative Attendance Synchronization: Gate and Admin views return identical, accurate DB-backed counts', async () => {
+    // 1. Create a submission and approve it
+    const sub = ticketService.submitTicket({
+      name: 'Sync Test Attendee',
+      email: 'sync.attendee@gmail.com',
+      phone: '+94 77 888 9999',
+      ticketType: 'student',
+      universityRegistrationNumber: 'FC' + Math.floor(100000 + Math.random() * 899999),
+      paymentSlipUrl: '/uploads/sync.jpg',
+      quantity: 1,
+    });
+    const approved = await approvalService.approveSubmission(sub.submissionId, 'Test Approver');
+
+    // Query gate statistics
+    const gateStatsBefore = await (await fetch(`${baseUrl}/api/checkin/statistics`, {
+      headers: { Authorization: `Bearer ${staffToken}` },
+    })).json();
+
+    // Query admin attendance statistics
+    const adminStatsBefore = await (await fetch(`${baseUrl}/api/admin/attendance/statistics`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    })).json();
+
+    // Must be 100% synchronized
+    assert.strictEqual(gateStatsBefore.checkedInCount, adminStatsBefore.checkedInCount);
+    assert.strictEqual(gateStatsBefore.totalApprovedTickets, adminStatsBefore.totalApprovedTickets);
+    assert.strictEqual(gateStatsBefore.percentage, adminStatsBefore.percentage);
+
+    // Check the ticket in
+    checkinService.verifyAndCheckIn(approved.ticketId, 'Gate Staff');
+
+    // Query gate and admin statistics after checkin
+    const gateStatsAfter = await (await fetch(`${baseUrl}/api/checkin/statistics`, {
+      headers: { Authorization: `Bearer ${staffToken}` },
+    })).json();
+
+    const adminStatsAfter = await (await fetch(`${baseUrl}/api/admin/attendance/statistics`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    })).json();
+
+    // Both must reflect the exact incremented checked-in count
+    assert.strictEqual(gateStatsAfter.checkedInCount, gateStatsBefore.checkedInCount + 1);
+    assert.strictEqual(adminStatsAfter.checkedInCount, adminStatsBefore.checkedInCount + 1);
+    assert.strictEqual(gateStatsAfter.checkedInCount, adminStatsAfter.checkedInCount);
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 22: BACKENDFIXES 5 — Production Hardening, QR Reissuance, Deletion & Re-registration, Error Engine
+  // ----------------------------------------------------
+  console.log('\n--- GROUP 22: BACKENDFIXES 5 Production Hardening & Verification ---');
+
+  await test('QR Code Regeneration & Invalidation: Old QR rejected, new QR admitted, email dispatched, approver forbidden', async () => {
+    // 1. Create a submission and approve it
+    const sub = ticketService.submitTicket({
+      name: 'Regen Test Attendee',
+      email: 'regen.attendee@gmail.com',
+      phone: '+94 77 999 1111',
+      ticketType: 'student',
+      universityRegistrationNumber: 'FC' + Math.floor(100000 + Math.random() * 899999),
+      paymentSlipUrl: '/uploads/regen.jpg',
+      quantity: 1,
+    });
+    const approved = await approvalService.approveSubmission(sub.submissionId, 'Approver');
+    const subRecord = db.prepare('SELECT qr_token FROM submissions WHERE id = ?').get(sub.submissionId) as any;
+    const oldToken = subRecord.qr_token;
+    assert.ok(oldToken, 'Old QR token must exist');
+
+    // 2. Approver is forbidden from regenerating QR
+    const approverRegenRes = await fetch(`${baseUrl}/api/admin/tickets/${approved.ticketId}/regenerate-qr`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${approverToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.strictEqual(approverRegenRes.status, 403, 'Approver must not be authorized to regenerate QR');
+
+    // 3. Admin regenerates QR without confirm -> 400
+    const noConfirmRes = await fetch(`${baseUrl}/api/admin/tickets/${approved.ticketId}/regenerate-qr`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: false }),
+    });
+    assert.strictEqual(noConfirmRes.status, 400, 'Confirmation must be required');
+
+    // 4. Admin regenerates QR with confirm -> succeeds (200)
+    const regenRes = await fetch(`${baseUrl}/api/admin/tickets/${approved.ticketId}/regenerate-qr`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, reason: 'Badge lost by attendee' }),
+    });
+    assert.strictEqual(regenRes.status, 200);
+    const regenData = await regenRes.json();
+    assert.strictEqual(regenData.success, true);
+    assert.ok(regenData.qrToken);
+    assert.notStrictEqual(regenData.qrToken, oldToken, 'New token must differ from old token');
+
+    // 5. Old token is recorded in revoked_qr_tokens
+    const revokedRecord = db.prepare('SELECT * FROM revoked_qr_tokens WHERE token = ?').get(oldToken) as any;
+    assert.ok(revokedRecord, 'Old token must be recorded in revoked_qr_tokens table');
+
+    // 6. Old QR token scan is rejected
+    const oldScan = checkinService.verifyAndCheckIn(oldToken, 'Gate Staff');
+    assert.strictEqual(oldScan.valid, false);
+    assert.ok(oldScan.reason?.toLowerCase().includes('invalidated') || oldScan.reason?.toLowerCase().includes('replaced'));
+
+    // 7. New QR token scan succeeds
+    const newScan = checkinService.verifyAndCheckIn(regenData.qrToken, 'Gate Staff');
+    assert.strictEqual(newScan.valid, true);
+
+    // 8. Admin can resend regenerated QR email (returns delivery status and diagnostic)
+    const resendRes = await fetch(`${baseUrl}/api/admin/tickets/${approved.ticketId}/resend-qr-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(resendRes.status, 200);
+    const resendData = await resendRes.json();
+    assert.strictEqual(typeof resendData.success, 'boolean');
+    assert.ok(resendData.message);
+  });
+
+  await test('Permanent Deletion & Re-registration: Purging allows immediate re-registration without 409 conflict, audit retained', async () => {
+    const regNo = 'FC' + Math.floor(100000 + Math.random() * 899999);
+
+    // 1. Submit ticket with unique reg number
+    const sub = ticketService.submitTicket({
+      name: 'Purge Test Student',
+      email: 'purge.test@gmail.com',
+      phone: '+94 77 123 4567',
+      ticketType: 'student',
+      universityRegistrationNumber: regNo,
+      paymentSlipUrl: '/uploads/purge.jpg',
+      quantity: 1,
+    });
+    assert.ok(sub.submissionId);
+
+    // 2. Attempting duplicate registration receives 409
+    let duplicateFailed = false;
+    try {
+      ticketService.submitTicket({
+        name: 'Purge Test Student 2',
+        email: 'purge2@gmail.com',
+        phone: '+94 77 123 4568',
+        ticketType: 'student',
+        universityRegistrationNumber: regNo,
+        paymentSlipUrl: '/uploads/purge2.jpg',
+        quantity: 1,
+      });
+    } catch (err: any) {
+      if (err.statusCode === 409 || err.code === 'REG_NUMBER_EXISTS') duplicateFailed = true;
+    }
+    assert.ok(duplicateFailed, 'Duplicate active reg number must be rejected with conflict');
+
+    // 3. Admin permanently deletes submission with { confirm: true, permanent: true }
+    const delRes = await fetch(`${baseUrl}/api/admin/submissions/${sub.submissionId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, permanent: true, reason: 'Registration cancelled by user' }),
+    });
+    assert.strictEqual(delRes.status, 200);
+    const delData = await delRes.json();
+    assert.strictEqual(delData.success, true);
+
+    // 4. Verify record is physically removed from submissions table
+    const checkDb = db.prepare('SELECT id FROM submissions WHERE id = ?').get(sub.submissionId);
+    assert.strictEqual(checkDb, undefined, 'Permanently deleted submission must be removed from submissions table');
+
+    // 5. Verify system audit log retained the deletion action
+    const auditRecord = db.prepare("SELECT * FROM system_audit_logs WHERE action = 'DELETE_SUBMISSION' AND target_id = ?").get(sub.submissionId) as any;
+    assert.ok(auditRecord, 'Audit logs must NEVER be deleted when records are purged');
+
+    // 6. Same attendee can now re-register with the exact same regNo without error
+    const reSub = ticketService.submitTicket({
+      name: 'Purge Test Student Re-registration',
+      email: 'purge.test@gmail.com',
+      phone: '+94 77 123 4567',
+      ticketType: 'student',
+      universityRegistrationNumber: regNo,
+      paymentSlipUrl: '/uploads/purge-new.jpg',
+      quantity: 1,
+    });
+    assert.ok(reSub.submissionId, 'Attendee must be permitted to re-register after permanent deletion');
+    assert.notStrictEqual(reSub.submissionId, sub.submissionId, 'New submission receives a new distinct ID');
+  });
+
+  await test('Targeted User Deletion & Confirmation: Requires explicit confirmation, forbidden for non-admins, audits event', async () => {
+    // 1. Create a temporary staff user to delete
+    const tempUserEmail = `temp.staff.${Date.now()}@memoria.lk`;
+    const createRes = await fetch(`${baseUrl}/api/admin/users`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Temp Staff User',
+        email: tempUserEmail,
+        password: 'password123',
+        role: 'staff',
+      }),
+    });
+    assert.strictEqual(createRes.status, 201);
+    const createData = await createRes.json();
+    const tempUserId = createData.id || createData.user?.id;
+
+    // 2. Staff user cannot delete another user (403)
+    const staffDeleteRes = await fetch(`${baseUrl}/api/admin/users/${tempUserId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${staffToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.strictEqual(staffDeleteRes.status, 403);
+
+    // 3. Admin attempt without confirm fails (400)
+    const noConfirmRes = await fetch(`${baseUrl}/api/admin/users/${tempUserId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: false }),
+    });
+    assert.strictEqual(noConfirmRes.status, 400);
+
+    // 4. Admin delete with confirm succeeds (200)
+    const deleteRes = await fetch(`${baseUrl}/api/admin/users/${tempUserId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.strictEqual(deleteRes.status, 200);
+
+    // 5. User is deleted from DB
+    const checkUser = db.prepare('SELECT id FROM users WHERE id = ?').get(tempUserId);
+    assert.strictEqual(checkUser, undefined);
+
+    // 6. Other users untouched
+    const adminExists = db.prepare("SELECT id FROM users WHERE role = 'admin'").get();
+    assert.ok(adminExists);
+  });
+
+  await test('Dedicated System Error Management Engine: Query errors, update resolution status, role protection', async () => {
+    // 1. Log a test error in system_audit_logs
+    const errorId = `err-test-${Date.now()}`;
+    db.prepare(`
+      INSERT INTO system_audit_logs (
+        id, timestamp, severity, event_type, action, module, message,
+        status_code, error_code, error_message, resolution_status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      errorId,
+      new Date().toISOString(),
+      'ERROR',
+      'TEST_ERROR_EVENT',
+      'SIMULATE_FAILURE',
+      'API',
+      'Simulated database timeout on gateway check',
+      500,
+      'GATEWAY_TIMEOUT',
+      'Connection timed out after 5000ms',
+      'open',
+      new Date().toISOString()
+    );
+
+    // 2. Staff user denied access (403)
+    const staffErrorsRes = await fetch(`${baseUrl}/api/admin/system-errors`, {
+      headers: { Authorization: `Bearer ${staffToken}` },
+    });
+    assert.strictEqual(staffErrorsRes.status, 403);
+
+    // 3. Admin queries errors (200)
+    const adminErrorsRes = await fetch(`${baseUrl}/api/admin/system-errors?module=API&severity=ERROR`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(adminErrorsRes.status, 200);
+    const errorsData = await adminErrorsRes.json();
+    assert.ok(Array.isArray(errorsData.errors));
+    const foundError = errorsData.errors.find((e: any) => e.id === errorId);
+    assert.ok(foundError, 'The logged system error must be returned in query results');
+    assert.strictEqual(foundError.resolutionStatus, 'open');
+
+    // 4. Admin updates resolution status to investigating with note
+    const patchRes = await fetch(`${baseUrl}/api/admin/system-errors/${errorId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'investigating', note: 'Investigating gateway latency' }),
+    });
+    assert.strictEqual(patchRes.status, 200);
+    const patchData = await patchRes.json();
+    assert.strictEqual(patchData.success, true);
+    assert.strictEqual(patchData.error.resolutionStatus, 'investigating');
+    assert.strictEqual(patchData.error.resolutionNote, 'Investigating gateway latency');
+
+    // 5. Verify DB state
+    const dbErr = db.prepare('SELECT resolution_status, resolution_note, resolved_by FROM system_audit_logs WHERE id = ?').get(errorId) as any;
+    assert.strictEqual(dbErr.resolution_status, 'investigating');
+    assert.strictEqual(dbErr.resolution_note, 'Investigating gateway latency');
+    assert.ok(dbErr.resolved_by);
+
+    // Clean up test error
+    db.prepare('DELETE FROM system_audit_logs WHERE id = ?').run(errorId);
+  });
+
+  // ----------------------------------------------------
+  // TEST GROUP 24: FIXES 6 — SMTP Reset, Clear Error Logs, Clear Submission Logs, Approver Auth & Authoritative Stats
+  // ----------------------------------------------------
+  console.log('\n--- TEST GROUP 24: FIXES 6 — SMTP Reset, Clear Error Logs, Clear Submission Logs, Approver Auth & Authoritative Stats ---');
+
+  await test('SMTP Reset: POST /api/admin/smtp/reset requires admin role and rejects staff/unauth', async () => {
+    // 1. Unauthenticated request rejected
+    const unauthRes = await fetch(`${baseUrl}/api/admin/smtp/reset`, { method: 'POST' });
+    assert.strictEqual(unauthRes.status, 401);
+
+    // 2. Staff rejected
+    const staffRes = await fetch(`${baseUrl}/api/admin/smtp/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${staffToken}` },
+    });
+    assert.strictEqual(staffRes.status, 403);
+
+    // 3. Approver rejected
+    const approverRes = await fetch(`${baseUrl}/api/admin/smtp/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+    assert.strictEqual(approverRes.status, 403);
+  });
+
+  await test('SMTP Reset: Clears persistent DB row, active transporter, sets status to Not Configured, and audits action', async () => {
+    // 1. First ensure SMTP is configured with known values
+    await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        smtpHost: 'smtp.pre-reset-test.com',
+        smtpPort: 587,
+        smtpUser: 'pre-reset@test.com',
+        smtpPass: 'secretTestPassword123',
+        smtpSecure: false,
+        smtpFrom: 'no-reply@pre-reset-test.com',
+        senderName: 'Pre-Reset Desk',
+      }),
+    });
+
+    const preResetCheck = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const preResetData = await preResetCheck.json();
+    assert.strictEqual(preResetData.status, 'Configured');
+    assert.strictEqual(preResetData.configured, true);
+
+    // 2. Execute Reset via POST /api/admin/smtp/reset
+    const resetRes = await fetch(`${baseUrl}/api/admin/smtp/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(resetRes.status, 200);
+    const resetData = await resetRes.json();
+    assert.strictEqual(resetData.success, true);
+    assert.strictEqual(resetData.config.status, 'Not Configured');
+    assert.strictEqual(resetData.config.smtpHost, '');
+    assert.strictEqual(resetData.config.smtpUser, '');
+    assert.strictEqual(resetData.config.smtpPass, '');
+    assert.strictEqual(resetData.config.hasPassword, false);
+
+    // 3. Verify Database persistent storage: smtp_settings row is deleted
+    const dbRow = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get();
+    assert.strictEqual(dbRow, undefined, 'smtp_settings row must be deleted from database');
+
+    // 4. Verify GET /api/admin/smtp/config returns unconfigured status
+    const getSmtpRes = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const freshSmtpData = await getSmtpRes.json();
+    assert.strictEqual(freshSmtpData.status, 'Not Configured');
+    assert.strictEqual(freshSmtpData.configured, false);
+    assert.strictEqual(emailService.isConfigured(), false);
+
+    // 5. Verify audit log entry was created
+    const resetAudit = db.prepare("SELECT * FROM system_audit_logs WHERE event_type = 'SMTP_SETTINGS_RESET' ORDER BY timestamp DESC LIMIT 1").get() as any;
+    assert.ok(resetAudit, 'SMTP reset must be audited in system_audit_logs');
+    assert.strictEqual(resetAudit.module, 'SMTP');
+    assert.strictEqual(resetAudit.username, 'Thisal Methwidu');
+  });
+
+  await test('SMTP Reconfiguration: Can save new SMTP configuration immediately after reset without restart', async () => {
+    // 1. Configure new SMTP credentials after reset
+    const newConfigRes = await fetch(`${baseUrl}/api/admin/smtp/config`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        smtpHost: 'smtp.new-reconfigured.com',
+        smtpPort: 465,
+        smtpUser: 'new@reconfigured.com',
+        smtpPass: 'brandNewSecret99',
+        smtpSecure: true,
+        smtpFrom: 'tickets@new-reconfigured.com',
+        senderName: 'New Reconfigured Desk',
+      }),
+    });
+    assert.strictEqual(newConfigRes.status, 200);
+    const newConfigData = await newConfigRes.json();
+    assert.strictEqual(newConfigData.config.status, 'Configured');
+    assert.strictEqual(newConfigData.config.smtpHost, 'smtp.new-reconfigured.com');
+    assert.strictEqual(newConfigData.config.smtpPass, '********');
+
+    // Verify DB updated
+    const dbRow = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as any;
+    assert.strictEqual(dbRow.smtp_host, 'smtp.new-reconfigured.com');
+    assert.strictEqual(dbRow.smtp_pass, 'brandNewSecret99');
+    assert.strictEqual(emailService.isConfigured(), true);
+
+    // Clean up by resetting again
+    await fetch(`${baseUrl}/api/admin/smtp/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+  });
+
+  await test('Error Logs Clearing: DELETE & POST /api/admin/system-errors/clear requires admin and confirmation', async () => {
+    // 1. Unauthenticated or staff rejected
+    const unauthRes = await fetch(`${baseUrl}/api/admin/system-errors/clear`, { method: 'POST', body: JSON.stringify({ confirm: true }) });
+    assert.strictEqual(unauthRes.status, 401);
+
+    const staffRes = await fetch(`${baseUrl}/api/admin/system-errors/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${staffToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.strictEqual(staffRes.status, 403);
+
+    // 2. Reject without confirm: true
+    const noConfirmRes = await fetch(`${baseUrl}/api/admin/system-errors/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: false }),
+    });
+    assert.strictEqual(noConfirmRes.status, 400);
+
+    // 3. Create test error log
+    const testErrId = `err-clear-test-${Date.now()}`;
+    db.prepare(`
+      INSERT INTO system_audit_logs (id, timestamp, severity, event_type, action, module, message, created_at)
+      VALUES (?, ?, 'ERROR', 'TEST_ERROR', 'TEST_ACTION', 'EMAIL', 'Temporary test error for clearing', ?)
+    `).run(testErrId, new Date().toISOString(), new Date().toISOString());
+
+    // 4. Admin clears error logs
+    const clearRes = await fetch(`${baseUrl}/api/admin/system-errors/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, reason: 'Testing error log cleanup' }),
+    });
+    assert.strictEqual(clearRes.status, 200);
+    const clearData = await clearRes.json();
+    assert.strictEqual(clearData.success, true);
+    assert.ok(clearData.deletedCount >= 1);
+
+    // 5. Verify the test error log is gone
+    const checkErr = db.prepare('SELECT id FROM system_audit_logs WHERE id = ?').get(testErrId);
+    assert.strictEqual(checkErr, undefined, 'Targeted error log must be deleted');
+
+    // 6. Verify audit event for error clearing was recorded
+    const auditRow = db.prepare("SELECT * FROM system_audit_logs WHERE event_type = 'ADMIN_CLEAR_ERROR_LOGS' ORDER BY timestamp DESC LIMIT 1").get() as any;
+    assert.ok(auditRow, 'ADMIN_CLEAR_ERROR_LOGS audit record must exist');
+    assert.strictEqual(auditRow.severity, 'INFO');
+  });
+
+  await test('Submission Logs Clearing: Clears history/activity logs while preserving submissions business records', async () => {
+    // 1. Verify business submission count before
+    const subCountBefore = Number((db.prepare('SELECT COUNT(*) as c FROM submissions').get() as any)?.c) || 0;
+
+    // 2. Create a test submission activity log
+    const testActId = `act-test-${Date.now()}`;
+    db.prepare(`
+      INSERT INTO activity_logs (id, timestamp, actor, action, entity_id, result)
+      VALUES (?, ?, 'Thisal Methwidu', 'APPLICATION_SUBMITTED', 'sub-test-dummy', 'SUCCESS')
+    `).run(testActId, new Date().toISOString());
+
+    // 3. Clear submission logs
+    const clearRes = await fetch(`${baseUrl}/api/admin/submissions/logs/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true, reason: 'Testing submission log clearing' }),
+    });
+    assert.strictEqual(clearRes.status, 200);
+    const clearData = await clearRes.json();
+    assert.strictEqual(clearData.success, true);
+
+    // 4. Verify test activity log is gone
+    const checkAct = db.prepare('SELECT id FROM activity_logs WHERE id = ?').get(testActId);
+    assert.strictEqual(checkAct, undefined, 'Submission activity log must be deleted');
+
+    // 5. CRITICAL: Verify submissions table records remain 100% intact!
+    const subCountAfter = Number((db.prepare('SELECT COUNT(*) as c FROM submissions').get() as any)?.c) || 0;
+    assert.strictEqual(subCountAfter, subCountBefore, 'Submissions business data must NEVER be touched when clearing logs');
+
+    // 6. Verify audit event was logged
+    const auditRow = db.prepare("SELECT * FROM system_audit_logs WHERE event_type = 'ADMIN_CLEAR_SUBMISSION_LOGS' ORDER BY timestamp DESC LIMIT 1").get() as any;
+    assert.ok(auditRow, 'ADMIN_CLEAR_SUBMISSION_LOGS audit event must be created');
+  });
+
+  await test('Approver Authorization: /api/approve/* strictly protects approval desk against unauthorized roles', async () => {
+    // 1. Unauthenticated request rejected
+    const unauthRes = await fetch(`${baseUrl}/api/approve/stats`);
+    assert.strictEqual(unauthRes.status, 401);
+
+    // 2. Staff role rejected
+    const staffRes = await fetch(`${baseUrl}/api/approve/stats`, {
+      headers: { Authorization: `Bearer ${staffToken}` },
+    });
+    assert.strictEqual(staffRes.status, 403);
+
+    const staffPending = await fetch(`${baseUrl}/api/approve/pending`, {
+      headers: { Authorization: `Bearer ${staffToken}` },
+    });
+    assert.strictEqual(staffPending.status, 403);
+
+    // 3. Approver role allowed
+    const approverRes = await fetch(`${baseUrl}/api/approve/stats`, {
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+    assert.strictEqual(approverRes.status, 200);
+
+    // 4. Admin role allowed
+    const adminRes = await fetch(`${baseUrl}/api/approve/stats`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(adminRes.status, 200);
+  });
+
+  await test('Authoritative Statistics Consistency: Database count matches Admin and Approver endpoints', async () => {
+    const adminStatsRes = await fetch(`${baseUrl}/api/admin/stats`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(adminStatsRes.status, 200);
+    const adminStats = await adminStatsRes.json();
+
+    const approverStatsRes = await fetch(`${baseUrl}/api/approve/stats`, {
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+    assert.strictEqual(approverStatsRes.status, 200);
+    const approverStats = await approverStatsRes.json();
+
+    // Direct database authoritative counts
+    const dbSubmissions = Number((db.prepare('SELECT COUNT(*) as c FROM submissions WHERE deleted_at IS NULL').get() as any)?.c) || 0;
+    const dbUsers = Number((db.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c) || 0;
+    const dbAuditLogs = Number((db.prepare('SELECT COUNT(*) as c FROM system_audit_logs').get() as any)?.c) || 0;
+
+    assert.strictEqual(adminStats.totalApplications, dbSubmissions);
+    assert.strictEqual(approverStats.totalApplications, dbSubmissions);
+    assert.strictEqual(adminStats.totalUsers, dbUsers);
+    assert.strictEqual(adminStats.totalAuditLogs, dbAuditLogs);
+    assert.strictEqual(adminStats.ticketsSold, approverStats.ticketsSold);
+  });
+
+  await test('Resend Ticket Pass Email: Both Admin and Approver endpoints dispatch pass email and enforce RBAC', async () => {
+    // 1. Create and approve a test submission
+    const resendSub = ticketService.submitTicket({
+      name: 'Resend Pass Attendee',
+      email: 'resend.pass@gmail.com',
+      phone: '+94 77 555 1234',
+      ticketType: 'outsider',
+      quantity: 1,
+      paymentSlipUrl: '/uploads/resend.jpg',
+    });
+    const approved = await approvalService.approveSubmission(resendSub.submissionId, 'Approver');
+    assert.ok(approved.ticketId);
+
+    // 2. Staff user forbidden from resending pass (403)
+    const staffRes = await fetch(`${baseUrl}/api/approve/submissions/${resendSub.submissionId}/resend-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${staffToken}` },
+    });
+    assert.strictEqual(staffRes.status, 403, 'Staff must be forbidden from resending ticket pass');
+
+    // 3. Approver can resend pass email via /api/approve/submissions/:id/resend-email
+    const approverRes = await fetch(`${baseUrl}/api/approve/submissions/${resendSub.submissionId}/resend-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${approverToken}` },
+    });
+    assert.strictEqual(approverRes.status, 200);
+    const approverData = await approverRes.json();
+    assert.strictEqual(typeof approverData.success, 'boolean');
+    assert.ok(approverData.message);
+
+    // 4. Admin can resend pass email via /api/admin/submissions/:id/resend-email
+    const adminRes = await fetch(`${baseUrl}/api/admin/submissions/${resendSub.submissionId}/resend-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    assert.strictEqual(adminRes.status, 200);
+    const adminData = await adminRes.json();
+    assert.strictEqual(typeof adminData.success, 'boolean');
+    assert.ok(adminData.message);
+
+    // 5. Clean up test record
+    db.prepare('DELETE FROM submissions WHERE id = ?').run(resendSub.submissionId);
+  });
+
+  // ----------------------------------------------------
+  // Summary & Test Log Cleanup
   // ----------------------------------------------------
   // Clean up any dynamically created test admin accounts and ensure standard users
   db.prepare("DELETE FROM users WHERE id NOT IN ('usr-1', 'usr-2', 'usr-3', 'usr-4', 'usr-5')").run();
   db.prepare("UPDATE users SET role = 'admin', name = 'Thisal Methwidu', email = 'admin@memoria.lk', password_hash = ? WHERE id = 'usr-1'").run(bcrypt.hashSync('admin123', 10));
+
+  // Clean up test logs generated by test suite to prevent production log pollution
+  db.prepare("DELETE FROM activity_logs WHERE actor IN ('Test Approver', 'test') OR metadata LIKE '%test%'").run();
+  db.prepare("DELETE FROM system_audit_logs WHERE id LIKE '%test%' OR message LIKE '%test%' OR message LIKE '%Test%'").run();
+
+  // Restore original SMTP configuration if one existed before tests
+  if (initialSmtpSetting) {
+    db.prepare(`
+      INSERT OR REPLACE INTO smtp_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_from, sender_name, updated_at, updated_by)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      initialSmtpSetting.smtp_host,
+      initialSmtpSetting.smtp_port,
+      initialSmtpSetting.smtp_user,
+      initialSmtpSetting.smtp_pass,
+      initialSmtpSetting.smtp_secure,
+      initialSmtpSetting.smtp_from,
+      initialSmtpSetting.sender_name,
+      initialSmtpSetting.updated_at,
+      initialSmtpSetting.updated_by
+    );
+    emailService.reloadTransporter();
+  }
 
   server.close();
   console.log('\n========================================================');

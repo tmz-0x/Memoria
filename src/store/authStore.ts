@@ -15,21 +15,7 @@ interface AuthState {
 }
 
 const STORAGE_AUTH_USER = 'memoria_auth_user_v1';
-
-const DEMO_USERS: Record<string, { pass: string; user: AuthUser }> = {
-  'admin@memoria.lk': {
-    pass: 'admin123',
-    user: { id: 'usr-1', name: 'Alexander Cross', email: 'admin@memoria.lk', role: 'admin' },
-  },
-  'approver@memoria.lk': {
-    pass: 'approve123',
-    user: { id: 'usr-2', name: 'Elena Vance', email: 'approver@memoria.lk', role: 'approver' },
-  },
-  'staff@memoria.lk': {
-    pass: 'staff123',
-    user: { id: 'usr-3', name: 'Marcus Chen', email: 'staff@memoria.lk', role: 'staff' },
-  },
-};
+const STORAGE_AUTH_TOKEN = 'memoria_auth_token_v1';
 
 const getStoredUser = (): AuthUser | null => {
   try {
@@ -41,8 +27,6 @@ const getStoredUser = (): AuthUser | null => {
 };
 
 const initialUser = getStoredUser();
-
-const STORAGE_AUTH_TOKEN = 'memoria_auth_token_v1';
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: initialUser,
@@ -73,14 +57,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       const message = errData?.message || 'Invalid credentials. Please verify your email and password.';
       return { success: false, message };
     } catch {
-      // Offline / network fallback using demo users
-      const account = DEMO_USERS[normalizedEmail];
-      if (account && account.pass === trimmedPass) {
-        localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(account.user));
-        set({ user: account.user, isAuthenticated: true });
-        return { success: true };
-      }
-      return { success: false, message: 'Invalid credentials or backend unavailable.' };
+      return {
+        success: false,
+        message: 'Unable to reach the authentication server. Please ensure the backend server is running and try again.',
+      };
     }
   },
 

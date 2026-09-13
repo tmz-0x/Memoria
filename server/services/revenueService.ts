@@ -73,6 +73,14 @@ export interface AdminStatistics {
   studentRevenue: number;
   totalCapacity: number;
   remainingAllocation: number;
+
+  // Authoritative Database Statistics (BACKENDFIXES6 Sections 24-25)
+  totalUsers: number;
+  totalAuditLogs: number;
+  totalErrorLogs: number;
+  totalSubmissionLogs: number;
+  validTickets: number;
+  remainingTickets: number;
 }
 
 export const revenueService = {
@@ -217,6 +225,14 @@ export const revenueService = {
       studentRevenue,
       totalCapacity: settings?.total_capacity ?? 800,
       remainingAllocation: settings?.remaining_allocation ?? 142,
+
+      // Authoritative Database Statistics (BACKENDFIXES6 Sections 24-25)
+      totalUsers: Number((db.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c) || 0,
+      totalAuditLogs: Number((db.prepare('SELECT COUNT(*) as c FROM system_audit_logs').get() as any)?.c) || 0,
+      totalErrorLogs: Number((db.prepare("SELECT COUNT(*) as c FROM system_audit_logs WHERE (severity IN ('ERROR', 'CRITICAL') OR status_code >= 400 OR error_code IS NOT NULL)").get() as any)?.c) || 0,
+      totalSubmissionLogs: Number((db.prepare("SELECT COUNT(*) as c FROM activity_logs WHERE (action LIKE '%SUBMISSION%' OR action LIKE '%APPLICATION%' OR action LIKE '%QR%' OR action LIKE '%TICKET%')").get() as any)?.c) || 0,
+      validTickets: totalTicketsIssued,
+      remainingTickets: remainingNotCheckedIn,
     };
   },
 };

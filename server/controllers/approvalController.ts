@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db } from '../db/database';
 import { approvalService } from '../services/approvalService';
+import { emailService } from '../services/emailService';
 import { auditService } from '../services/auditService';
 import { revenueService } from '../services/revenueService';
 import { AppError } from '../middleware/errorHandler';
@@ -145,6 +146,39 @@ export const approvalController = {
         reason: h.reason,
       }));
       res.status(200).json(formatted);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  resendEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const sub = db.prepare('SELECT id, ticket_id, name, email, status FROM submissions WHERE (id = ? OR ticket_id = ?) AND deleted_at IS NULL').get(id, id) as any;
+      if (!sub) {
+        throw new AppError('Application record not found.', 404, 'NOT_FOUND');
+      }
+      if (sub.status !== 'approved' || !sub.ticket_id) {
+        throw new AppError('Cannot dispatch ticket email for an application that has not been approved.', 400, 'TICKET_NOT_APPROVED');
+      }
+
+      const result = await emailService.sendTicketEmail(sub.id);
+      auditService.logActivity(req.user?.name || 'approver', 'TICKET_EMAIL_RESENT', result.success ? 'SUCCESS' : 'FAILURE', sub.id, {
+        ticketId: sub.ticket_id,
+        email: sub.email,
+        result,
+      });
+
+      res.status(200).json({
+        success: result.success,
+        message: result.success
+          ? `Official admission pass successfully dispatched to ${sub.email} (${sub.ticket_id}).`
+          : `Dispatch attempted but delivery failed: ${result.error || 'SMTP server unavailable'}.`,
+        error: result.error,
+        emailStatus: result.success ? 'SENT' : 'FAILED',
+        recipientEmail: sub.email,
+        ticketId: sub.ticket_id,
+      });
     } catch (err) {
       next(err);
     }

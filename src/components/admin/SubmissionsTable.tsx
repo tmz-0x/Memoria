@@ -40,6 +40,7 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
   // Delete modal state
   const [deletingSub, setDeletingSub] = useState<Submission | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
+  const [permanentDelete, setPermanentDelete] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   // QR Regenerate modal state
@@ -116,10 +117,11 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
     if (!deletingSub) return;
     setDeleteLoading(true);
     try {
-      await api.deleteSubmission(deletingSub.id, deleteReason);
+      await api.deleteSubmission(deletingSub.id, deleteReason, permanentDelete);
       setDeletingSub(null);
       setDeleteReason('');
-      setNotification(`Record for ${deletingSub.name} deleted successfully.`);
+      setPermanentDelete(false);
+      setNotification(`Record for ${deletingSub.name} ${permanentDelete ? 'permanently removed from database' : 'archived'}.`);
       onRefresh?.();
       setTimeout(() => setNotification(null), 4000);
     } catch (err: any) {
@@ -133,12 +135,16 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
     if (!regenSub) return;
     setRegenLoading(true);
     try {
-      await api.regenerateQR(regenSub.id, regenReason);
+      const res = await api.regenerateQR(regenSub.id, regenReason);
       setRegenSub(null);
       setRegenReason('');
-      setNotification(`QR credential successfully regenerated for ${regenSub.name}. Previous QR invalidated.`);
+      if (res.emailSent) {
+        setNotification(`QR credential successfully regenerated for ${regenSub.name}. Previous QR invalidated and updated pass emailed.`);
+      } else {
+        setNotification(`QR credential regenerated and previous QR invalidated. Note: Outbound email failed (${res.emailError || 'SMTP unavailable'}).`);
+      }
       onRefresh?.();
-      setTimeout(() => setNotification(null), 4000);
+      setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
       alert(err.message || 'Failed to regenerate QR');
     } finally {
@@ -207,6 +213,7 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
               <th className="px-6 py-3.5">Type & Reg</th>
               <th className="px-6 py-3.5">Qty / Total</th>
               <th className="px-6 py-3.5">Status</th>
+              <th className="px-6 py-3.5">Email Delivery</th>
               <th className="px-6 py-3.5">Ticket ID</th>
               <th className="px-6 py-3.5">Admission</th>
               <th className="px-6 py-3.5 text-right">Actions</th>
@@ -215,7 +222,7 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
+                <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
                   No ticket submissions match your current filters.
                 </td>
               </tr>
@@ -275,6 +282,23 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
                       </span>
                     )}
                   </td>
+                  <td className="px-6 py-4">
+                    {sub.emailStatus === 'SENT' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700" title={sub.emailSentAt ? `Delivered: ${new Date(sub.emailSentAt).toLocaleString()}` : 'Delivered'}>
+                        <CheckCircle2 className="w-3 h-3" />
+                        Delivered
+                      </span>
+                    ) : sub.emailStatus === 'FAILED' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700" title={sub.emailLastError || 'Delivery failed'}>
+                        <AlertTriangle className="w-3 h-3" />
+                        Failed
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-400">
+                        {sub.status === 'approved' ? 'Queued' : '—'}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 font-mono font-medium">
                     {sub.ticketId ? (
                       <span className="text-blue-600 font-semibold">{sub.ticketId}</span>
@@ -309,6 +333,25 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
                           title="View Ticket QR Code"
                         >
                           <QrCode className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {sub.status === 'approved' && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await api.resendTicketEmail(sub.id);
+                              setNotification(`Pass emailed for ${sub.name}: ${res.message}`);
+                              onRefresh?.();
+                              setTimeout(() => setNotification(null), 5000);
+                            } catch (err: any) {
+                              alert(err.message || 'Failed to dispatch email');
+                            }
+                          }}
+                          className="p-1.5 rounded-md bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors"
+                          title="Send / Resend Ticket Pass Email"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
                         </button>
                       )}
 
@@ -532,6 +575,20 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
               />
             </div>
 
+            <div className="mb-4 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+              <label className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={permanentDelete}
+                  onChange={(e) => setPermanentDelete(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                />
+                <span>
+                  <strong>Permanent Purge:</strong> Remove entirely from database table (allows attendee to re-register with same credentials).
+                </span>
+              </label>
+            </div>
+
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -687,11 +744,28 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
                   Notice: Viewing this credential does not modify check-in status or create a new QR code.
                 </p>
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await api.resendTicketEmail(viewingQRSub.id);
+                        setNotification(res.message);
+                        onRefresh?.();
+                        setTimeout(() => setNotification(null), 5000);
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to dispatch email');
+                      }
+                    }}
+                    className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    Send Ticket Email
+                  </button>
                   <button
                     type="button"
                     onClick={() => { setViewingQRSub(null); setQrDetails(null); }}
-                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold"
+                    className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                   >
                     Close QR Viewer
                   </button>

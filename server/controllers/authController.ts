@@ -22,6 +22,15 @@ export const authController = {
       `).get(normalizedEmail) as any;
 
       if (!user || !bcrypt.compareSync(String(password).trim(), user.password_hash)) {
+        auditService.logSystemEvent({
+          severity: 'WARNING',
+          eventType: 'LOGIN_FAILED',
+          action: 'USER_LOGIN',
+          module: 'AUTH',
+          message: `Authentication failed for email: ${normalizedEmail}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
         throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS');
       }
 
@@ -37,6 +46,17 @@ export const authController = {
       });
 
       auditService.logActivity(user.name, 'USER_LOGIN', 'SUCCESS', user.id, { role: user.role });
+      auditService.logSystemEvent({
+        severity: 'INFO',
+        eventType: 'LOGIN_SUCCESS',
+        action: 'USER_LOGIN',
+        module: 'AUTH',
+        message: `User ${user.name} logged in successfully (${user.role})`,
+        userId: user.id,
+        username: user.name,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
 
       res.status(200).json({
         success: true,
@@ -103,6 +123,10 @@ export const authController = {
           throw new AppError('New password must be at least 6 characters.', 400, 'WEAK_PASSWORD');
         }
 
+        if (bcrypt.compareSync(String(newPassword).trim(), currentUser.password_hash)) {
+          throw new AppError('New password cannot be the same as your current password.', 400, 'SAME_PASSWORD');
+        }
+
         newPassHash = bcrypt.hashSync(String(newPassword).trim(), 10);
       }
 
@@ -116,6 +140,18 @@ export const authController = {
         emailChanged: newEmail !== currentUser.email,
         passwordChanged: Boolean(newPassword),
       });
+
+      if (newPassword) {
+        auditService.logSystemEvent({
+          severity: 'INFO',
+          eventType: 'PASSWORD_CHANGED',
+          action: 'UPDATE_PROFILE_PASSWORD',
+          module: 'AUTH',
+          message: `User ${newName} changed their password`,
+          userId,
+          username: newName,
+        });
+      }
 
       const updatedUserPayload = {
         id: userId,
@@ -140,6 +176,17 @@ export const authController = {
   },
 
   logout: (req: Request, res: Response): void => {
+    if (req.user) {
+      auditService.logSystemEvent({
+        severity: 'INFO',
+        eventType: 'LOGOUT',
+        action: 'USER_LOGOUT',
+        module: 'AUTH',
+        message: `User ${req.user.name} logged out`,
+        userId: req.user.id,
+        username: req.user.name,
+      });
+    }
     res.status(200).json({
       success: true,
       message: 'Logged out successfully.',

@@ -129,6 +129,49 @@ export function initializeDatabase() {
       result TEXT NOT NULL,
       metadata TEXT
     );
+    -- Dedicated System Audit Logs (System Reliability, Exceptions & Admin Security)
+    CREATE TABLE IF NOT EXISTS system_audit_logs (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      severity TEXT NOT NULL CHECK(severity IN ('INFO', 'WARNING', 'ERROR', 'CRITICAL')),
+      event_type TEXT NOT NULL,
+      action TEXT NOT NULL,
+      module TEXT NOT NULL,
+      message TEXT NOT NULL,
+      user_id TEXT,
+      username TEXT,
+      target_type TEXT,
+      target_id TEXT,
+      request_id TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      endpoint TEXT,
+      http_method TEXT,
+      status_code INTEGER,
+      error_code TEXT,
+      error_message TEXT,
+      stack_trace TEXT,
+      metadata TEXT,
+      resolution_status TEXT DEFAULT 'open' CHECK(resolution_status IN ('open', 'investigating', 'resolved', 'ignored')),
+      resolution_note TEXT,
+      resolved_by TEXT,
+      resolved_at TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    -- Dynamic Runtime SMTP Settings (Singleton row id = 1)
+    CREATE TABLE IF NOT EXISTS smtp_settings (
+      id INTEGER PRIMARY KEY CHECK(id = 1),
+      smtp_host TEXT NOT NULL,
+      smtp_port INTEGER NOT NULL,
+      smtp_user TEXT,
+      smtp_pass TEXT,
+      smtp_secure INTEGER NOT NULL DEFAULT 0 CHECK(smtp_secure IN (0, 1)),
+      smtp_from TEXT NOT NULL,
+      sender_name TEXT NOT NULL DEFAULT 'Memoria 26 Ticketing Desk',
+      updated_at TEXT NOT NULL,
+      updated_by TEXT
+    );
   `);
 
   // Safe migrations for existing tables
@@ -154,6 +197,21 @@ export function initializeDatabase() {
   }
   if (!cols.includes('email_last_error')) {
     db.exec("ALTER TABLE submissions ADD COLUMN email_last_error TEXT");
+  }
+
+  // Safe migrations for system_audit_logs error handling
+  const sysCols = (db.pragma('table_info(system_audit_logs)') as Array<{ name: string }>).map((c) => c.name);
+  if (!sysCols.includes('resolution_status')) {
+    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolution_status TEXT DEFAULT 'open'");
+  }
+  if (!sysCols.includes('resolution_note')) {
+    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolution_note TEXT");
+  }
+  if (!sysCols.includes('resolved_by')) {
+    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolved_by TEXT");
+  }
+  if (!sysCols.includes('resolved_at')) {
+    db.exec("ALTER TABLE system_audit_logs ADD COLUMN resolved_at TEXT");
   }
 
   // Performance Indexes for 15,000+ Crowd Scale
@@ -189,5 +247,35 @@ export function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_scan_logs_time ON scan_audit_logs(scanned_at);
     CREATE INDEX IF NOT EXISTS idx_activity_time ON activity_logs(timestamp);
     CREATE INDEX IF NOT EXISTS idx_revoked_qr_token ON revoked_qr_tokens(token);
+
+    -- Dedicated System Audit Indexes
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_time ON system_audit_logs(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_severity ON system_audit_logs(severity);
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_event_type ON system_audit_logs(event_type);
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_module ON system_audit_logs(module);
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_user_id ON system_audit_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_request_id ON system_audit_logs(request_id);
+    CREATE INDEX IF NOT EXISTS idx_sys_audit_resolution ON system_audit_logs(resolution_status);
   `);
+
+  // Ensure default SMTP configuration row exists from environment variables if not present
+  try {
+    const existingSmtp = db.prepare('SELECT id FROM smtp_settings WHERE id = 1').get();
+    if (!existingSmtp) {
+      db.prepare(`
+        INSERT INTO smtp_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_from, sender_name, updated_at, updated_by)
+        VALUES (1, ?, ?, ?, ?, ?, ?, 'Memoria 26 Ticketing Desk', ?, 'system')
+      `).run(
+        process.env.SMTP_HOST || 'smtp.gmail.com',
+        parseInt(process.env.SMTP_PORT || '587', 10),
+        process.env.SMTP_USER || '',
+        process.env.SMTP_PASS || '',
+        process.env.SMTP_SECURE === 'true' ? 1 : 0,
+        process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Memoria\'26 Ticketing Desk" <tickets@memoria.lk>',
+        new Date().toISOString()
+      );
+    }
+  } catch (err) {
+    console.error('[SMTP Settings Init Error]:', err);
+  }
 }

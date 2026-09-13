@@ -112,20 +112,50 @@ export const approvalService = {
       ticketId,
       attendeeName: sub.name,
       ticketType: sub.ticket_type,
-    });
-    auditService.logActivity(approverName, 'QR_GENERATED', 'SUCCESS', submissionId, {
-      ticketId,
       qrTokenPrefix: qrToken.slice(0, 8),
     });
-
-    // 6. Asynchronously trigger ticket email in background
-    emailService.sendTicketEmail(submissionId).catch((err) => {
-      console.error('[Background Email Dispatch Error]:', err);
+    auditService.logSystemEvent({
+      severity: 'INFO',
+      eventType: 'TICKET_APPROVED',
+      action: 'APPROVE_TICKET',
+      module: 'APPROVAL',
+      message: `Ticket pass ${ticketId} approved for ${sub.name} by ${approverName}`,
+      targetType: 'ticket',
+      targetId: ticketId,
+      username: approverName,
+      metadata: {
+        submissionId,
+        ticketId,
+        ticketType: sub.ticket_type,
+        quantity: sub.quantity,
+      },
     });
+
+    // 6. Deliver ticket pass email to buyer (decoupled: failure does not invalidate approved ticket)
+    let emailSent = false;
+    let emailStatus = 'PENDING';
+    let emailError: string | undefined;
+
+    try {
+      const emailRes = await emailService.sendTicketEmail(submissionId);
+      emailSent = emailRes.success;
+      emailStatus = emailRes.success ? 'SENT' : 'FAILED';
+      emailError = emailRes.error;
+    } catch (err: any) {
+      emailSent = false;
+      emailStatus = 'FAILED';
+      emailError = err.message || 'Email dispatch failed';
+      console.error('[Approval Email Dispatch Error]:', err);
+    }
 
     return {
       success: true,
       ticketId,
+      emailSent,
+      emailStatus,
+      emailError,
+      recipientEmail: sub.email,
+      attendeeName: sub.name,
     };
   },
 
@@ -171,6 +201,19 @@ export const approvalService = {
     auditService.logActivity(approverName, 'APPLICATION_REJECTED', 'SUCCESS', submissionId, {
       reason: trimmedReason,
       attendeeName: sub.name,
+    });
+    auditService.logSystemEvent({
+      severity: 'INFO',
+      eventType: 'TICKET_REJECTED',
+      action: 'REJECT_TICKET',
+      module: 'APPROVAL',
+      message: `Submission ${submissionId} for ${sub.name} rejected by ${approverName}: ${trimmedReason}`,
+      targetType: 'submission',
+      targetId: submissionId,
+      username: approverName,
+      metadata: {
+        reason: trimmedReason,
+      },
     });
 
     return { success: true };

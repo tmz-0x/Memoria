@@ -1,0 +1,830 @@
+FIXES 6 — SMTP RESET, LOG ACCURACY, APPROVER NAVIGATION & ADMIN LOG MANAGEMENT
+
+You are continuing development of an existing event ticket management and administration system.
+
+This is an additional corrective/hardening phase after Fixes 1–5.
+
+DO NOT rebuild the application.
+
+DO NOT replace working functionality unnecessarily.
+
+DO NOT create duplicate services or duplicate database logic.
+
+Before implementing anything, inspect the existing codebase and understand how the current:
+
+SMTP configuration
+SMTP reset
+Admin dashboard
+System audit logs
+Error logs
+Submission logs
+Approval/approver page
+Navigation/sidebar
+Database statistics
+Test/demo logs
+
+are implemented.
+
+The database must remain the authoritative source of truth.
+
+1. FIX SMTP RESET FUNCTIONALITY
+Current problem
+
+The SMTP configuration can be configured successfully, but the RESET functionality does not properly reset the configuration after SMTP settings have been configured.
+
+Fix the existing reset implementation.
+
+Do NOT simply clear the frontend form.
+
+A reset must actually reset the persisted SMTP configuration and the active runtime SMTP configuration.
+
+2. SMTP RESET MUST HANDLE ALL CONFIGURATION LAYERS
+
+Inspect where SMTP configuration currently exists.
+
+It may involve:
+
+Environment variables
+Database configuration
+Runtime memory/cache
+SMTP transport/connection pool
+Frontend state
+Browser state
+
+Identify all active sources.
+
+The reset operation must correctly handle the architecture actually being used.
+
+After:
+
+ADMIN → SMTP Settings → RESET
+
+the system must not continue using the old administrator-configured SMTP settings unintentionally.
+
+3. DEFINE CORRECT SMTP RESET BEHAVIOR
+
+When an administrator selects:
+
+Reset SMTP Configuration
+
+show a confirmation dialog.
+
+Example:
+
+"Reset SMTP configuration? Email sending will stop until valid SMTP settings are configured again."
+
+After confirmation:
+
+Remove/reset the administrator-configured SMTP values from persistent storage.
+Clear the active runtime SMTP configuration.
+Destroy/recreate the SMTP transport if required.
+Clear relevant cached configuration.
+Return the system to the intended unconfigured/default state.
+Do not accidentally restore stale values from frontend state.
+Update the SMTP status displayed in the admin panel.
+Record the operation in the audit log.
+4. ENVIRONMENT VARIABLE BEHAVIOR
+
+Be careful with .env configuration.
+
+If environment variables are used as fallback configuration, clearly distinguish:
+
+Initial/default configuration
+
+from:
+
+Administrator-managed runtime configuration
+
+Do not make the RESET button appear to work while the backend immediately reloads the same SMTP values from environment variables.
+
+If .env values are intentionally configured as permanent deployment defaults, clearly show that the system is using deployment-level SMTP configuration and that administrator reset cannot permanently remove those values.
+
+Do not modify .env files from the browser.
+
+The final behavior must be predictable.
+
+5. SMTP RESET ACCEPTANCE TEST
+
+Test this exact workflow:
+
+Start with SMTP unconfigured.
+Configure SMTP.
+Save.
+Verify SMTP status becomes configured.
+Send/test an email.
+Click Reset.
+Confirm reset.
+Refresh the browser.
+Restart the backend if necessary during testing.
+Verify the intended reset state remains.
+Verify the old SMTP configuration is not unintentionally active.
+Configure new SMTP settings.
+Verify the new configuration works.
+Verify email sending uses the new configuration.
+
+Do not declare the reset fixed until this workflow works.
+
+6. ADMIN LOG COUNT IS CURRENTLY INCORRECT
+
+There are logs/test records that appear when entering the Admin page.
+
+The displayed count is currently incorrect.
+
+This MUST be investigated at the backend/database level.
+
+Do not simply modify the number displayed on the frontend.
+
+Determine why the count is wrong.
+
+Possible causes to investigate:
+
+Duplicate database records
+Duplicate API requests
+React effect executing multiple times
+Pagination count being confused with total count
+Filtered count being confused with total count
+Client-side counting
+Cached count
+Test logs being counted incorrectly
+Multiple log tables
+Different event types being counted differently
+Soft-deleted logs still being counted
+Race conditions
+Incorrect SQL/ORM aggregation
+JOIN operations multiplying records
+Duplicate audit events being generated
+Count API returning page size instead of total count
+
+Find the actual root cause.
+
+7. DEFINE EXACTLY WHAT "LOG COUNT" MEANS
+
+Do not use ambiguous counting.
+
+For every displayed log statistic, define exactly what it represents.
+
+For example:
+
+Total Logs =
+COUNT of all eligible log records in the database
+
+Error Logs =
+COUNT of log records where severity = ERROR
+
+Critical Logs =
+COUNT where severity = CRITICAL
+
+Submission Logs =
+COUNT of actual submission log records
+
+Do not count rows from a JOIN if the JOIN causes one log to appear multiple times.
+
+Use:
+
+COUNT(DISTINCT log.id)
+
+where appropriate.
+
+Adapt this to the existing database technology.
+
+8. DATABASE AS SINGLE SOURCE OF TRUTH
+
+The Admin dashboard must NOT calculate critical log counts using frontend arrays.
+
+Do NOT do:
+
+logs.length
+
+unless logs represents the complete authoritative dataset.
+
+Do NOT load the first 20 logs and then claim:
+
+"Total logs = 20"
+
+if there are actually 500 logs.
+
+Instead, obtain the total count from the backend/database.
+
+For example:
+
+{
+"items": [...],
+"pagination": {
+"page": 1,
+"limit": 20,
+"total": 500
+}
+}
+
+Use the backend's authoritative total.
+
+9. TEST/DEVELOPMENT LOGS MUST NOT CORRUPT PRODUCTION STATISTICS
+
+The existing logs used for website testing must be reviewed.
+
+Determine whether they are:
+
+Real audit events
+Development/test records
+Sample/demo records
+Temporary debugging logs
+
+Do NOT blindly delete real historical logs.
+
+Do NOT blindly include development sample data in production statistics.
+
+If test records exist in the production database:
+
+Identify them.
+Determine how they were generated.
+Remove them only if they are confirmed to be test/sample records.
+Prevent test data from being generated in production again.
+
+Production statistics must represent real system activity.
+
+10. PREVENT DUPLICATE LOG CREATION
+
+Inspect the application for situations where one action creates multiple identical logs.
+
+For example:
+
+One login
+→ one login event
+
+One ticket approval
+→ one approval event
+
+One QR check-in
+→ one check-in event
+
+Do not allow a single operation to create multiple identical audit records because multiple frontend effects, retries, or backend handlers execute the same logging operation.
+
+Where appropriate, use:
+
+Request IDs
+Idempotency
+Unique event identifiers
+Transaction boundaries
+
+Do not artificially hide duplicate logs in the UI.
+
+Fix their creation.
+
+11. LOG COUNTS MUST UPDATE CORRECTLY
+
+After:
+
+Creating a log
+Deleting a log
+Clearing logs
+Changing filters
+Changing pages
+Refreshing
+Logging in/out
+Performing administrative actions
+
+the displayed statistics must remain accurate.
+
+Use backend/database values.
+
+After a destructive action, re-fetch the authoritative count.
+
+Do not manually:
+
+count++
+
+or:
+
+count--
+
+unless the architecture explicitly guarantees that this is safe.
+
+Prefer re-fetching authoritative statistics.
+
+12. ADD PROPER REFRESH BEHAVIOR FOR LOGS
+
+The admin log page must have a refresh function.
+
+When refreshed:
+
+Fetch latest records.
+Fetch latest counts.
+Fetch latest error statistics.
+Fetch latest submission statistics.
+Update the UI.
+Do not use stale frontend state.
+
+Show:
+
+"Last updated: [timestamp]"
+
+Handle refresh failures properly.
+
+13. APPROVER PAGE NAVIGATION IS MISSING
+
+In the Admin page, the navigation button/link to the Approver page is currently missing.
+
+Fix the admin navigation.
+
+Add a clearly visible navigation item:
+
+Approvals / Approver
+
+Use the application's existing naming convention.
+
+14. APPROVER NAVIGATION MUST USE EXISTING ROUTING
+
+Do NOT create a duplicate approval page.
+
+Find the existing:
+
+Approver component/page
+Route
+API
+Permissions
+
+and connect the Admin navigation to the existing implementation.
+
+Clicking:
+
+Admin → Approver
+
+must correctly navigate to the existing approval management interface.
+
+15. APPROVER AUTHORIZATION
+
+The navigation button is not the security mechanism.
+
+Verify that the Approver page itself is protected by backend authorization.
+
+Users without appropriate privileges must not be able to access the page simply by entering its URL.
+
+Check:
+
+Route protection
+API authorization
+Role permissions
+Direct API requests
+
+Do not rely only on hiding/showing the navigation button.
+
+16. APPROVER PAGE STATE
+
+When navigating from Admin → Approver:
+
+Page should load correctly.
+Data should be fetched from the backend.
+Counts must be accurate.
+Existing filters should work.
+Existing approval actions should work.
+No stale admin-page data should be reused incorrectly.
+
+If approval statistics exist elsewhere in the system, they must use the same authoritative backend calculations.
+
+17. ERROR LOGS MUST BE CLEARABLE BY ADMIN
+
+Administrators must be able to clear error logs from the Admin → Error Handling section.
+
+Add:
+
+Clear Error Logs
+
+The action must:
+
+Require admin authorization.
+Require confirmation.
+Clearly state that it is destructive.
+Delete/clear the intended error records from the database.
+Update the displayed count.
+Refresh the list.
+Record the clearing action in the remaining audit trail where appropriate.
+
+Do not allow normal users to perform this action.
+
+18. SUBMISSION LOGS MUST BE CLEARABLE BY ADMIN
+
+Administrators must also be able to clear submission logs.
+
+Add:
+
+Clear Submission Logs
+
+Again:
+
+Backend authorization is mandatory.
+Confirmation required.
+Clear only submission logs.
+Do not delete actual submission/user/ticket records.
+Do not delete unrelated audit logs.
+Update counts immediately.
+Refresh the data.
+Record the administrative clearing action appropriately.
+
+IMPORTANT:
+
+"Clear submission logs" means clearing LOG/HISTORY records.
+
+It must NOT mean:
+
+"Delete all submissions."
+
+Do not confuse the two.
+
+19. LOG CLEARING MUST BE TARGETED
+
+Create separate operations for:
+
+Clear error logs
+Clear submission logs
+Clear audit logs
+
+Do not implement a generic:
+
+DELETE /logs
+
+that accidentally deletes everything.
+
+The backend must explicitly identify the intended log category.
+
+For example:
+
+Error logs → only error-log records
+
+Submission logs → only submission-log records
+
+Audit logs → only audit-log records
+
+20. DO NOT DELETE AUDIT HISTORY BY ACCIDENT
+
+If an administrator clears error logs:
+
+The system should NOT automatically delete:
+
+Ticket records
+User records
+Submission records
+Approval records
+Attendance records
+Security audit records
+
+Likewise, clearing submission logs must not delete the actual submission entities.
+
+Maintain separation between:
+
+BUSINESS DATA
+
+and
+
+LOG/HISTORY DATA
+
+21. CLEAR OPERATION MUST BE AUDITED
+
+When possible, the system must record:
+
+ADMIN_CLEAR_ERROR_LOGS
+ADMIN_CLEAR_SUBMISSION_LOGS
+ADMIN_CLEAR_AUDIT_LOGS
+
+The record should contain:
+
+Admin user
+Timestamp
+Log type
+Number of records affected
+Optional date/filter range
+Request ID
+
+Do NOT log sensitive information unnecessarily.
+
+If clearing the audit log itself, handle the audit-of-the-clear operation carefully so accountability is not completely lost.
+
+22. CLEAR LOGS WITH FILTERS
+
+Where practical, allow administrators to choose:
+
+Clear all
+Clear logs older than a selected date
+Clear selected category
+
+Do not make this unnecessarily complicated if the existing UI is simple.
+
+The key requirement is that the administrator must be able to safely clear the intended log category without affecting unrelated system data.
+
+23. CONFIRM ACTUAL DATABASE EFFECT
+
+After clearing any log type:
+
+Verify directly through the backend/database that:
+
+Intended records were removed.
+Unrelated records remain.
+Count is correct.
+UI is correct after refresh.
+
+Do not consider the feature complete just because the frontend list becomes empty.
+
+24. FIX COUNTING ACROSS THE ENTIRE ADMIN PANEL
+
+While fixing the log count, inspect other admin statistics for the same underlying problem.
+
+Check:
+
+Total users
+Total submissions
+Approved submissions
+Pending submissions
+Rejected submissions
+Total tickets
+Valid tickets
+Checked-in tickets
+Remaining tickets
+Revenue/amount
+Error count
+Audit count
+Submission log count
+Attendance count
+
+Every statistic must have a clear backend/database definition.
+
+Do not allow different pages to calculate the same metric differently.
+
+25. CENTRALIZED STATISTICS ARCHITECTURE
+
+Use:
+
+DATABASE
+↓
+CENTRALIZED BACKEND STATISTICS SERVICE
+↓
+AUTHORITATIVE API
+↓
+ADMIN DASHBOARD
+↓
+LOG PAGES
+↓
+APPROVAL PAGE
+↓
+ATTENDANCE PAGE
+
+Do NOT implement:
+
+Dashboard count → frontend calculation
+
+Log page count → separate frontend calculation
+
+Approver count → another query
+
+Gate count → local state
+
+All equivalent metrics must be consistent.
+
+26. PAGINATION COUNT CORRECTNESS
+
+If logs are paginated, clearly distinguish:
+
+Current page count
+Total matching records
+Total records overall
+
+Example:
+
+Showing 21–40 of 347 logs
+
+The number 347 must come from the database/backend.
+
+Do not calculate it from the current page.
+
+Filters must also affect the count correctly.
+
+For example:
+
+All logs = 347
+
+Filter:
+Severity = ERROR
+
+Result:
+
+Error logs = 29
+
+The API and UI must agree.
+
+27. FILTER + COUNT CONSISTENCY
+
+Test combinations:
+
+All logs
+Error only
+Critical only
+Submission only
+Date range
+User
+Search term
+Multiple filters
+
+The displayed count must correspond to the currently selected filters where that is the intended UI behavior.
+
+Do not show a filtered list with an unfiltered count unless clearly labeled.
+
+28. ERROR HANDLING
+
+If retrieving logs fails:
+
+Show an appropriate error state.
+Do not display 0 as if there are no logs.
+Do not silently replace database failures with empty arrays.
+Provide retry/refresh.
+
+This is important because:
+
+Database failure ≠ zero records.
+
+For example:
+
+BAD:
+"0 errors"
+
+when the database request failed.
+
+GOOD:
+"Unable to load error logs."
+
+29. DATABASE FAILURE TEST
+
+Test the Admin page when the database/API is unavailable.
+
+Verify that:
+
+Counts are not incorrectly displayed as zero.
+Tables do not falsely appear empty.
+The administrator sees an error state.
+Error is recorded by the system logging infrastructure.
+Refresh/retry works after the database becomes available again.
+30. SMTP FAILURE TEST
+
+Test:
+
+SMTP configured
+SMTP reset
+SMTP reconfigured
+Wrong credentials
+SMTP unavailable
+Email sending failure
+
+Verify the admin panel always displays the real configuration state.
+
+Do not show:
+
+"SMTP configured"
+
+when the backend has actually reset/removed the active configuration.
+
+31. FINAL SECURITY REVIEW FOR THESE CHANGES
+
+Verify:
+
+Only admins can reset SMTP.
+Only admins can clear logs.
+Only admins can access administration pages.
+Only authorized roles can access Approver.
+Log-clearing APIs cannot be called by normal users.
+SMTP reset APIs cannot be called by normal users.
+Counts cannot be manipulated through frontend requests.
+Log deletion cannot be performed by modifying IDs in requests.
+No sensitive credentials are returned.
+No SMTP passwords appear in logs.
+No stack traces are exposed to normal users.
+32. FINAL PRODUCTION CLEANUP
+
+Do not add unnecessary testing controls.
+
+The final application should contain only legitimate operational functionality.
+
+Keep:
+
+SMTP configuration
+SMTP reset
+SMTP testing
+Audit logs
+Error logs
+Submission logs
+Log clearing
+Approver navigation
+Real attendance
+Real QR scanning
+Real database statistics
+Refresh controls
+
+Do not add:
+
+Fake counters
+Sample logs
+Simulated approvals
+Fake attendance
+Demo statistics
+Test-only buttons
+Debug controls
+33. FINAL ACCEPTANCE TEST
+
+Perform this complete workflow:
+
+SMTP
+Configure SMTP.
+Verify configuration.
+Send test email.
+Reset SMTP.
+Refresh admin page.
+Verify reset state.
+Restart backend if appropriate.
+Verify old configuration is not unexpectedly active.
+Configure a new SMTP configuration.
+Verify new configuration works.
+Logs
+Enter Admin.
+Check displayed log counts.
+Compare counts with database/backend result.
+Open log list.
+Apply filters.
+Verify counts.
+Refresh.
+Create a known log event.
+Refresh.
+Verify exactly the expected increase.
+Clear error logs.
+Verify only error logs are cleared.
+Clear submission logs.
+Verify only submission logs are cleared.
+Verify actual submissions remain.
+Verify audit history remains where required.
+Approver
+Enter Admin.
+Verify Approver navigation is visible.
+Click Approver.
+Verify correct page opens.
+Verify data loads.
+Verify approval statistics are correct.
+Verify unauthorized users cannot access the page directly.
+34. FINAL ACCEPTANCE CRITERIA
+
+This Fixes 6 implementation is complete only when:
+
+SMTP
+SMTP configuration works.
+SMTP reset actually resets persisted configuration.
+Runtime SMTP configuration is reset correctly.
+Stale SMTP configuration is not reused.
+New SMTP configuration can be applied after reset.
+SMTP reset is audited.
+Logs
+Admin log counts exactly match authoritative backend/database counts.
+Pagination counts are correct.
+Filtered counts are correct.
+Test/debug records do not corrupt production statistics.
+Duplicate logging is investigated and fixed.
+Refresh retrieves current data.
+Database failures are not represented as zero records.
+Error logs can be cleared by authorized admins.
+Submission logs can be cleared by authorized admins.
+Clearing logs does not delete actual business records.
+Clear operations are appropriately audited.
+Approver
+Approver navigation is visible in the Admin page.
+Navigation opens the existing Approver interface.
+Approver authorization is enforced server-side.
+Approval statistics use authoritative backend data.
+Security
+All new admin operations require backend authorization.
+No sensitive credentials are exposed.
+No frontend-only security controls are trusted.
+Destructive operations require confirmation.
+Database integrity is preserved.
+FINAL IMPLEMENTATION REPORT
+
+After implementation, provide:
+
+SMTP reset root cause
+SMTP reset implementation
+SMTP persistence/runtime behavior
+Log-count root cause
+Log-count correction
+Duplicate-log issues discovered
+Error-log clearing implementation
+Submission-log clearing implementation
+Database effects of log clearing
+Approver navigation fix
+Authorization checks added/verified
+Tests performed
+Files/components modified
+Database migrations if any
+API endpoints changed/added
+Any remaining known issues
+
+Do not simply report that the features were added.
+
+Explain the actual root causes of the bugs that were fixed.
+
+MOST IMPORTANT:
+
+Do not make the numbers "look right."
+
+Make the numbers mathematically and logically correct according to the actual database state.

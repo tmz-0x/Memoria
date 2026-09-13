@@ -33,9 +33,13 @@ adminRoutes.delete('/applications/:id', adminController.deleteSubmission);
 adminRoutes.get('/tickets/:id/qr', adminController.getTicketQR);
 adminRoutes.get('/submissions/:id/qr', adminController.getTicketQR);
 
-// Admin QR Code Regeneration (Sections 5-8, 36)
+// Admin QR Code Regeneration & Resend (BACKENDFIXES5 Sections 1-3)
 adminRoutes.post('/tickets/:id/regenerate-qr', adminController.regenerateQR);
 adminRoutes.post('/submissions/:id/regenerate-qr', adminController.regenerateQR);
+adminRoutes.post('/tickets/:id/resend-qr-email', adminController.resendRegeneratedQrEmail);
+adminRoutes.post('/submissions/:id/resend-qr-email', adminController.resendRegeneratedQrEmail);
+adminRoutes.post('/tickets/:id/resend-email', adminController.resendTicketEmail);
+adminRoutes.post('/submissions/:id/resend-email', adminController.resendTicketEmail);
 
 // Complete Database Reset with Admin Password Verification (Sections 14-21, 36)
 adminRoutes.post('/database/reset', adminController.resetDatabase);
@@ -63,6 +67,37 @@ adminRoutes.get('/users', adminController.getUsers);
 adminRoutes.post('/users', adminController.createUser);
 adminRoutes.put('/users/:id/role', adminController.updateUserRole);
 adminRoutes.delete('/users/:id', adminController.deleteUser);
+adminRoutes.post('/users/:id/password', adminController.resetUserPassword);
+adminRoutes.put('/users/:id/password', adminController.resetUserPassword);
+adminRoutes.post('/users/:id/reset-password', adminController.resetUserPassword);
+
+// Dedicated System Audit Logs (BACKENDFIXES4 Sections 4-5)
+adminRoutes.get('/audit-logs', adminController.getAuditLogs);
+adminRoutes.get('/system-audit-logs', adminController.getAuditLogs);
+adminRoutes.post('/audit-logs/clear', adminController.clearAuditLogs);
+adminRoutes.delete('/audit-logs', adminController.clearAuditLogs);
+
+// Dedicated Error Handling Engine (BACKENDFIXES5 Sections 26-29)
+adminRoutes.get('/system-errors', adminController.getSystemErrors);
+adminRoutes.patch('/system-errors/:id/status', adminController.updateSystemErrorStatus);
+adminRoutes.put('/system-errors/:id/status', adminController.updateSystemErrorStatus);
+adminRoutes.post('/system-errors/clear', adminController.clearSystemErrors);
+adminRoutes.delete('/system-errors', adminController.clearSystemErrors);
+
+// Submission Activity / History Logs Clearing (BACKENDFIXES6 Sections 18-21)
+adminRoutes.post('/submissions/logs/clear', adminController.clearSubmissionLogs);
+adminRoutes.delete('/submissions/logs', adminController.clearSubmissionLogs);
+
+// Dynamic Runtime SMTP Configuration (BACKENDFIXES4 Sections 17-23 & FIXES6 Sections 1-5)
+adminRoutes.get('/smtp/config', adminController.getSmtpConfig);
+adminRoutes.put('/smtp/config', adminController.updateSmtpConfig);
+adminRoutes.post('/smtp/test-connection', adminController.testSmtpConnection);
+adminRoutes.post('/smtp/send-test-email', adminController.sendSmtpTestEmail);
+adminRoutes.post('/smtp/reset', adminController.resetSmtpConfig);
+adminRoutes.delete('/smtp/config', adminController.resetSmtpConfig);
+
+// Authoritative Gate Attendance Statistics (BACKENDFIXES4 Section 10 & 13)
+adminRoutes.get('/attendance/statistics', adminController.getAttendanceStats);
 
 // Admin Alerts from Approvers
 adminRoutes.get('/alerts', adminController.getAlerts);

@@ -11,3 +11,4 @@ checkinRoutes.use(authenticate, requireRole('admin', 'staff'));
 // Rate limited verify scans: max 120 per minute per client
 checkinRoutes.post('/verify', rateLimiter({ windowMs: 60 * 1000, maxRequests: 120 }), checkinController.verify);
 checkinRoutes.get('/stats', checkinController.getStats);
+checkinRoutes.get('/statistics', checkinController.getStats);
