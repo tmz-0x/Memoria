@@ -6,13 +6,21 @@ interface PaymentDetailsProps {
   accountName?: string;
   accountNumber?: string;
   branch?: string;
+  paymentDetail1Label?: string;
+  paymentDetail1Value?: string;
+  paymentDetail2Label?: string;
+  paymentDetail2Value?: string;
 }
 
 export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
-  bankName = 'Bank of Ceylon',
-  accountName = 'JPURA Voiceclub Memoria Account',
-  accountNumber = '8942-0012-3841-992',
-  branch = 'Colombo Fort Branch',
+  bankName = 'Peoples bank',
+  accountName = 'N.T.P gallage',
+  accountNumber = '188200230053755',
+  branch = 'Ahangama Branch',
+  paymentDetail1Label = 'PAYMENT DETAIL 1',
+  paymentDetail1Value = '[ADD REQUIRED PAYMENT DETAIL]',
+  paymentDetail2Label = 'PAYMENT DETAIL 2',
+  paymentDetail2Value = '[ADD REQUIRED PAYMENT DETAIL]',
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -70,6 +78,27 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
           </div>
         </div>
 
+        {/* Additional Payment Details (Fix 10, Sections 19-21) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-3.5 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
+            <span className="block text-[10px] font-heading uppercase tracking-wider text-[#F0E6FA]/50 mb-1">
+              {paymentDetail1Label}
+            </span>
+            <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words">
+              {paymentDetail1Value}
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
+            <span className="block text-[10px] font-heading uppercase tracking-wider text-[#F0E6FA]/50 mb-1">
+              {paymentDetail2Label}
+            </span>
+            <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words">
+              {paymentDetail2Value}
+            </span>
+          </div>
+        </div>
+
         {/* Account Name */}
         <div className="p-3.5 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20 flex items-center justify-between">
           <div>
@@ -83,7 +112,7 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
           <button
             type="button"
             onClick={() => copyToClipboard(accountName, 'accountName')}
-            className="px-3 py-2 min-h-[40px] rounded-lg bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] text-xs font-heading flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+            className="px-2.5 py-1.5 rounded-lg bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] text-xs font-heading flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             {copiedField === 'accountName' ? (
               <>
@@ -112,7 +141,7 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
           <button
             type="button"
             onClick={() => copyToClipboard(accountNumber.replace(/[^0-9]/g, ''), 'accountNumber')}
-            className="px-3.5 py-2.5 min-h-[42px] rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FFB3D9] text-[#0D0518] text-xs font-heading font-bold flex items-center gap-1.5 hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all cursor-pointer active:scale-95"
+            className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FFB3D9] text-[#0D0518] text-xs font-heading font-bold flex items-center gap-1.5 hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all cursor-pointer"
           >
             {copiedField === 'accountNumber' ? (
               <>
@@ -122,7 +151,7 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
             ) : (
               <>
                 <Copy className="w-4 h-4 text-[#0D0518]" />
-                <span>Copy</span>
+                <span>Copy Number</span>
               </>
             )}
           </button>

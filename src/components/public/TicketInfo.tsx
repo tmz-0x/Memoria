@@ -101,7 +101,7 @@ export const TicketInfo: React.FC = () => {
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Venue</span>
                   <span className="text-xs sm:text-sm font-heading font-bold text-white">Gal Pittaniya premises</span>
-                  
+                  <span className="block text-[10px] text-[#FF8FC7]"> University Of Sri Jayewardenapura</span>
                 </div>
               </div>
 

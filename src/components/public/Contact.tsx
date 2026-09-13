@@ -28,7 +28,7 @@ export const Contact: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* WhatsApp Support Card */}
           <a
-            href="https://wa.me/94771234567"
+            href="https://wa.me/94768773240"
             target="_blank"
             rel="noopener noreferrer"
             className="p-8 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/30 hover:border-emerald-400/80 hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-xl flex flex-col justify-between"
@@ -63,7 +63,7 @@ export const Contact: React.FC = () => {
 
           {/* Email Support Card */}
           <a
-            href="mailto:tickets@memoria.lk"
+            href="mailto:thisalmethwidu16@gmail.com"
             className="p-8 rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/30 hover:border-[#E066FF] hover:bg-[#1A0D2E]/90 transition-all duration-300 group shadow-xl flex flex-col justify-between"
           >
             <div>
@@ -86,7 +86,7 @@ export const Contact: React.FC = () => {
 
             <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
               <span className="font-mono text-sm font-semibold text-white tracking-wider">
-                tickets@memoria.lk
+                thisalmethwidu16@gmail.com
               </span>
               <span className="text-xs font-heading font-bold text-[#E066FF] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                 Send Email &rarr;

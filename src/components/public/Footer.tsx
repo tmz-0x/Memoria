@@ -67,12 +67,12 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <button type="button" onClick={() => navigate('/tickets')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
-                  Ticket Purchase &bull;
+                  Ticket Purchase 
                 </button>
               </li>
               <li>
                 <button type="button" onClick={() => scrollToSection('charity')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
-                  Swarodaya Youth Fund
+                  Social responsibility
                 </button>
               </li>
               <li>
@@ -116,10 +116,10 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar Credits (NO PUBLIC PORTAL LINK) */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-body text-[#F0E6FA]/50">
           <p className="flex items-center gap-1">
-            <span>&copy; 2026 Memoria&apos;26. Crafted with pride by</span>
-            <strong className="text-[#D4AF37] font-semibold">JPURA Voice</strong>.
+            <span>&copy; All right reserved. Developed By </span>
+            <strong className="text-[#D4AF37] font-semibold">Thisal Methwidu</strong>
+            
           </p>
-
           <div className="flex items-center space-x-6 text-[11px] font-heading uppercase tracking-wider">
             <button type="button" onClick={() => navigate('/tickets')} className="hover:text-[#D4AF37] transition-colors cursor-pointer">
               Terms of Admission

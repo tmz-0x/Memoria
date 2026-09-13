@@ -100,11 +100,11 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
 
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      // Clearly visible continuous drift speeds (0.25 to 0.75 px/frame)
-      const speed = Math.random() * 0.50 + 0.25;
-      const baseVx = Math.cos(angle) * speed * 0.85;
-      // Ambient slow vertical drift (varied upward and downward)
-      const baseVy = Math.sin(angle) * speed * 0.75 - (Math.random() > 0.3 ? 0.18 : -0.10);
+      // Moderately slower, elegant cinematic drift speeds (~0.12 to 0.34 px/frame)
+      const speed = Math.random() * 0.22 + 0.12;
+      const baseVx = Math.cos(angle) * speed * 0.75;
+      // Ambient gentle vertical drift (varied upward and downward floating motes)
+      const baseVy = Math.sin(angle) * speed * 0.65 - (Math.random() > 0.3 ? 0.08 : -0.04);
 
       // Varied dust sizes: mostly fine dust (0.9px - 2.0px) with occasional brighter motes (2.4px - 3.2px)
       const sizeTier = Math.random();
@@ -115,7 +115,7 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
 
       // ~25% of particles are twinkling star-like motes with randomized cycle timing
       const isTwinkler = Math.random() < 0.28;
-      const twinkleSpeed = (Math.random() * 0.02 + 0.008) * (Math.random() > 0.5 ? 1 : -1);
+      const twinkleSpeed = (Math.random() * 0.015 + 0.006) * (Math.random() > 0.5 ? 1 : -1);
 
       particles.push({
         x: Math.random() * width,
@@ -132,7 +132,7 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
         twinklePhase: Math.random() * Math.PI * 2,
         twinkleSpeed,
         seed: Math.random() * 300,
-        speedMultiplier: Math.random() * 0.6 + 0.75,
+        speedMultiplier: Math.random() * 0.5 + 0.75,
         hasGlow: size > 2.0 || isTwinkler,
       });
     }
@@ -140,25 +140,33 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
     let time = 0;
 
     const render = () => {
+      // Pause updates completely if tab is hidden in background
+      if (document.hidden) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
-      time += 0.016;
+      time += 0.010;
 
       // Smooth mouse spring interpolation
       if (!isTouch) {
-        mouse.x += (mouse.targetX - mouse.x) * 0.08;
-        mouse.y += (mouse.targetY - mouse.y) * 0.08;
+        mouse.x += (mouse.targetX - mouse.x) * 0.06;
+        mouse.y += (mouse.targetY - mouse.y) * 0.06;
       }
 
       const isFieldActive = enabledRef.current;
 
       if (isFieldActive) {
+        let shadowActive = false;
+
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
 
           if (!prefersReducedMotion) {
-            // 1. Visible organic drift movement across varied directions
-            p.x += p.vx + Math.sin(time + p.seed) * 0.40 * p.speedMultiplier;
-            p.y += p.vy + Math.cos(time * 0.80 + p.seed) * 0.30 * p.speedMultiplier;
+            // 1. Subtle, organic gentle drift movement (moderated speed per Fix 10)
+            p.x += p.vx + Math.sin(time * 0.6 + p.seed) * 0.18 * p.speedMultiplier;
+            p.y += p.vy + Math.cos(time * 0.5 + p.seed) * 0.14 * p.speedMultiplier;
 
             // 2. Twinkle & Blinking behavior (randomized star-like behavior on subset)
             if (p.isTwinkler) {
@@ -172,7 +180,7 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
               p.hasGlow = flare > 0.45;
             } else {
               // Subtle organic breathing for atmospheric dust motes
-              p.alpha = p.baseAlpha + Math.sin(time * 0.75 + p.seed) * 0.14;
+              p.alpha = p.baseAlpha + Math.sin(time * 0.5 + p.seed) * 0.12;
             }
 
             // 3. Gentle mouse gathering attraction outside cinematic intro (Section 18)
@@ -183,20 +191,20 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
 
               if (distance < mouse.radius && distance > 4) {
                 const normalizedDist = distance / mouse.radius;
-                const gatherStrength = (1 - normalizedDist) * 0.65;
+                const gatherStrength = (1 - normalizedDist) * 0.45;
 
                 // Gentle drift toward cursor
-                p.vx += (dx / distance) * gatherStrength * 0.45;
-                p.vy += (dy / distance) * gatherStrength * 0.45;
+                p.vx += (dx / distance) * gatherStrength * 0.25;
+                p.vy += (dy / distance) * gatherStrength * 0.25;
 
                 // Subtly brighten near cursor
-                p.alpha = Math.min(1, p.alpha + (1 - normalizedDist) * 0.35);
+                p.alpha = Math.min(1, p.alpha + (1 - normalizedDist) * 0.30);
               }
             }
 
             // 4. Inertial return: slowly returns to natural drift when mouse moves away
-            p.vx = p.vx * 0.96 + p.baseVx * 0.04;
-            p.vy = p.vy * 0.96 + p.baseVy * 0.04;
+            p.vx = p.vx * 0.97 + p.baseVx * 0.03;
+            p.vy = p.vy * 0.97 + p.baseVy * 0.03;
 
             // 5. Wrap bounds seamlessly
             if (p.y > height + 25) {
@@ -214,21 +222,27 @@ export const ParticleField: React.FC<ParticleFieldProps> = ({ enabled = true }) 
             }
           }
 
-          // 6. Draw illuminated theatrical dust mote with soft luminous halo
-          ctx.save();
+          // 6. Draw illuminated theatrical dust mote (Fast draw without expensive save/restore calls)
           const drawAlpha = Math.max(0.08, Math.min(1, p.alpha));
           ctx.globalAlpha = drawAlpha;
           ctx.fillStyle = p.color;
 
           if (p.hasGlow && !isTouch) {
             ctx.shadowColor = p.color;
-            ctx.shadowBlur = p.size * (p.isTwinkler ? 4.8 : 3.2);
+            ctx.shadowBlur = p.size * (p.isTwinkler ? 4.0 : 2.5);
+            shadowActive = true;
+          } else if (shadowActive) {
+            ctx.shadowBlur = 0;
+            shadowActive = false;
           }
 
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
-          ctx.restore();
+        }
+
+        if (shadowActive) {
+          ctx.shadowBlur = 0;
         }
       }
 

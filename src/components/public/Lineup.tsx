@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, memo } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { SectionDivider } from './SectionDivider';
 import { Sparkles, Star, Music, Award } from 'lucide-react';
@@ -6,9 +6,12 @@ import { Sparkles, Star, Music, Award } from 'lucide-react';
 export interface ArtistItem {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   role: string;
   genre: string;
   image: string;
+  webpImage?: string;
   tagline?: string;
   objectPosition?: string;
 }
@@ -23,6 +26,7 @@ export interface BandItem {
   genre: string;
   description: string;
   image: string | null;
+  webpImage?: string | null;
 }
 
 /**
@@ -35,55 +39,63 @@ export function normalizeArtistName(filename: string): string {
 }
 
 /**
- * Data-driven Artist List (Fix 9, Section 1 & 2)
- * Loaded from images in /public/artists/
- * To add another artist, simply append a new object to this array.
+ * Data-driven Artist List (Fix 9 & Fix 10)
+ * Loaded with full names (First Name + Last Name) and optimized WebP/JPEG assets.
  */
 export const LINEUP_ARTISTS: ArtistItem[] = [
   {
     id: 'ridma',
-    name: 'RIDMA ',
+    firstName: 'RIDMA',
+    lastName: 'WEERAWARDENA',
+    name: 'RIDMA WEERAWARDENA',
     role: 'Featured Artist',
     genre: 'Contemporary Classical & Fusion',
     image: '/artists/Ridma.jpeg',
+    webpImage: '/artists/Ridma.webp',
     tagline: 'Soul-stirring vocals & timeless melodies',
     objectPosition: '60% 25%',
   },
-  
   {
     id: 'wasthi',
+    firstName: 'WASTHI',
+    lastName: '',
     name: 'WASTHI',
     role: 'Featured Artist',
     genre: 'Dynamic Pop & Folk Fusion Duo',
     image: '/artists/Wasthi.png',
+    webpImage: '/artists/Wasthi.webp',
     tagline: 'High-energy anthems & theatrical presence',
     objectPosition: 'center top',
   },
   {
     id: 'krishan',
-    name: 'KRISHAN',
+    firstName: 'KRISHAN',
+    lastName: 'MAHESHAN',
+    name: 'KRISHAN MAHESHAN',
     role: 'Featured Artist',
     genre: 'Fusion Pioneer & Urban Beats',
     image: '/artists/Krishan.jpeg',
+    webpImage: '/artists/Krishan.webp',
     tagline: 'Rhythmic poetry & commanding stagecraft',
     objectPosition: 'center 20%',
   },
   {
     id: 'yashodha',
-    name: 'YASHODHA',
+    firstName: 'YASHODHA',
+    lastName: 'PRIYADARSHANI',
+    name: 'YASHODHA PRIYADARSHANI',
     role: 'Featured Artist',
     genre: 'Acoustic Melody & Soul Vocalist',
     image: '/artists/Yashodha.jpeg',
+    webpImage: '/artists/Yashodha.webp',
     tagline: 'Intimate vocal depth & evocative storytelling',
     objectPosition: 'center 20%',
   },
 ];
 
 /**
- * Dedicated Band Configuration (Fix 9, Section 11 & 12)
- * Currently set with image: null to display the designed placeholder.
- * When the DIVINE band image is uploaded to e.g. '/artists/divine.jpg',
- * setting image here will automatically switch from the placeholder to the photo.
+ * Dedicated Band Configuration (Fix 9 & Fix 10)
+ * Fitted with 3:2 photographic composition and WebP optimization.
  */
 export const LINEUP_BAND: BandItem = {
   type: 'band',
@@ -92,7 +104,8 @@ export const LINEUP_BAND: BandItem = {
   genre: 'Live Symphony & Modern Orchestration',
   description:
     'The master musicians delivering live orchestration, acoustic arrangements, and soaring symphonic backings for every performance on the Memoria’26 stage.',
-  image: null,
+  image: '/artists/band.png',
+  webpImage: '/artists/band.webp',
 };
 
 const CornerAccent: React.FC<{ position: 'tl' | 'tr' | 'bl' | 'br' }> = ({ position }) => {
@@ -117,45 +130,53 @@ const ArtistCard: React.FC<{
   artist: ArtistItem;
   index: number;
   isStaggered?: boolean;
-}> = ({ artist, index, isStaggered }) => {
+}> = memo(({ artist, index, isStaggered }) => {
   const [imgError, setImgError] = useState(false);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 35 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.7, delay: index * 0.15, ease: 'easeOut' }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.6, delay: index * 0.12, ease: 'easeOut' }}
       className={`relative group cursor-pointer ${isStaggered ? 'lg:translate-y-6' : ''}`}
     >
-      {/* Outer Glow Aura */}
-      <div className="absolute -inset-2 bg-gradient-to-b from-[#E066FF]/20 via-[#D4AF37]/15 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
+      {/* Outer Glow Aura (GPU-friendly transition) */}
+      <div className="absolute -inset-2 bg-gradient-to-b from-[#E066FF]/20 via-[#D4AF37]/15 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      {/* Main Theatrical Portrait Frame (Fix 9, Section 4 & 5) */}
-      <div className="relative h-[440px] sm:h-[480px] lg:h-[550px] w-full rounded-2xl overflow-hidden bg-[#0D0518] border border-[#D4AF37]/35 group-hover:border-[#D4AF37] shadow-[0_10px_35px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_35px_rgba(224,102,255,0.35),0_0_50px_rgba(212,175,55,0.4)] transition-all duration-500 flex flex-col justify-end">
+      {/* Main Theatrical Portrait Frame (Fix 10, Sections 3-5) */}
+      <div className="relative h-[440px] sm:h-[480px] lg:h-[550px] w-full rounded-2xl overflow-hidden bg-[#0D0518] border border-[#D4AF37]/35 group-hover:border-[#D4AF37] shadow-[0_10px_35px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_35px_rgba(224,102,255,0.35),0_0_50px_rgba(212,175,55,0.4)] transition-shadow duration-500 flex flex-col justify-end">
         {/* Antique Gold Corner Accents */}
         <CornerAccent position="tl" />
         <CornerAccent position="tr" />
         <CornerAccent position="bl" />
         <CornerAccent position="br" />
 
-        {/* Large Portrait Artist Image */}
+        {/* Large Portrait Artist Image Container with zero layout shift */}
         <div className="absolute inset-0 w-full h-full overflow-hidden bg-[#0D0518]">
-          <img
-            src={imgError ? '/assets/hero-stage-scene.jpg' : artist.image}
-            alt={artist.name}
-            onError={() => setImgError(true)}
-            loading="lazy"
-            style={{ objectPosition: artist.objectPosition || 'center top' }}
-            className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 group-hover:brightness-110 will-change-transform"
-          />
+          <picture>
+            {!imgError && artist.webpImage && (
+              <source type="image/webp" srcSet={artist.webpImage} />
+            )}
+            <img
+              src={imgError ? '/assets/hero-stage-scene.jpg' : artist.image}
+              alt={artist.name}
+              onError={() => setImgError(true)}
+              loading={index < 2 ? 'eager' : 'lazy'}
+              decoding="async"
+              width={400}
+              height={550}
+              style={{ objectPosition: artist.objectPosition || 'center top' }}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 will-change-transform"
+            />
+          </picture>
 
           {/* Ambient Vignettes (Faces remain bright & visible; bottom transitions to dark stage) */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-[#0D0518]/70 via-35% to-transparent pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0D0518]/45 via-transparent to-transparent h-24 pointer-events-none" />
 
-          {/* Diagonal Light Shimmer Sweep on Hover (Fix 9, Section 7 & 8) */}
-          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+          {/* Diagonal Light Shimmer Sweep on Hover (GPU transform only) */}
+          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none will-change-transform" />
         </div>
 
         {/* Top Tag: Performer Identification */}
@@ -164,7 +185,7 @@ const ArtistCard: React.FC<{
           <span>Stage Performer</span>
         </div>
 
-        {/* Artist Name & Typography Composition (Fix 9, Section 5) */}
+        {/* Artist Name & Typography Composition (Fix 10, Sections 15-17) */}
         <div className="relative z-20 p-5 sm:p-6 pt-0">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-heading text-[10px] sm:text-[11px] font-bold tracking-[0.35em] text-[#D4AF37] uppercase">
@@ -176,11 +197,16 @@ const ArtistCard: React.FC<{
             </span>
           </div>
 
-          <h3 className="font-heading text-2xl sm:text-3xl font-black text-white tracking-[0.14em] uppercase transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:via-[#FFB3D9] group-hover:to-[#D4AF37] drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
-            {artist.name}
+          <h3 className="font-heading font-black text-white tracking-[0.10em] sm:tracking-[0.12em] uppercase transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:via-[#FFB3D9] group-hover:to-[#D4AF37] drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] leading-tight break-words">
+            <span className="block text-2xl sm:text-3xl">{artist.firstName}</span>
+            {artist.lastName ? (
+              <span className="block text-lg sm:text-xl font-bold tracking-[0.08em] sm:tracking-[0.10em] text-[#F0E6FA]/90 mt-0.5 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:via-[#FFB3D9] group-hover:to-[#D4AF37]">
+                {artist.lastName}
+              </span>
+            ) : null}
           </h3>
 
-          <p className="font-heading text-xs text-[#FF8FC7] uppercase tracking-[0.16em] font-semibold mt-1">
+          <p className="font-heading text-xs text-[#FF8FC7] uppercase tracking-[0.16em] font-semibold mt-1.5">
             {artist.genre}
           </p>
 
@@ -199,22 +225,24 @@ const ArtistCard: React.FC<{
       </div>
     </motion.div>
   );
-};
+});
 
-const BandCard: React.FC<{ band: BandItem }> = ({ band }) => {
+ArtistCard.displayName = 'ArtistCard';
+
+const BandCard: React.FC<{ band: BandItem }> = memo(({ band }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.7, delay: 0.2 }}
+      transition={{ duration: 0.6, delay: 0.15 }}
       className="relative group w-full"
     >
       {/* Outer Glow Aura */}
-      <div className="absolute -inset-3 bg-gradient-to-r from-[#E066FF]/20 via-[#D4AF37]/20 to-[#C04ECF]/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+      <div className="absolute -inset-3 bg-gradient-to-r from-[#E066FF]/20 via-[#D4AF37]/20 to-[#C04ECF]/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      {/* Main Theatrical Container (Fix 9, Section 11 & 12) */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#1A0D2E]/95 via-[#23103B]/90 to-[#0D0518]/95 border-2 border-[#D4AF37]/50 group-hover:border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.25)] group-hover:shadow-[0_0_60px_rgba(224,102,255,0.45)] transition-all duration-500">
+      {/* Main Theatrical Container */}
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#1A0D2E]/95 via-[#23103B]/90 to-[#0D0518]/95 border-2 border-[#D4AF37]/50 group-hover:border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.25)] group-hover:shadow-[0_0_60px_rgba(224,102,255,0.45)] transition-shadow duration-500">
         {/* Filigree Texture Overlay */}
         <img
           src="/assets/ticket-frame.png"
@@ -228,7 +256,7 @@ const BandCard: React.FC<{ band: BandItem }> = ({ band }) => {
             <div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0D0518]/90 border border-[#D4AF37]/60 text-xs font-heading font-extrabold uppercase tracking-widest text-[#D4AF37] mb-4 shadow-sm">
                 <Music className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Live Orchestration &amp; Band</span>
+                <span>Live Orchestration</span>
               </div>
 
               <div className="flex items-center gap-3">
@@ -262,22 +290,26 @@ const BandCard: React.FC<{ band: BandItem }> = ({ band }) => {
             </div>
           </div>
 
-          {/* Right Column: Band Visual Showcase / Placeholder (Section 11 & 12) */}
+          {/* Right Column: Band Visual Showcase / Placeholder (Fix 10, Sections 12-14) */}
           <div className="lg:col-span-7 w-full">
             {band.image ? (
-              // When band photograph is provided:
-              <div className="relative h-72 sm:h-80 w-full rounded-2xl overflow-hidden border border-[#D4AF37]/50 shadow-2xl bg-[#0D0518]">
-                <img
-                  src={band.image}
-                  alt={band.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+              // When band photograph is provided: Frame accurately maintains 3:2 photographic aspect ratio
+              <div className="relative aspect-[16/10] sm:aspect-[3/2] w-full max-h-[380px] lg:max-h-[420px] rounded-2xl overflow-hidden border border-[#D4AF37]/50 shadow-2xl bg-[#0D0518]">
+                <picture>
+                  {band.webpImage && (
+                    <source type="image/webp" srcSet={band.webpImage} />
+                  )}
+                  <img
+                    src={band.image}
+                    alt={band.name}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={426}
+                    className="w-full h-full object-cover object-[center_35%] group-hover:scale-105 transition-transform duration-700 will-change-transform"
+                  />
+                </picture>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-transparent pointer-events-none" />
-                <div className="absolute bottom-4 left-4 z-10">
-                  <span className="font-heading text-xs uppercase tracking-widest text-[#D4AF37] font-bold">
-                    Official Band Photograph
-                  </span>
-                </div>
               </div>
             ) : (
               // Section 11 & 12: Premium Designed Band Image Upload Placeholder
@@ -313,21 +345,23 @@ const BandCard: React.FC<{ band: BandItem }> = ({ band }) => {
       </div>
     </motion.div>
   );
-};
+});
+
+BandCard.displayName = 'BandCard';
 
 export const Lineup: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Fix 9, Section 9: Preserved System of TWO OPPOSING THEATRICAL SPOTLIGHTS
+  // Fix 10: Smooth, GPU-efficient scroll-linked theatrical spotlights
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'end start'],
   });
 
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 75,
-    damping: 24,
-    restDelta: 0.001,
+    stiffness: 90,
+    damping: 28,
+    restDelta: 0.005,
   });
 
   // Left Spotlight: Sweeps from top-left across the artists
@@ -346,7 +380,7 @@ export const Lineup: React.FC = () => {
       id="lineup"
       className="relative py-28 px-4 sm:px-6 lg:px-8 bg-transparent overflow-hidden"
     >
-      {/* Fix Pass 5: System of TWO OPPOSING THEATRICAL SPOTLIGHTS (Section 18) */}
+      {/* System of TWO OPPOSING THEATRICAL SPOTLIGHTS (GPU-accelerated without heavy drop-shadow filter) */}
       {/* Spotlight 1: Originating from the LEFT */}
       <motion.div
         style={{
@@ -360,8 +394,10 @@ export const Lineup: React.FC = () => {
         <img
           src="/assets/spotlight-beam.png"
           alt="Lineup Left Spotlight"
-          className="w-full h-full object-fill opacity-75 md:opacity-90 md:filter md:drop-shadow-[0_0_60px_#E066FF]"
+          className="w-full h-full object-fill opacity-80 md:opacity-95"
         />
+        {/* Hardware-accelerated ambient theatrical glow halo */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-[#E066FF]/20 rounded-full blur-3xl pointer-events-none" />
       </motion.div>
 
       {/* Spotlight 2: Originating from the RIGHT */}
@@ -377,8 +413,10 @@ export const Lineup: React.FC = () => {
         <img
           src="/assets/spotlight-beam.png"
           alt="Lineup Right Spotlight"
-          className="w-full h-full object-fill opacity-75 md:opacity-90 -scale-x-100 md:filter md:drop-shadow-[0_0_60px_#D4AF37]"
+          className="w-full h-full object-fill opacity-80 md:opacity-95 -scale-x-100"
         />
+        {/* Hardware-accelerated ambient theatrical glow halo */}
+        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-[#D4AF37]/20 rounded-full blur-3xl pointer-events-none" />
       </motion.div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
@@ -412,7 +450,7 @@ export const Lineup: React.FC = () => {
           </p>
         </div>
 
-        {/* Fix 9, Section 3 & 6: Theatrical Editorial Artist Composition */}
+        {/* Theatrical Editorial Artist Composition */}
         <div className="space-y-16">
           {/* 4-Artist Editorial Poster Grid (Desktop: 4 staggered cards, Tablet: 2x2, Mobile: Stacked) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-start">
@@ -426,7 +464,7 @@ export const Lineup: React.FC = () => {
             ))}
           </div>
 
-          {/* Dedicated Band Showcase (Fix 9, Section 11 & 12): DIVINE */}
+          {/* Dedicated Band Showcase (Fix 10): DIVINE */}
           <BandCard band={LINEUP_BAND} />
         </div>
       </div>

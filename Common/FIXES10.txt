@@ -1,0 +1,636 @@
+FRONTEND FIXES 10 — PERFORMANCE, LINEUP, PARTICLES, PAYMENT DETAILS & ARTIST CARDS
+
+You are modifying the existing event ticket management website.
+
+These are FRONTEND-ONLY fixes.
+
+DO NOT rebuild the website.
+
+DO NOT change the existing visual identity, theme, colors, animations, layout style, or overall design unless required to solve the issues below.
+
+Preserve the existing:
+
+Event theme
+Deep violet/indigo visual style
+Magenta-violet glow
+Antique gold accents
+Blossom pink details
+Cinematic lighting
+Artist card design
+Lineup section concept
+Particle effects
+Ticket/payment workflow
+Responsive behavior
+
+The goal is to improve performance and visual correctness without removing the immersive experience.
+
+1. FIX LINEUP SECTION SCROLL PERFORMANCE
+Current problem
+
+The Lineup section does not load/scroll smoothly.
+
+There is noticeable minor lag/stuttering when entering or scrolling through the Lineup section.
+
+Fix the actual performance problem instead of simply reducing the visual quality.
+
+The Lineup section should feel:
+
+Smooth
+Responsive
+Fluid
+Cinematic
+Lightweight
+
+Target a consistent smooth scrolling experience, ideally around 60 FPS on normal supported devices.
+
+2. FIND THE ACTUAL CAUSE OF THE LINEUP LAG
+
+Before changing the animation, inspect the existing Lineup implementation.
+
+Check for:
+
+Excessive re-renders
+Heavy React components
+Large image decoding during scroll
+Images being loaded simultaneously
+Expensive CSS filters
+Excessive backdrop-filter
+Large box shadows
+Repeated blur effects
+Continuous JavaScript calculations
+Scroll listeners running too frequently
+requestAnimationFrame misuse
+Multiple animation loops
+Unnecessary state updates
+Framer Motion/animation components causing excessive rendering
+Intersection Observer misuse
+DOM elements being unnecessarily recreated
+Particle calculations affecting the Lineup section
+Large unoptimized artist/band images
+
+Do not blindly remove animations.
+
+Identify the expensive operations first.
+
+3. OPTIMIZE ARTIST/BAND IMAGE LOADING
+
+Do not load every high-resolution artist image at maximum resolution immediately.
+
+Use appropriate:
+
+Lazy loading
+Image dimensions
+Responsive image sizing
+Modern image formats where available
+Proper compression
+Browser caching
+
+Do not allow layout shifts when images load.
+
+Reserve the correct image dimensions/aspect ratio before the image finishes loading.
+
+Use appropriate image loading behavior:
+
+Above-the-fold images can load normally.
+Images further down the Lineup can lazy-load.
+
+Do not lazy-load images in a way that causes visible blank cards during normal scrolling.
+
+4. PREVENT LAYOUT SHIFT
+
+Artist and band cards must maintain their dimensions while images load.
+
+The browser should know the expected image aspect ratio before loading.
+
+Do not allow:
+
+Image loads
+→ card changes size
+→ surrounding content jumps
+→ scroll becomes unstable.
+
+Use a fixed/responsive aspect-ratio container.
+
+5. OPTIMIZE LINEUP ANIMATIONS
+
+Review all Lineup animations.
+
+Animations should be GPU-friendly where possible.
+
+Prefer transforms and opacity for continuous animation:
+
+transform
+opacity
+
+Avoid continuously animating expensive properties such as:
+
+width
+height
+top
+left
+box-shadow
+filter
+large blur effects
+
+unless there is a strong visual reason.
+
+Do not run unnecessary JavaScript for animations that can be handled by CSS.
+
+6. REDUCE REACT RE-RENDERS
+
+If the Lineup contains repeated artist cards:
+
+Avoid unnecessary re-rendering of every artist when:
+
+Mouse moves
+Scroll changes
+Hover occurs
+Another card changes state
+
+Use appropriate component optimization where useful:
+
+React.memo
+stable props
+stable callbacks
+appropriate keys
+
+Do not add memoization everywhere blindly.
+
+Only optimize components where it actually reduces unnecessary rendering.
+
+7. OPTIMIZE SCROLL EVENT HANDLING
+
+If the Lineup uses JavaScript scroll listeners:
+
+Do not execute expensive calculations on every raw scroll event.
+
+Use appropriate techniques such as:
+
+requestAnimationFrame
+throttling where appropriate
+IntersectionObserver
+CSS-based effects
+
+Avoid updating React state continuously during scrolling unless absolutely necessary.
+
+For example, do NOT continuously trigger:
+
+setState(scrollPosition)
+
+for every pixel of scrolling if the visual effect can be implemented more efficiently.
+
+8. DO NOT BREAK THE CINEMATIC EFFECT
+
+Performance optimization must NOT turn the Lineup section into a plain static section.
+
+Keep the existing:
+
+Spotlight effects
+Glow
+Artist transitions
+Hover effects
+Particle atmosphere
+Cinematic framing
+
+but optimize their implementation.
+
+The goal is:
+
+SAME VISUAL EXPERIENCE
++
+LOWER RENDERING COST
++
+SMOOTHER SCROLLING
+
+9. REDUCE PARTICLE MOVEMENT SPEED
+
+The current particle movement is too fast.
+
+Reduce the movement speed slightly.
+
+Do NOT remove the particles.
+
+Do NOT make them completely static.
+
+The intended effect should be:
+
+Slow
+→ subtle
+→ atmospheric
+→ elegant
+→ cinematic
+
+Particles should appear to gently drift through the scene.
+
+The movement should feel like floating dust/sparkle particles rather than fast-moving objects.
+
+10. PARTICLE PERFORMANCE OPTIMIZATION
+
+While reducing particle speed, inspect the particle implementation.
+
+Avoid excessive CPU usage.
+
+If particles use JavaScript animation:
+
+Use requestAnimationFrame correctly.
+Avoid unnecessary React state updates.
+Do not recreate particle objects every frame.
+Reuse existing particle data where possible.
+Pause/reduce animation when the section is not visible if appropriate.
+
+If CSS animations are sufficient, prefer them over expensive JavaScript loops.
+
+Do not create a new animation loop for every individual particle.
+
+Use one efficient animation mechanism where possible.
+
+11. REDUCE PARTICLE SPEED ONLY SLIGHTLY
+
+Do not overcorrect.
+
+Current:
+
+Particle speed = too fast
+
+Desired:
+
+Particle speed = moderately slower
+
+The effect should still be clearly animated.
+
+Do NOT change:
+
+Particle appearance
+Particle color
+Particle density
+
+unless required for performance.
+
+Only reduce the movement speed unless another issue is discovered.
+
+12. FIX BAND IMAGE FITTING
+
+The band image currently does not fit correctly inside its frame.
+
+Fix the image rendering so that the band image properly fits the existing artist/band card frame.
+
+The image must:
+
+Stay inside the frame
+Preserve its intended visual composition
+Avoid stretching
+Avoid distortion
+Avoid overflowing outside the card
+Respect rounded corners/borders
+Respect the existing decorative frame
+Remain responsive
+13. BAND IMAGE OBJECT-FIT
+
+Use an appropriate image fitting strategy.
+
+Prefer:
+
+object-fit: cover
+
+when the frame is designed as a photographic card and cropping is acceptable.
+
+If the entire band image must remain visible:
+
+Use:
+
+object-fit: contain
+
+and adjust the surrounding background/frame appropriately.
+
+Do NOT simply stretch the image to fill the frame.
+
+The correct choice should depend on the existing band image composition.
+
+14. BAND IMAGE POSITIONING
+
+If object-fit: cover causes important members of the band to be cropped:
+
+Adjust:
+
+object-position
+image container
+aspect ratio
+
+so the important content remains visible.
+
+Do not arbitrarily crop faces or important parts of the band image.
+
+The final result should look intentionally designed rather than like an incorrectly fitted <img>.
+
+15. ADD ARTIST LAST NAMES
+
+Artist cards currently display only the artist's first name.
+
+Update the artist data model/configuration and card component so artists can display:
+
+FIRST NAME + LAST NAME
+
+For example:
+
+Current:
+
+John
+
+Desired:
+
+John Perera
+
+Use the actual artist data already present in the project.
+
+Do NOT invent surnames.
+
+16. ARTIST DATA STRUCTURE
+
+If artist data currently looks like:
+
+{
+name: "John",
+image: "/artists/john.png"
+}
+
+Update it appropriately, for example:
+
+{
+firstName: "John",
+lastName: "Perera",
+image: "/artists/john.png"
+}
+
+OR use the existing project structure if another approach is already established.
+
+Do not unnecessarily break existing references to name.
+
+If the project already contains full artist names elsewhere, reuse that source rather than duplicating names.
+
+17. ARTIST CARD DISPLAY
+
+Artist cards should display the full artist name in a visually balanced way.
+
+Support:
+
+Short names
+Long surnames
+Two-word names
+Multi-word names
+
+Do not allow long names to break the card layout.
+
+Use appropriate:
+
+Font sizing
+Line height
+Wrapping
+Text alignment
+
+while preserving the existing design.
+
+Do not truncate names unless the existing design specifically requires it.
+
+18. BAND DATA
+
+Apply the same image/card fitting logic to band cards.
+
+If the band currently uses a placeholder because the final band image is not yet available, preserve the placeholder behavior.
+
+When the real band image exists:
+
+Load it correctly.
+Fit it to the frame.
+Preserve the intended composition.
+Use the same optimized loading strategy.
+19. ADD TWO PAYMENT DETAILS TO payment-details.tsx
+
+Update:
+
+payment-details.tsx
+
+to include two additional payment details.
+
+IMPORTANT:
+
+Do NOT invent the values.
+
+Add the two fields/details specified by the project owner.
+
+Use placeholders in the implementation if the actual values have not yet been supplied:
+
+PAYMENT DETAIL 1
+
+[ADD REQUIRED PAYMENT DETAIL]
+
+PAYMENT DETAIL 2
+
+[ADD REQUIRED PAYMENT DETAIL]
+
+The implementation should make these values easy to replace without modifying unrelated components.
+
+20. PAYMENT DETAILS DESIGN
+
+The two new payment details must match the existing payment UI.
+
+Do not create a visually disconnected component.
+
+Maintain:
+
+Existing typography
+Existing colors
+Existing card/frame design
+Existing spacing
+Existing responsive behavior
+Existing event theme
+
+The additional details should appear naturally alongside the existing payment information.
+
+21. PAYMENT INFORMATION MUST BE CLEAR
+
+Payment details should be easy for the user to understand.
+
+Use clear labels.
+
+For example:
+
+Payment Detail:
+Value
+
+Do not expose unnecessary internal information.
+
+Do not add fake bank/account information.
+
+Do not guess missing payment data.
+
+22. RESPONSIVE DESIGN
+
+Test all changes on:
+
+Desktop
+Laptop
+Tablet
+Mobile
+
+Particularly check:
+
+Lineup
+Cards remain aligned.
+Scrolling remains smooth.
+Images don't jump.
+Artist names
+Long names don't overflow.
+Names remain readable.
+Band images
+Frame remains correctly sized.
+Image remains correctly positioned.
+Payment details
+No horizontal overflow.
+Details remain readable.
+Layout remains visually balanced.
+23. PERFORMANCE TESTING
+
+After implementation, test the Lineup section using browser performance tools.
+
+Check:
+
+FPS
+CPU usage
+Rendering time
+Long tasks
+Layout shifts
+Image decoding
+JavaScript execution
+Animation performance
+
+Look for obvious performance bottlenecks.
+
+Do not assume the problem is solved just because the scroll feels slightly better.
+
+24. VERIFY PARTICLE PERFORMANCE
+
+Confirm:
+
+Particle movement is slower.
+Particles remain visually smooth.
+No excessive CPU usage.
+No frame-rate collapse.
+No new particle instances are continuously created.
+No memory leak occurs.
+
+If the particle system is shared globally, ensure optimization does not accidentally break particles on other sections.
+
+25. DO NOT SACRIFICE QUALITY FOR PERFORMANCE
+
+Do NOT solve lag by:
+
+Removing the Lineup section.
+Removing all animations.
+Removing artist images.
+Removing spotlights.
+Removing particles completely.
+Making cards static.
+Reducing image quality excessively.
+
+Optimize the implementation instead.
+
+26. FINAL FRONTEND VALIDATION
+
+After making the changes:
+
+Open the website from a clean browser session.
+Enter the Lineup section.
+Scroll normally.
+Scroll quickly.
+Scroll up and down repeatedly.
+Hover artist cards.
+Load multiple artist images.
+Check band image framing.
+Check long artist names.
+Check particles.
+Open payment details.
+Test desktop layout.
+Test mobile layout.
+Refresh the page.
+Navigate away and return to Lineup.
+Confirm no duplicated animation loops are created.
+27. REGRESSION TESTING
+
+Ensure these fixes do not break:
+
+Hero section
+Cinematic intro
+Main page
+Ticket booking
+Payment flow
+Artist cards
+Band cards
+Navigation
+Ticket details
+Responsive design
+Particle effects
+Existing animations
+28. FINAL ACCEPTANCE CRITERIA
+
+The Fixes 10 implementation is complete only when:
+
+Lineup
+Lineup loads smoothly.
+Scroll no longer has noticeable unnecessary lag.
+Images do not cause layout shifts.
+Animations remain cinematic.
+React does not perform unnecessary repeated rendering.
+Scroll handlers are optimized.
+Large images are handled efficiently.
+Particles
+Particle movement is noticeably slower.
+Particles still feel alive and atmospheric.
+Particle animation remains smooth.
+Particle system does not create unnecessary CPU load.
+Band
+Band image fits correctly inside the frame.
+No stretching.
+No unwanted overflow.
+No broken aspect ratio.
+Important image content remains visible.
+Artists
+Artist cards display first name + last name.
+Actual artist data is used.
+No invented surnames.
+Long names do not break the layout.
+Payment
+payment-details.tsx contains the two requested additional payment details.
+Both details match the existing UI.
+No fake payment information has been invented.
+Payment section remains responsive.
+Final Quality
+No console errors caused by the changes.
+No broken imports.
+No broken image paths.
+No animation memory leaks.
+No duplicated particle/scroll loops.
+No new layout shifts.
+Production build succeeds.
+FINAL IMPLEMENTATION REPORT
+
+After completing the changes, report:
+
+Root cause of Lineup lag
+Performance optimizations applied
+Particle speed adjustment
+Particle performance changes
+Band image fitting fix
+Artist-name/data changes
+Payment details added
+Files/components modified
+Performance tests performed
+Responsive tests performed
+Any remaining frontend issues
+
+IMPORTANT:
+
+Do not just make the Lineup "look smoother."
+
+Identify and fix the actual rendering/performance bottleneck.
+
+Do not invent the two payment details or artist surnames if they are not already available in the project.
