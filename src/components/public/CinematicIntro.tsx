@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Ticket } from 'lucide-react';
+import { ChevronDown, Ticket, Sparkles } from 'lucide-react';
 import { FallingBlossoms } from './FallingBlossoms';
 
 interface CinematicIntroProps {
@@ -97,7 +97,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
         <button
           type="button"
           onClick={handleSkip}
-          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-4 py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/80 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
+          className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 z-50 text-[10px] sm:text-[11px] font-heading tracking-[0.2em] uppercase text-[#F0E6FA]/80 hover:text-[#D4AF37] px-3.5 py-2 sm:px-4 sm:py-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37]/50 bg-[#0D0518]/85 backdrop-blur-md transition-all duration-300 cursor-pointer select-none active:scale-95 shadow-lg"
         >
           Skip Intro
         </button>
@@ -287,7 +287,9 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-0 w-full h-full pointer-events-none z-40 overflow-hidden bg-[#0D0518]"
+            onClick={handleSkip}
+            className="absolute inset-0 w-full h-full z-40 overflow-hidden bg-[#0D0518] cursor-pointer group select-none"
+            title="Tap anywhere to enter"
           >
             <motion.div
               initial={{ scale: 1.0 }}
@@ -313,8 +315,62 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
               </picture>
 
               {/* Subtle atmospheric vignette and cinematic gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/60 pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0D0518]/40 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0518] via-transparent to-[#0D0518]/70 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0D0518]/50 via-transparent to-transparent pointer-events-none" />
+
+              {/* Ambient Breathing Radial Glow */}
+              <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-2xl h-[40vh] bg-gradient-radial from-[#D4AF37]/20 via-[#E066FF]/10 to-transparent blur-3xl pointer-events-none animate-pulse"
+                style={{ animationDuration: '3.5s' }}
+              />
+
+              {/* Theatrical Opening Crest & Text Overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-6 pointer-events-none select-none z-10">
+                {/* Golden Ceremonial Pill Badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.0, delay: 0.2, ease: 'easeOut' }}
+                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-[#0D0518]/80 border border-[#D4AF37]/45 shadow-[0_0_25px_rgba(212,175,55,0.4)] backdrop-blur-md mb-2.5 sm:mb-4"
+                >
+                  <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D4AF37] animate-pulse shrink-0" />
+                  <span className="font-heading text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#D4AF37]">
+                    The Eclipse Of Memories &bull; Memoria &apos;26
+                  </span>
+                  <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D4AF37] animate-pulse shrink-0" />
+                </motion.div>
+
+                {/* Main Theatrical Opening Subtitle */}
+                <motion.h2
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 1.2, delay: 0.4, ease: 'easeOut' }}
+                  className="font-wordmark text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FFB3D9] to-[#D4AF37] drop-shadow-[0_0_35px_rgba(224,102,255,0.8)] py-1"
+                >
+                  Where Memories Bloom
+                </motion.h2>
+
+                {/* Subtitle / Venue */}
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.0, delay: 0.7, ease: 'easeOut' }}
+                  className="font-heading text-[9px] sm:text-xs tracking-[0.18em] sm:tracking-[0.3em] text-[#F0E6FA]/80 uppercase mt-1.5 sm:mt-3"
+                >
+                  Tuesday, October 13 &bull; Gal Pittaniya Premises
+                </motion.p>
+              </div>
+
+              {/* Mobile & Desktop "Tap anywhere to enter" hint */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 1.1 }}
+                className="absolute bottom-4 sm:bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-[#0D0518]/70 border border-white/15 backdrop-blur-md text-[9px] sm:text-[10px] font-heading tracking-[0.18em] uppercase text-[#F0E6FA]/70 pointer-events-none select-none group-hover:border-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-all"
+              >
+                <span>Tap anywhere to enter</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-ping" />
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
