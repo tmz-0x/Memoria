@@ -52,7 +52,7 @@ Memoria'26 separates concerns between a reactive client application and a harden
                                      │ Asynchronous Connection Pool (pg.Pool)
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│              PostgreSQL 16 Database (Port 5432 / Docker)                │
+│              PostgreSQL Database (Port 5432 / Local / Cloud)            │
 │  - Row-level locking (FOR UPDATE) for simultaneous gate scanners        │
 │  - Atomic allocation decrement & idempotent check-ins                   │
 │  - 10 Relational Tables: Users, Submissions, History, Audits, SMTP, etc.│
@@ -303,11 +303,16 @@ All requests accept and return `application/json`. Authenticated routes require 
    npm install
    ```
 
-3. **Start PostgreSQL Database**:
-   Launch PostgreSQL 16 using Docker Compose:
-   ```bash
-   docker compose up -d
-   ```
+3. **Set Up PostgreSQL (No Docker Needed)**:
+   You can use either a free cloud database or native local PostgreSQL:
+   - **Option A (Easiest — Free Cloud DB)**: Create a free database on [Neon.tech](https://neon.tech) or [Supabase.com](https://supabase.com). Copy the connection string directly to your `.env` file as `DATABASE_URL`.
+   - **Option B (Local Native Install on Ubuntu/Debian)**:
+     ```bash
+     sudo apt update && sudo apt install -y postgresql postgresql-contrib
+     sudo -u postgres psql -c "CREATE USER memoria WITH PASSWORD 'memoria2026';"
+     sudo -u postgres psql -c "CREATE DATABASE memoria OWNER memoria;"
+     sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE memoria TO memoria;"
+     ```
 
 4. **Configure Environment Variables**:
    Copy the example environment file:
