@@ -31,14 +31,61 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const copyToClipboard = (text: string, fieldName: string) => {
+  const copyToClipboard = async (text: string, fieldName: string) => {
     // Don't copy placeholder text
-    if (text.includes('[ADD REQUIRED')) return;
-    navigator.clipboard.writeText(text);
+    if (!text || text.includes('[ADD REQUIRED')) return;
+
+    const trimmedText = text.trim();
+    let copied = false;
+
+    // Method 1: Modern navigator.clipboard API (requires secure context / user interaction)
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function'
+    ) {
+      try {
+        await navigator.clipboard.writeText(trimmedText);
+        copied = true;
+      } catch (err) {
+        console.warn('navigator.clipboard.writeText failed, attempting execCommand fallback:', err);
+      }
+    }
+
+    // Method 2: Universal execCommand fallback (works over HTTP, mobile webviews, iframes)
+    if (!copied && typeof document !== 'undefined') {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = trimmedText;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '0';
+        textarea.style.left = '-9999px';
+        textarea.style.width = '2em';
+        textarea.style.height = '2em';
+        textarea.style.padding = '0';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.boxShadow = 'none';
+        textarea.style.background = 'transparent';
+        textarea.style.opacity = '0';
+        textarea.setAttribute('readonly', '');
+        document.body.appendChild(textarea);
+
+        textarea.select();
+        textarea.setSelectionRange(0, trimmedText.length);
+
+        copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch (fallbackErr) {
+        console.error('Clipboard fallback copy failed:', fallbackErr);
+      }
+    }
+
+    // Provide immediate positive feedback in the UI
     setCopiedField(fieldName);
     setTimeout(() => {
       setCopiedField(null);
-    }, 1500);
+    }, 2000);
   };
 
   const acc1: PaymentAccountInfo = {
@@ -54,11 +101,11 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
   const acc2: PaymentAccountInfo = {
     accountLabel: account2?.accountLabel || 'Payment Account 02',
     badge: account2?.badge || 'Secondary Gateway',
-    bankName: account2?.bankName || '[ADD REQUIRED BANK NAME]',
-    accountName: account2?.accountName || '[ADD REQUIRED ACCOUNT NAME]',
-    accountNumber: account2?.accountNumber || '[ADD REQUIRED ACCOUNT NUMBER]',
-    branch: account2?.branch || '[ADD REQUIRED BRANCH]',
-    isPlaceholder: account2?.isPlaceholder ?? true,
+    bankName: account2?.bankName || 'Bank Of Ceylon',
+    accountName: account2?.accountName || 'R.M.P.S.Senevirathna ',
+    accountNumber: account2?.accountNumber || '85196868',
+    branch: account2?.branch || 'Melsiripura Branch',
+    isPlaceholder: account2?.isPlaceholder ?? false,
   };
 
   const accounts = [acc1, acc2];
@@ -172,25 +219,46 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
 
               {/* Account Number with Prominent Copy Button */}
               <div className="p-3.5 sm:p-4 rounded-xl bg-[#080210] border border-[#D4AF37]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner mt-auto min-w-0">
-                <div className="min-w-0 flex-1">
-                  <span className="block text-[10px] font-heading uppercase tracking-wider text-[#D4AF37] mb-0.5">
-                    Account Number {isSecondPlaceholder ? '' : '(Click to copy)'}
-                  </span>
-                  <span className="font-mono text-sm sm:text-base lg:text-lg font-bold text-white tracking-wider break-all select-all block">
+                <div
+                  className={`min-w-0 flex-1 ${!isSecondPlaceholder ? 'cursor-pointer group/num' : ''}`}
+                  onClick={() => {
+                    if (!isSecondPlaceholder) {
+                      copyToClipboard(acc.accountNumber.replace(/\s+/g, ''), `${accId}-accountNumber`);
+                    }
+                  }}
+                  title={!isSecondPlaceholder ? 'Click to copy account number' : undefined}
+                >
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="block text-[10px] font-heading uppercase tracking-wider text-[#D4AF37]">
+                      Account Number
+                    </span>
+                    {!isSecondPlaceholder && (
+                      <span className="text-[10px] font-heading text-[#FF8FC7]/80 opacity-0 group-hover/num:opacity-100 transition-opacity">
+                        (Click to copy)
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-mono text-sm sm:text-base lg:text-lg font-bold text-white tracking-wider break-all select-all block group-hover/num:text-[#D4AF37] transition-colors">
                     {acc.accountNumber}
                   </span>
                 </div>
                 {!isSecondPlaceholder && (
                   <button
                     type="button"
-                    onClick={() =>
-                      copyToClipboard(acc.accountNumber.replace(/[^0-9]/g, ''), `${accId}-accountNumber`)
-                    }
-                    className="w-full sm:w-auto px-3.5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] text-[#0D0518] text-xs font-heading font-bold flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(acc.accountNumber.replace(/\s+/g, ''), `${accId}-accountNumber`);
+                    }}
+                    aria-label={`Copy account number ${acc.accountNumber}`}
+                    className={`w-full sm:w-auto px-4 py-2.5 rounded-lg text-xs font-heading font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap ${
+                      copiedField === `${accId}-accountNumber`
+                        ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]'
+                        : 'bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] text-[#0D0518] hover:shadow-[0_0_15px_rgba(212,175,55,0.6)]'
+                    }`}
                   >
                     {copiedField === `${accId}-accountNumber` ? (
                       <>
-                        <Check className="w-4 h-4 text-[#0D0518]" />
+                        <Check className="w-4 h-4 text-white" />
                         <span>Copied ✓</span>
                       </>
                     ) : (
