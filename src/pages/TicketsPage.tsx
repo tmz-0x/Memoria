@@ -281,7 +281,7 @@ export const TicketsPage: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
               <span className="font-heading text-[#D4AF37] font-bold block mb-1">03 &bull; Bank Transfer</span>
-              <p className="text-[#F0E6FA]/70">Transfer total amount to Bank of Ceylon with your full name as remarks.</p>
+              <p className="text-[#F0E6FA]/70">Transfer total amount to either verified bank account below with your full name as remarks.</p>
             </div>
             <div className="p-3 rounded-xl bg-[#0D0518]/70 border border-[#D4AF37]/20">
               <span className="font-heading text-[#D4AF37] font-bold block mb-1">04 &bull; Upload Proof</span>
@@ -302,16 +302,14 @@ export const TicketsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Payment Details + Purchase Form Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Bank Payment Credentials */}
-          <div className="lg:col-span-5 order-2 lg:order-1">
-            <PaymentDetails />
-          </div>
+        {/* Official Bank Credentials (Payment Details Section) */}
+        <div className="mb-10 w-full">
+          <PaymentDetails />
+        </div>
 
-          {/* Right Column: Ticket Form / Submission Result */}
-          <div className="lg:col-span-7 order-1 lg:order-2">
-            <div className="rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/40 p-6 sm:p-8 shadow-2xl relative">
+        {/* Registration & Purchase Form Container */}
+        <div className="max-w-4xl mx-auto w-full">
+          <div className="rounded-2xl bg-[#1A0D2E] border border-[#D4AF37]/40 p-6 sm:p-8 shadow-2xl relative">
               {submittedResult ? (
                 /* Submission Pending State */
                 <motion.div
@@ -702,7 +700,6 @@ export const TicketsPage: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
       </main>
     </div>
   );

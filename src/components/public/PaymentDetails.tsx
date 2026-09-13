@@ -90,7 +90,7 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
       </div>
 
       {/* Fix 11: Two Separate Payment Accounts (Desktop: 2-Column Grid | Mobile: Stacked) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {accounts.map((acc, index) => {
           const accId = `acc${index + 1}`;
           const isSecondPlaceholder = acc.isPlaceholder;
@@ -98,16 +98,16 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
           return (
             <div
               key={accId}
-              className="p-5 sm:p-6 rounded-2xl bg-[#0D0518]/90 border border-[#D4AF37]/35 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-[#D4AF37]/70 transition-all duration-300"
+              className="p-5 sm:p-6 rounded-2xl bg-[#0D0518]/90 border border-[#D4AF37]/35 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-[#D4AF37]/70 transition-all duration-300 w-full min-w-0"
             >
               {/* Corner ambient glow */}
               <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-[#E066FF]/10 rounded-full blur-2xl pointer-events-none" />
 
-              <div>
+              <div className="min-w-0">
                 {/* Account Numbered Header */}
-                <div className="flex items-center justify-between gap-2 pb-3 mb-4 border-b border-[#D4AF37]/15">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-[#D4AF37]/15">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[10px] font-heading font-extrabold uppercase tracking-widest text-[#D4AF37]">
-                    <CreditCard className="w-3.5 h-3.5" />
+                    <CreditCard className="w-3.5 h-3.5 shrink-0" />
                     <span>{acc.accountLabel}</span>
                   </div>
                   {acc.badge && (
@@ -119,32 +119,32 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
 
                 {/* Bank & Branch Sub-Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                  <div className="p-3 rounded-xl bg-[#1A0D2E]/70 border border-[#D4AF37]/20">
+                  <div className="p-3 rounded-xl bg-[#1A0D2E]/70 border border-[#D4AF37]/20 min-w-0 overflow-hidden">
                     <span className="block text-[10px] font-heading uppercase tracking-wider text-[#F0E6FA]/50 mb-0.5">
                       Bank
                     </span>
-                    <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words">
+                    <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words block">
                       {acc.bankName}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#1A0D2E]/70 border border-[#D4AF37]/20">
+                  <div className="p-3 rounded-xl bg-[#1A0D2E]/70 border border-[#D4AF37]/20 min-w-0 overflow-hidden">
                     <span className="block text-[10px] font-heading uppercase tracking-wider text-[#F0E6FA]/50 mb-0.5">
                       Branch
                     </span>
-                    <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words">
+                    <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words block">
                       {acc.branch}
                     </span>
                   </div>
                 </div>
 
                 {/* Account Holder / Name */}
-                <div className="p-3.5 rounded-xl bg-[#1A0D2E]/70 border border-[#D4AF37]/20 flex items-center justify-between gap-3 mb-3">
-                  <div className="min-w-0">
+                <div className="p-3.5 rounded-xl bg-[#1A0D2E]/70 border border-[#D4AF37]/20 flex items-center justify-between gap-3 mb-3 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <span className="block text-[10px] font-heading uppercase tracking-wider text-[#F0E6FA]/50 mb-0.5">
                       Account Holder / Name
                     </span>
-                    <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words">
+                    <span className="font-heading text-xs sm:text-sm font-semibold text-[#F0E6FA] break-words block">
                       {acc.accountName}
                     </span>
                   </div>
@@ -171,12 +171,12 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
               </div>
 
               {/* Account Number with Prominent Copy Button */}
-              <div className="p-3.5 sm:p-4 rounded-xl bg-[#080210] border border-[#D4AF37]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner mt-1">
-                <div className="min-w-0">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-[#080210] border border-[#D4AF37]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner mt-auto min-w-0">
+                <div className="min-w-0 flex-1">
                   <span className="block text-[10px] font-heading uppercase tracking-wider text-[#D4AF37] mb-0.5">
                     Account Number {isSecondPlaceholder ? '' : '(Click to copy)'}
                   </span>
-                  <span className="font-mono text-sm sm:text-base lg:text-lg font-bold text-white tracking-wider break-all">
+                  <span className="font-mono text-sm sm:text-base lg:text-lg font-bold text-white tracking-wider break-all select-all block">
                     {acc.accountNumber}
                   </span>
                 </div>
@@ -186,7 +186,7 @@ export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
                     onClick={() =>
                       copyToClipboard(acc.accountNumber.replace(/[^0-9]/g, ''), `${accId}-accountNumber`)
                     }
-                    className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FFB3D9] text-[#0D0518] text-xs font-heading font-bold flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all cursor-pointer shrink-0 active:scale-95"
+                    className="w-full sm:w-auto px-3.5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] text-[#0D0518] text-xs font-heading font-bold flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap"
                   >
                     {copiedField === `${accId}-accountNumber` ? (
                       <>
