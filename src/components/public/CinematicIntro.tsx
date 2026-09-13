@@ -350,15 +350,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
                   Where Memories Bloom
                 </motion.h2>
 
-                {/* Subtitle / Venue */}
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1.0, delay: 0.7, ease: 'easeOut' }}
-                  className="font-heading text-[9px] sm:text-xs tracking-[0.18em] sm:tracking-[0.3em] text-[#F0E6FA]/80 uppercase mt-1.5 sm:mt-3"
-                >
-                  Tuesday, October 13 &bull; Gal Pittaniya Premises
-                </motion.p>
+              
               </div>
 
               {/* Mobile & Desktop "Tap anywhere to enter" hint */}

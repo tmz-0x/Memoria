@@ -53,7 +53,7 @@ export const Contact: React.FC = () => {
 
             <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
               <span className="font-mono text-sm font-semibold text-white tracking-wider">
-                +94 77 123 4567
+                +94 76 877 3240
               </span>
               <span className="text-xs font-heading font-bold text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                 Chat Now &rarr;
