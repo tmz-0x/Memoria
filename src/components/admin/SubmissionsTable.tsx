@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Submission, api } from '../../api/mockApi';
+import { apiUrl } from '../../config/api';
 import {
   Search,
   Eye,
@@ -319,7 +320,7 @@ export const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions,
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
-                        onClick={() => setActiveSlip(sub.paymentSlipUrl)}
+                        onClick={() => setActiveSlip(apiUrl(sub.paymentSlipUrl))}
                         className="p-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                         title="View Bank Slip"
                       >

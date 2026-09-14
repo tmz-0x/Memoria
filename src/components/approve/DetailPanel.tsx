@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Submission, api } from '../../api/mockApi';
+import { apiUrl } from '../../config/api';
 import {
   X,
   CheckCircle2,
@@ -143,7 +144,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               Attached Bank Deposit Slip / Transfer Proof
             </label>
             <a
-              href={submission.paymentSlipUrl}
+              href={apiUrl(submission.paymentSlipUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
@@ -155,7 +156,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
           <div className="rounded-xl border border-slate-300 overflow-hidden bg-slate-100 flex items-center justify-center p-2 min-h-[220px]">
             <img
-              src={submission.paymentSlipUrl}
+              src={apiUrl(submission.paymentSlipUrl)}
               alt="Payment Slip"
               className="max-h-[280px] w-auto object-contain rounded shadow-xs"
             />

@@ -1,4 +1,6 @@
 // Mock API with realistic 500-800ms delay and LocalStorage persistence
+import { apiUrl, apiFetch } from '../config/api';
+const fetch = apiFetch;
 
 export interface Submission {
   id: string;
