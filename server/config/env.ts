@@ -14,7 +14,7 @@ export const config = {
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
     database: process.env.PGDATABASE || 'memoria',
-    ssl: (process.env.PGSSL === 'true' || process.env.DATABASE_URL?.includes('sslmode=require')) ? { rejectUnauthorized: false } : undefined,
+    ssl: (process.env.PGSSL === 'true' || process.env.DATABASE_URL?.includes('sslmode=require') || process.env.DATABASE_URL?.includes('amazonaws.com') || (process.env.PGHOST && process.env.PGHOST.includes('amazonaws.com'))) ? { rejectUnauthorized: false } : undefined,
   },
   jwtSecret: process.env.JWT_SECRET || 'memoria_eclipse_2026_jwt_secret_dev_key',
   qrSecret: process.env.QR_SECRET || 'memoria_qr_cryptographic_signing_key_2026',
