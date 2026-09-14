@@ -1,4 +1,0 @@
-/api/* https://api.memoria-26.live/api/:splat 200
-/uploads/* https://api.memoria-26.live/uploads/:splat 200
-/* /index.html 200
-
