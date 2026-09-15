@@ -497,7 +497,7 @@ export const TicketForm: React.FC = () => {
                     </>
                   ) : (
                     <span>
-                      Submit Reservation — Rs. {ticketType === 'student' ? '200' : (quantity * 1000).toLocaleString()}
+                      Submit Reservation • Rs. {ticketType === 'student' ? '200' : (quantity * 1000).toLocaleString()}
                     </span>
                   )}
                 </button>

@@ -301,7 +301,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
                 <source type="image/webp" srcSet="/assets/initialIntro.webp" />
                 <img
                   src="/assets/initialIntro.jpg"
-                  alt="Memoria'26 Theatrical Opening"
+                  alt="MEMORIA'26 Theatrical Opening"
                   fetchPriority="high"
                   decoding="sync"
                   className="w-full h-full object-cover object-center"
@@ -335,7 +335,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onIntroComplete 
                 >
                   <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D4AF37] animate-pulse shrink-0" />
                   <span className="font-heading text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#D4AF37]">
-                    The Eclipse Of Memories &bull; Memoria &apos;26
+                    The Eclipse Of Memories &bull; MEMORIA &apos;26
                   </span>
                   <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D4AF37] animate-pulse shrink-0" />
                 </motion.div>

@@ -39,7 +39,7 @@ export const EventSettingsForm: React.FC<EventSettingsFormProps> = ({
     hasPassword: false,
     smtpSecure: false,
     smtpFrom: '',
-    senderName: "Memoria'26 Ticketing Desk",
+    senderName: "MEMORIA'26 Ticketing Desk",
     status: 'Not Configured',
   });
   const [smtpSaving, setSmtpSaving] = useState(false);
@@ -509,7 +509,7 @@ export const EventSettingsForm: React.FC<EventSettingsFormProps> = ({
               name="senderName"
               value={smtpConfig.senderName}
               onChange={handleSmtpChange}
-              placeholder="e.g. Memoria'26 Ticketing Desk"
+              placeholder="e.g. MEMORIA'26 Ticketing Desk"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
             />
           </div>

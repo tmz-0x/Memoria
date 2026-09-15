@@ -8,7 +8,16 @@ export const checkinRoutes = Router();
 // Only Admin and Check-in Staff can access gate check-in scanner (Section 32)
 checkinRoutes.use(authenticate, requireRole('admin', 'staff'));
 
-// Rate limited verify scans: max 120 per minute per client
-checkinRoutes.post('/verify', rateLimiter({ windowMs: 60 * 1000, maxRequests: 120 }), checkinController.verify);
+// Rate limited verify scans: per staff account, high throughput for gate queues
+checkinRoutes.post(
+  '/verify',
+  rateLimiter({
+    windowMs: 60 * 1000,
+    maxRequests: 240,
+    keyGenerator: (req) => req.user?.id || req.ip || '127.0.0.1',
+    message: 'Gate scan rate limit exceeded for this operator. Please wait a moment.',
+  }),
+  checkinController.verify
+);
 checkinRoutes.get('/stats', checkinController.getStats);
 checkinRoutes.get('/statistics', checkinController.getStats);

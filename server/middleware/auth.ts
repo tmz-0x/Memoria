@@ -19,6 +19,14 @@ declare global {
   }
 }
 
+// In-memory user session micro-cache to prevent DB connection pool exhaustion under high-frequency gate scanning
+const userCache = new Map<string, { user: AuthenticatedUser; expires: number }>();
+
+export function clearUserCache(userId?: string) {
+  if (userId) userCache.delete(userId);
+  else userCache.clear();
+}
+
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
@@ -43,7 +51,19 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       throw new AppError('Invalid or expired authentication token.', 401, 'INVALID_TOKEN');
     }
 
-    const user = await db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(decoded.id) as AuthenticatedUser | undefined;
+    const now = Date.now();
+    const cached = userCache.get(decoded.id);
+    let user: AuthenticatedUser | undefined;
+
+    if (cached && cached.expires > now) {
+      user = cached.user;
+    } else {
+      user = await db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(decoded.id) as AuthenticatedUser | undefined;
+      if (user) {
+        userCache.set(decoded.id, { user, expires: now + 60000 });
+      }
+    }
+
     if (!user) {
       throw new AppError('User session is invalid or user no longer exists.', 401, 'UNAUTHORIZED');
     }

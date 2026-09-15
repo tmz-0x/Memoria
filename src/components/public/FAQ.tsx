@@ -10,9 +10,9 @@ interface FAQItem {
 
 const FAQS: FAQItem[] = [
   {
-    question: 'What is the refund and cancellation policy for Memoria’26?',
+    question: 'What is the refund and cancellation policy for MEMORIA’26?',
     answer:
-      'Tickets for Memoria’26 are non-refundable once approved by our verification desk, as event admissions are officially registered. However, if your application is rejected during slip verification, no reservation is charged and you may re-apply with corrected proof of payment.',
+      'Tickets for MEMORIA’26 are non-refundable once approved by our verification desk, as event admissions are officially registered. However, if your application is rejected during slip verification, no reservation is charged and you may re-apply with corrected proof of payment.',
   },
   {
     question: 'How long does the payment verification and approval turnaround take?',
@@ -56,7 +56,7 @@ export const FAQ: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto mb-14">
           <span className="font-heading text-xs tracking-[0.35em] text-[#D4AF37] uppercase font-bold inline-flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5" />
-            ACT VI — CLARIFICATIONS
+            ACT VI • CLARIFICATIONS
             <Sparkles className="w-3.5 h-3.5" />
           </span>
 

@@ -103,7 +103,7 @@ export const LINEUP_BAND: BandItem = {
   role: 'Official Concert Band',
   genre: 'Live Symphony & Modern Orchestration',
   description:
-    'The master musicians delivering live orchestration, acoustic arrangements, and soaring symphonic backings for every performance on the Memoria’26 stage.',
+    'The master musicians delivering live orchestration, acoustic arrangements, and soaring symphonic backings for every performance on the MEMORIA’26 stage.',
   image: '/artists/band.png',
   webpImage: '/artists/band.webp',
 };
@@ -285,7 +285,7 @@ const BandCard: React.FC<{ band: BandItem }> = memo(({ band }) => {
                 <span>Full Symphony Synchronization</span>
               </span>
               <span className="text-[#FFB3D9] font-bold tracking-wider">
-                Memoria Mainstage
+                MEMORIA Mainstage
               </span>
             </div>
           </div>
@@ -431,7 +431,7 @@ export const Lineup: React.FC = () => {
             className="font-heading text-xs tracking-[0.35em] text-[#D4AF37] uppercase font-bold inline-flex items-center gap-2"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            ACT II — THE PERFORMANCE
+            ACT II • THE PERFORMANCE
             <Sparkles className="w-3.5 h-3.5" />
           </motion.span>
 
@@ -446,7 +446,7 @@ export const Lineup: React.FC = () => {
           </motion.h2>
 
           <p className="font-body text-base text-[#F0E6FA]/70 mt-4 font-light">
-            Four voices, one night — each artist bringing their own sound to the stage.
+            Four voices, one night. Each artist bringing their own sound to the stage.
           </p>
         </div>
 

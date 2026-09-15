@@ -60,21 +60,29 @@ export const CheckinPage: React.FC = () => {
   const handleVerify = async (query: string) => {
     if (!query.trim()) return;
     setLoading(true);
-    const res = await api.verifyAndCheckIn(query);
-    setLoading(false);
-
-    if (res.valid) {
-      setScanResult({
-        status: 'valid',
-        submission: res.submission,
-      });
-      fetchStats();
-    } else {
+    try {
+      const res = await api.verifyAndCheckIn(query);
+      if (res.valid) {
+        setScanResult({
+          status: 'valid',
+          submission: res.submission,
+        });
+        fetchStats();
+      } else {
+        setScanResult({
+          status: 'invalid',
+          submission: res.submission,
+          reason: res.reason || 'Invalid or unapproved ticket.',
+        });
+      }
+    } catch (err: any) {
+      console.error('Check-in verification failed:', err);
       setScanResult({
         status: 'invalid',
-        submission: res.submission,
-        reason: res.reason,
+        reason: err?.message || 'Verification network error. Please try again.',
       });
+    } finally {
+      setLoading(false);
     }
   };
 

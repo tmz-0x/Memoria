@@ -24,9 +24,9 @@ export const WHATSAPP_SUPPORT_LINES = [
   {
     id: 3,
     label: 'Support Hotline 03',
-    displayNumber: '+94 74 063 8431', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 3
-    cleanNumber: '94740638431',       // <-- Digits for wa.me link (e.g. 94719876543)
-    desc: 'Thilruwan Kanishka',
+    displayNumber: '+94 72 759 2372', // <-- REPLACE WITH YOUR WHATSAPP NUMBER 3
+    cleanNumber: '94727592372',       // <-- Digits for wa.me link (e.g. 94719876543)
+    desc: 'Vihanga Kaluarachchi',
   },
 ];
 
@@ -113,7 +113,7 @@ export const Contact: React.FC = () => {
             <div className="mt-6 pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between text-[11px] text-[#F0E6FA]/60 font-body">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Verified Memoria&apos;26 Officers
+                Verified MEMORIA&apos;26 Officers
               </span>
               <span className="text-[#D4AF37]">Available 24/7</span>
             </div>

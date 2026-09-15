@@ -13,7 +13,7 @@ const STEPS = [
   {
     step: '02',
     title: 'Bank Transfer',
-    desc: 'Transfer (Rs. 1000 × quantity) to the official JPURA Voiceclub account provided below.',
+    desc: 'Transfer (Rs. 1000 × quantity) to the official J\'PURA VOICE Club account provided below.',
     icon: Landmark,
   },
   {
@@ -56,7 +56,7 @@ export const HowToBuy: React.FC = () => {
             className="font-heading text-xs tracking-[0.35em] text-[#D4AF37] uppercase font-bold inline-flex items-center gap-2"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            ACT IV — THE PROCESS
+            ACT IV • THE PROCESS
             <Sparkles className="w-3.5 h-3.5" />
           </motion.span>
 

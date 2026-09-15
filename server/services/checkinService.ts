@@ -14,16 +14,16 @@ export const checkinService = {
    * Prevents race conditions and double check-in under simultaneous scans.
    */
   verifyAndCheckIn: async (query: string, staffName: string): Promise<CheckinResult> => {
-    const raw = query?.trim();
+    const raw = typeof query === 'string' ? query.trim() : String(query || '').trim();
     if (!raw) {
       await auditService.logScan('', 'INVALID', staffName, null, null, 'Empty query');
       return { valid: false, reason: 'Empty QR code or ticket query provided.' };
     }
 
-    // Extract token if full payload was scanned
+    // Extract token if full payload was scanned (case-insensitive prefix check)
     let tokenQuery = raw;
-    if (raw.startsWith('MEMORIA26:TICKET:')) {
-      tokenQuery = raw.replace('MEMORIA26:TICKET:', '').trim();
+    if (/^MEMORIA26:TICKET:/i.test(raw)) {
+      tokenQuery = raw.replace(/^MEMORIA26:TICKET:/i, '').trim();
     }
 
     const normalizedUpper = raw.toUpperCase();
@@ -32,18 +32,22 @@ export const checkinService = {
     // Find submission by token, payload, ticketId, id, email, or student reg
     const sub = await db.prepare(`
       SELECT * FROM submissions
-      WHERE qr_token = ?
-         OR qr_payload = ?
-         OR UPPER(ticket_id) = ?
-         OR UPPER(id) = ?
-         OR UPPER(email) = ?
-         OR UPPER(normalized_reg_number) = ?
-    `).get(tokenQuery, raw, normalizedUpper, normalizedUpper, normalizedUpper, normalizedUpper) as any;
+      WHERE (
+        qr_token = ?
+        OR LOWER(qr_token) = ?
+        OR qr_payload = ?
+        OR UPPER(ticket_id) = ?
+        OR UPPER(id) = ?
+        OR UPPER(email) = ?
+        OR UPPER(normalized_reg_number) = ?
+      )
+    `).get(tokenQuery, normalizedToken, raw, normalizedUpper, normalizedUpper, normalizedUpper, normalizedUpper) as any;
 
     if (!sub) {
       const revoked = await db.prepare(`
-        SELECT * FROM revoked_qr_tokens WHERE token = ? OR token = ?
-      `).get(tokenQuery, raw) as any;
+        SELECT * FROM revoked_qr_tokens
+        WHERE token = ? OR LOWER(token) = ? OR token = ? OR LOWER(token) = ?
+      `).get(tokenQuery, normalizedToken, raw, normalizedUpper.toLowerCase()) as any;
 
       if (revoked) {
         await auditService.logScan(raw, 'INVALID', staffName, revoked.ticket_id, revoked.submission_id, 'Scanned invalidated/regenerated QR credential');
@@ -73,6 +77,26 @@ export const checkinService = {
         username: staffName,
       });
       return { valid: false, reason: 'Invalid Ticket: No matching record found.' };
+    }
+
+    // Check if ticket was deleted/cancelled
+    if (sub.deleted_at) {
+      await auditService.logScan(raw, 'INVALID', staffName, sub.ticket_id, sub.id, 'Ticket cancelled/deleted');
+      await auditService.logSystemEvent({
+        severity: 'WARNING',
+        eventType: 'INVALID_QR_SCAN',
+        action: 'CHECKIN_SCAN',
+        module: 'CHECKIN',
+        message: `Scan rejected: Ticket ${sub.ticket_id} was deleted/cancelled (${sub.delete_reason || 'Administrative cancellation'})`,
+        targetType: 'ticket',
+        targetId: sub.ticket_id,
+        username: staffName,
+      });
+      return {
+        valid: false,
+        reason: `Invalid Ticket: This ticket pass was cancelled (${sub.delete_reason || 'Administrative cancellation'}).`,
+        submission: sub,
+      };
     }
 
     // Check status
@@ -143,7 +167,7 @@ export const checkinService = {
       SET checked_in = 1,
           checked_in_at = ?,
           checked_in_by = ?
-      WHERE id = ? AND checked_in = 0 AND status = 'approved'
+      WHERE id = ? AND checked_in = 0 AND status = 'approved' AND deleted_at IS NULL
     `, [now, staffName, sub.id]);
 
     if (updateResult.changes === 0) {

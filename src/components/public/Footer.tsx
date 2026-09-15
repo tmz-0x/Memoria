@@ -39,13 +39,13 @@ export const Footer: React.FC = () => {
           {/* Brand Column */}
           <div className="md:col-span-5 space-y-4">
             <span className="font-wordmark text-4xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37] drop-shadow-[0_0_20px_rgba(224,102,255,0.7)] select-none">
-              Memoria&apos;26
+              MEMORIA&apos;26
             </span>
             <p className="font-heading text-xs uppercase tracking-[0.3em] text-[#D4AF37] font-semibold">
               The Eclipse Of Memories
             </p>
             <p className="font-body text-xs sm:text-sm text-[#F0E6FA]/70 max-w-sm leading-relaxed">
-              An unforgettable theatrical symphony presented by the Jpura voice of University of Sri Jayewardenepura.
+              An unforgettable theatrical symphony presented by the J'PURA VOICE of University of Sri Jayewardenepura.
             </p>
           </div>
 
@@ -91,11 +91,11 @@ export const Footer: React.FC = () => {
             <div className="space-y-2.5 text-xs text-[#F0E6FA]/70 font-body">
               <div className="flex items-start gap-2.5">
                 <Calendar className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                <span>Tuesday, October 13, 2026 &bull; Gates Open 5:30 PM &bull; Showtime 6:30 PM</span>
+                <span>Tuesday, October 13, 2026 &bull; Gates Open 4.00 PM &bull; Showtime 7.00 PM</span>
               </div>
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#FF8FC7] shrink-0 mt-0.5" />
-                <span>Gal Pittaniya premises,University Of Sri Jayewardenapura</span>
+                <span>University premises, University Of Sri Jayewardenapura</span>
               </div>
             </div>
 

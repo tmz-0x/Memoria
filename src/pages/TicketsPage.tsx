@@ -157,7 +157,7 @@ export const TicketsPage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <span className="font-wordmark text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37]">
-              Memoria&apos;26
+              MEMORIA&apos;26
             </span>
           </div>
         </div>
@@ -176,7 +176,7 @@ export const TicketsPage: React.FC = () => {
             Ticket Reservation
           </h1>
           <p className="font-body text-xs sm:text-sm text-[#F0E6FA]/70 mt-3 font-light">
-            Secure your presence for Memoria&apos;26. All online reservations are manually verified by our finance desk before QR pass delivery.
+            Secure your presence for MEMORIA&apos;26. All online reservations are manually verified by our finance desk before QR pass delivery.
           </p>
         </div>
 
@@ -193,7 +193,7 @@ export const TicketsPage: React.FC = () => {
           <div className="absolute -top-4 -right-4 sm:top-6 sm:right-6 w-20 h-20 sm:w-28 sm:h-28 opacity-85 pointer-events-none filter drop-shadow-[0_0_20px_rgba(212,175,55,0.7)] z-20">
             <img
               src="/assets/memoria-seal.png"
-              alt="Memoria Seal"
+              alt="MEMORIA Seal"
               className="w-full h-full object-contain"
             />
           </div>
@@ -207,7 +207,7 @@ export const TicketsPage: React.FC = () => {
                     : 'Official Admission Pass • Outsider General Admission'}
                 </span>
                 <h2 className="font-wordmark text-4xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37] mt-1 select-none">
-                  Memoria&apos;26
+                  MEMORIA&apos;26
                 </h2>
                 <span className="font-heading text-xs uppercase tracking-[0.3em] text-[#D4AF37] font-semibold block mt-0.5">
                   The Eclipse Of Memories
@@ -244,7 +244,7 @@ export const TicketsPage: React.FC = () => {
                 <MapPin className="w-6 h-6 text-[#FF8FC7] shrink-0" />
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Venue</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Gal Pittaniya Premises</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-white">University premises</span>
                   <span className="block text-[10px] text-[#F0E6FA]/60">University Of Sri Jayewardenapura</span>
                 </div>
               </div>
@@ -374,7 +374,7 @@ export const TicketsPage: React.FC = () => {
                       onClick={() => navigate('/')}
                       className="px-6 py-3 rounded-full font-heading text-xs tracking-wider uppercase font-bold text-[#0D0518] bg-gradient-to-r from-[#D4AF37] via-[#FFB3D9] to-[#D4AF37] hover:shadow-[0_0_20px_#D4AF37] transition-all cursor-pointer"
                     >
-                      Return to Memoria&apos;26
+                      Return to MEMORIA&apos;26
                     </button>
                     <button
                       type="button"
@@ -688,7 +688,7 @@ export const TicketsPage: React.FC = () => {
                       </>
                     ) : (
                       <span>
-                        Submit Reservation — Rs. {ticketType === 'student' ? '200' : (quantity * 1000).toLocaleString()}
+                        Submit Reservation • Rs. {ticketType === 'student' ? '200' : (quantity * 1000).toLocaleString()}
                       </span>
                     )}
                   </button>

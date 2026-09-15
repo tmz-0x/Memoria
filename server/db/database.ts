@@ -1,15 +1,22 @@
+import dns from 'dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
+
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { config } from '../config/env';
 
-// Initialize PostgreSQL Connection Pool
+// Initialize PostgreSQL Connection Pool with TCP Keepalive & Resilient Timeouts
 export const pool = new Pool(
   config.pg.connectionString
     ? {
         connectionString: config.pg.connectionString,
         ssl: config.pg.ssl,
-        max: 25, // High concurrency pool for 15,000+ crowd & multiple scanners
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        max: 10, // Controlled pool size to prevent Azure Flexible Server connection throttling
+        idleTimeoutMillis: 60000,
+        connectionTimeoutMillis: 15000,
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10000,
       }
     : {
         host: config.pg.host,
@@ -18,15 +25,17 @@ export const pool = new Pool(
         password: config.pg.password,
         database: config.pg.database,
         ssl: config.pg.ssl,
-        max: 25,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        max: 10,
+        idleTimeoutMillis: 60000,
+        connectionTimeoutMillis: 15000,
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10000,
       }
 );
 
 // Graceful pool error logging
 pool.on('error', (err) => {
-  console.error('[PostgreSQL Pool Unexpected Error]:', err.message);
+  console.error('[PostgreSQL Pool Background Event]:', err.message);
 });
 
 /**
@@ -64,6 +73,31 @@ function normalizeParams(params: any[]): any[] {
   return params;
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    const msg = String(err?.message || '').toLowerCase();
+    const code = String(err?.code || '').toUpperCase();
+    const isTransient =
+      code === 'ETIMEDOUT' ||
+      code === 'ECONNRESET' ||
+      code === 'ENETUNREACH' ||
+      code === '57P01' ||
+      msg.includes('etimedout') ||
+      msg.includes('connection terminated') ||
+      msg.includes('connection timeout') ||
+      msg.includes('timeout') ||
+      msg.includes('unreachable') ||
+      msg.includes('socket closed');
+    if (retries > 0 && isTransient) {
+      await new Promise((r) => setTimeout(r, 500));
+      return withRetry(fn, retries - 1);
+    }
+    throw err;
+  }
+}
+
 /**
  * Authoritative PostgreSQL Database Interface
  */
@@ -74,38 +108,46 @@ export const db = {
    * Execute query returning all matching rows
    */
   async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-    const text = convertPlaceholders(sql);
-    const res = await pool.query(text, normalizeParams(params));
-    return res.rows as T[];
+    return withRetry(async () => {
+      const text = convertPlaceholders(sql);
+      const res = await pool.query(text, normalizeParams(params));
+      return res.rows as T[];
+    });
   },
 
   /**
    * Execute query returning the first matching row or undefined
    */
   async get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
-    const text = convertPlaceholders(sql);
-    const res = await pool.query(text, normalizeParams(params));
-    return res.rows[0] as T | undefined;
+    return withRetry(async () => {
+      const text = convertPlaceholders(sql);
+      const res = await pool.query(text, normalizeParams(params));
+      return res.rows[0] as T | undefined;
+    });
   },
 
   /**
    * Execute INSERT / UPDATE / DELETE returning affected row count
    */
   async run(sql: string, params: any[] = []): Promise<RunResult> {
-    const text = convertPlaceholders(sql);
-    const res = await pool.query(text, normalizeParams(params));
-    return {
-      changes: res.rowCount || 0,
-      rowCount: res.rowCount || 0,
-      rows: res.rows,
-    };
+    return withRetry(async () => {
+      const text = convertPlaceholders(sql);
+      const res = await pool.query(text, normalizeParams(params));
+      return {
+        changes: res.rowCount || 0,
+        rowCount: res.rowCount || 0,
+        rows: res.rows,
+      };
+    });
   },
 
   /**
    * Execute multiple raw DDL / migration statements
    */
   async exec(sql: string): Promise<void> {
-    await pool.query(sql);
+    return withRetry(async () => {
+      await pool.query(sql);
+    });
   },
 
   /**
@@ -129,7 +171,7 @@ export const db = {
    * Execute transaction with automatic BEGIN, COMMIT, and ROLLBACK
    */
   async transaction<T>(callback: (tx: TxRunner) => Promise<T>): Promise<T> {
-    const client = await pool.connect();
+    const client = await withRetry(() => pool.connect());
     const tx: TxRunner = {
       client,
       query: async <R = any>(sql: string, params: any[] = []): Promise<R[]> => {

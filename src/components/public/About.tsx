@@ -20,7 +20,7 @@ export const About: React.FC = () => {
             className="font-heading text-xs tracking-[0.35em] text-[#D4AF37] uppercase font-bold inline-flex items-center gap-2"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            ACT I — THE GENESIS
+            ACT I • THE GENESIS
             <Sparkles className="w-3.5 h-3.5" />
           </motion.span>
 
@@ -41,7 +41,7 @@ export const About: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="font-body text-base sm:text-lg text-[#F0E6FA]/80 mt-5 leading-relaxed font-light"
           >
-            Memoria&apos;26 is more than a concert — It's an immersive musical experience presented by the J'PURA VOICE Filming Division, blending live performance, expressive dance, and interactive moments that celebrate love, connection, and the spirit of youth. Every performance is crafted to create lasting impressions, turning a single evening into a memory that lingers long after the final note fades.
+            MEMORIA&apos;26 is more than a concert. It's an immersive musical experience presented by the J'PURA VOICE Filming Division, blending live performance, expressive dance, and interactive moments that celebrate love, connection, and the spirit of youth. Every performance is crafted to create lasting impressions, turning a single evening into a memory that lingers long after the final note fades.
           </motion.p>
         </div>
 
@@ -62,7 +62,7 @@ export const About: React.FC = () => {
             <div className="relative rounded-2xl overflow-hidden border border-[#D4AF37]/30 shadow-2xl bg-[#1A0D2E]">
               <img
                 src="/assets/25memm.png"
-                alt="Memoria '25 Live Concert Experience"
+                alt="MEMORIA '25 Live Concert Experience"
                 className="w-full h-[260px] sm:h-[380px] md:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
               />
 
@@ -81,10 +81,10 @@ export const About: React.FC = () => {
               {/* Theatrical Card Label */}
               <div className="absolute bottom-6 left-6 right-6">
                 <span className="font-heading text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase font-bold">
-                  JPURA Voice Signature Production
+                  J'PURA VOICE Signature Production
                 </span>
                 <h3 className="font-heading text-xl sm:text-2xl font-bold text-white mt-1">
-                  Memoria&apos;25 Live Concert Experience
+                  MEMORIA&apos;25 Live Concert Experience
                 </h3>
               </div>
             </div>
@@ -101,12 +101,12 @@ export const About: React.FC = () => {
               {
                 iconSrc: '/assets/icon-dance.png',
                 title: 'Dance & Couple Experiences',
-                desc: 'Beautifully choreographed solo, couple, and group performances celebrating different expressions of love — alongside interactive games and live dedications that turn the audience into part of the story.',
+                desc: 'Beautifully choreographed solo, couple, and group performances celebrating different expressions of love, alongside interactive games and live dedications that turn the audience into part of the story.',
               },
               {
                 iconSrc: '/assets/icon-couple.png',
                 title: 'A Night That Gives Back',
-                desc: 'Beyond entertainment, Memoria26 supports 76 school students through essential educational resources and learning materials — turning the success of the night into a lasting, meaningful contribution.',
+                desc: 'Beyond entertainment, MEMORIA\'26 supports 76 school students through essential educational resources and learning materials, turning the success of the night into a lasting, meaningful contribution.',
               },
             ].map((item, idx) => (
               <motion.div

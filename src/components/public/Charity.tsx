@@ -12,7 +12,7 @@ export const Charity: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto mb-14">
           <span className="font-heading text-xs tracking-[0.35em] text-[#FF8FC7] uppercase font-bold inline-flex items-center gap-2">
             <Heart className="w-3.5 h-3.5 text-[#FF8FC7] fill-[#FF8FC7]" />
-            ACT VII — THE IMPACT
+            ACT VII • THE IMPACT
             <Heart className="w-3.5 h-3.5 text-[#FF8FC7] fill-[#FF8FC7]" />
           </span>
 
@@ -21,7 +21,7 @@ export const Charity: React.FC = () => {
           </h2>
 
           <p className="font-body text-base text-[#F0E6FA]/80 mt-3 font-light leading-relaxed">
-            Every ticket purchased for Memoria '26 resonates far beyond the spotlight. As part of our Corporate Social Responsibility initiative, we're supporting 76 school students with essential educational resources and learning materials.
+            Every ticket purchased for MEMORIA '26 resonates far beyond the spotlight. As part of our Corporate Social Responsibility initiative, we're supporting 76 school students with essential educational resources and learning materials.
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export const Charity: React.FC = () => {
                 A Lasting Contribution
               </h4>
               <p className="font-body text-xs text-[#F0E6FA]/70 leading-relaxed">
-                Turning the success of Memoria '26 into a meaningful, lasting impact beyond a single night.
+                Turning the success of MEMORIA '26 into a meaningful, lasting impact beyond a single night.
               </p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export const Charity: React.FC = () => {
               &ldquo;Beyond the music - a gift that lasts.&rdquo;
             </p>
             <span className="block font-heading text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase font-semibold mt-1">
-              JPURA Voiceclub Social Responsibility Initiative
+              J'PURA VOICE Social Responsibility Initiative
             </span>
           </div>
         </div>

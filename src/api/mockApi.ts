@@ -378,16 +378,16 @@ const initialUsers: User[] = [
 ];
 
 const initialSettings: EventSettings = {
-  eventName: "Memoria'26",
+  eventName: "MEMORIA'26",
   tagline: 'The Eclipse of Memories',
   eventDate: 'Tuesday, October 13, 2026',
-  eventVenue: 'Gal Pittaniya premises, University of Sri Jayewardenepura',
+  eventVenue: 'University premises, University of Sri Jayewardenepura',
   totalCapacity: 800,
   remainingAllocation: 142,
   ticketPrice: 1000,
   cutoffDate: 'October 13, 2026',
   bankName: 'Bank of Ceylon',
-  accountName: 'JPURA Voiceclub Memoria Account',
+  accountName: "J'PURA VOICE Club MEMORIA Account",
   accountNumber: '8942-0012-3841-992',
   branch: 'Colombo Fort Branch',
   announcement: 'Online registrations are open. Verification turnaround is currently under 24 hours.',
@@ -1387,7 +1387,7 @@ export const api = {
         hasPassword: false,
         smtpSecure: false,
         smtpFrom: 'tickets@memoria.lk',
-        senderName: "Memoria'26 Ticketing Desk",
+        senderName: "MEMORIA'26 Ticketing Desk",
         status: 'Not Configured',
       };
     }

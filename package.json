@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:https": "HTTPS=true vite",
     "server": "tsx server/server.ts",
     "server:watch": "tsx watch server/server.ts",
     "dev:all": "concurrently -k \"npm run server:watch\" \"npm run dev\"",
@@ -17,6 +18,7 @@
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
+    "docx": "^9.7.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "framer-motion": "^11.18.2",
@@ -45,6 +47,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "concurrently": "^10.0.5",

@@ -32,7 +32,7 @@ export const TicketInfo: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto mb-14">
           <span className="font-heading text-xs tracking-[0.35em] text-[#D4AF37] uppercase font-bold inline-flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5" />
-            ACT III — ADMISSION
+            ACT III • ADMISSION
             <Sparkles className="w-3.5 h-3.5" />
           </span>
 
@@ -40,7 +40,7 @@ export const TicketInfo: React.FC = () => {
             Event Admission
           </h2>
           <p className="font-body text-base text-[#F0E6FA]/80 mt-3 font-light">
-            Secure your admission pass and join us for an unforgettable evening under the open skies of Gal Pittaniya.
+            Secure your admission pass and join us for an unforgettable evening under the open skies of University premises.
           </p>
         </div>
 
@@ -57,7 +57,7 @@ export const TicketInfo: React.FC = () => {
           <div className="absolute -top-4 -right-4 sm:top-6 sm:right-6 w-20 h-20 sm:w-28 sm:h-28 opacity-85 pointer-events-none filter drop-shadow-[0_0_20px_rgba(212,175,55,0.7)] z-20">
             <img
               src="/assets/memoria-seal.png"
-              alt="Memoria Seal"
+              alt="MEMORIA Seal"
               className="w-full h-full object-contain"
             />
           </div>
@@ -70,7 +70,7 @@ export const TicketInfo: React.FC = () => {
                   Official Admission Pass &bull; General & Student Admission
                 </span>
                 <h3 className="font-wordmark text-4xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5F8] via-[#FF8FC7] to-[#D4AF37] mt-1 select-none">
-                  Memoria&apos;26
+                  MEMORIA&apos;26
                 </h3>
                 <span className="font-heading text-xs uppercase tracking-[0.3em] text-[#D4AF37] font-semibold block mt-0.5">
                   The Eclipse Of Memories
@@ -80,6 +80,7 @@ export const TicketInfo: React.FC = () => {
               {/* Two Ticket Tiers (Fix 6) */}
               <div className="flex flex-wrap items-center gap-3">
                 
+
 
                
               </div>
@@ -92,7 +93,7 @@ export const TicketInfo: React.FC = () => {
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Date & Time</span>
                   <span className="text-xs sm:text-sm font-heading font-bold text-white">Tue, October 13, 2026</span>
-                  <span className="block text-[10px] text-[#FF8FC7]">Gates: 4:00 PM &bull; Show: 6:30 PM</span>
+                  <span className="block text-[10px] text-[#FF8FC7]">Gates: 4:00 PM &bull; Show: 7.00 PM</span>
                 </div>
               </div>
 
@@ -100,7 +101,7 @@ export const TicketInfo: React.FC = () => {
                 <MapPin className="w-6 h-6 text-[#FF8FC7] shrink-0" />
                 <div>
                   <span className="block text-[10px] uppercase font-heading tracking-wider text-[#F0E6FA]/50">Venue</span>
-                  <span className="text-xs sm:text-sm font-heading font-bold text-white">Gal Pittaniya premises</span>
+                  <span className="text-xs sm:text-sm font-heading font-bold text-white">University premises</span>
                   <span className="block text-[10px] text-[#FF8FC7]"> University Of Sri Jayewardenapura</span>
                 </div>
               </div>
